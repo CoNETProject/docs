@@ -57,15 +57,25 @@ The tip can record matching and readiness, but it cannot rewrite the seller’s 
 
 This class coordinates one NFT-style sale of an existing asset or storage ledger. It is not a fungible-token central limit order book and does not define pair-wide sequencing, partial fills across many orders, or ERC-20 batch netting. The proposed [miner-matched order-book exchange](../applications/miner-orderbook-dex.md) requires a separate application settlement protocol or a future DLE protocol revision.
 
+## x402 v2 AI pay-per-use (target profile)
+
+Whitepaper §4.7a is a **target interoperability profile**, not a fourth chain class and not a tip VM. x402 remains the HTTP payment edge (`402 Payment Required` and the v2 payment headers). DLE may later store immutable usage receipts or batch-settlement references on existing asset or storage surfaces.
+
+The CoNET profile identifies L1 as `eip155:224422` and admits only version-pinned Treasury-canonical assets. Prompt and model output must not enter public tip state. “Running AI on DLE” never means deploying provider code into a general-purpose VM.
+
+This GitBook does not treat the current Beamio API as already x402-v2-conformant.
+
 ## Maturity boundary
 
 These class descriptions summarize the whitepaper’s target state machines. The Trade FSM and several class boundaries are product-frozen, but the complete Asset and Storage runtime, production gateway, economic admission, and end-to-end pilot are not established as live by this GitBook.
+
+The public [DLE explorer](explorer.md) inspects an isolated Archive lab. It does not execute class state machines or expose a tip VM.
 
 Asset safety requirements are further constrained by the normative gateway invariant specification. Production asset ingress remains disabled until its formal, implementation, Treasury-conformance, and economic release gates pass.
 
 ## Source anchors
 
-- Whitepaper: §§4.2 and 4.6–4.10; §6.3; §10
+- Whitepaper: §§4.2, 4.6–4.7a, and 4.8–4.10; §6.3; §10
 - `DLE-AssetBurnMintGateway-Invariant-Spec.md`: §§1–10
 - [Normative sources](specs-index.md) — controlling paths and status
 

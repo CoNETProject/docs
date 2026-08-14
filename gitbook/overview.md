@@ -30,9 +30,9 @@ Validator consensus, Guardian participation, and application state are related b
 
 ### L2 — specialized parallel ledgers
 
-[CoNET-DLE](l2/README.md) specifies Decentralization Clusters and parallel atomic ledger classes for asset, storage, and trade activity. The design moves high-frequency application events away from one globally serial execution lane while retaining explicit archive, finality, and settlement rules.
+[CoNET-DLE](l2/README.md) specifies Decentralization Clusters and parallel atomic ledger classes for asset, storage, and trade activity. The design moves high-frequency application events away from one globally serial execution lane while retaining explicit archive, finality, and settlement rules. The protocol **DLE Chain ID** is the hosting archive `groupId`, not CoNET L1 `224422`.
 
-The L2 section is a digest of the English whitepaper and normative specifications. It states design maturity separately from L0/L1 production status.
+The L2 section is a digest of the English whitepaper (revision **2026-08-14**) and normative specifications. It states design maturity separately from L0/L1 production status. A public [lab explorer](l2/explorer.md) at [https://dle.conet.network/](https://dle.conet.network/) inspects isolated Archive health and participant wallets. The L1 [Global Archive Routing Registry](l2/routing-registry.md) is deployed; that does not launch Archive Certificate or asset ingress.
 
 For an ERC-20 issued elsewhere, entering CoNET L1 and activating DLE are different transitions. Treasury route execution can establish a canonical CoNET representation; [DLE asset admission](l2/cross-chain-assets.md) additionally requires its own pool, oracle, registry, gateway, conservation, and release gates.
 
@@ -66,7 +66,7 @@ The comparison below is architectural, not a throughput or anonymity benchmark.
 - **A successful entry request is not proof of delivery.** Mailbox persistence and recipient acknowledgements provide the stronger delivery signal.
 - **Short sessions trade state for overhead.** Fetch-and-Close reduces persistent-flow exposure but is not an anonymity protocol; Chat SSE remains a traffic fingerprint.
 - **Wallet identity does not solve Sybil resistance alone.** Stake, admission, rate limits, or application policy are still required.
-- **Specification is not deployment.** DLE's normative design and a live L1 endpoint have different evidence levels.
+- **Specification is not deployment.** DLE's normative design, a live L1 endpoint, and the DLE lab explorer have different evidence levels. The explorer does not make Archive Certificate or asset ingress live.
 
 ## Evidence map
 
@@ -82,5 +82,7 @@ The comparison below is architectural, not a throughput or anonymity benchmark.
 | How can an external ERC-20 enter CoNET and later use DLE? | [Bring an ERC-20 into CoNET](developers/l1-erc20-bridge.md), [Cross-chain Treasury](l1/cross-chain-treasury.md), [cross-chain assets in DLE](l2/cross-chain-assets.md) |
 | How could miner matching support a non-custodial order book? | [Miner-matched order-book exchange](applications/miner-orderbook-dex.md) |
 | What does DLE actually specify? | [L2 development](developers/l2.md), [Design thesis](l2/design-thesis.md), [normative specifications](l2/specs-index.md) |
+| What does the DLE explorer show? | [DLE explorer](l2/explorer.md) — [https://dle.conet.network/](https://dle.conet.network/); lab Archive inspection, not a tip chain |
+| Where are archive participant wallets recorded? | [Global Archive Routing Registry](l2/routing-registry.md) — CoNET L1 facade + `/archives` |
 | What is usable versus under development? | [Applications](applications/README.md) |
 | Where are source and live-service references? | [Resources](resources.md) |

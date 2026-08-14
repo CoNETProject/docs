@@ -69,4 +69,4 @@ If measured costs exceed the profile’s safety envelope, the specified response
 
 ## Next
 
-[Normative sources →](specs-index.md)
+[DLE explorer →](explorer.md)

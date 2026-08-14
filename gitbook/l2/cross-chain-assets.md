@@ -130,6 +130,8 @@ Production asset ingress remains disabled until the documented release gates clo
 
 No wallet or exchange should represent a bridged balance as DLE-backed before an `ACTIVATED` receipt exists under that production protocol.
 
+The public [DLE explorer](explorer.md) does not show Treasury burns, gateway receipts, or activated L2 backing. Lab `POST /rpc` rejects `eth_call` because there is no tip VM.
+
 ## Source anchors
 
 - Whitepaper, §§4.2 and 4.6 — canonical asset boundary, admission, spillover, and exit

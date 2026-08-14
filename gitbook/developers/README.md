@@ -19,7 +19,7 @@ Use this top-level track when the task is **to build or operate against CoNET**,
 Developers
   ├─ L0  → SI /post + application compositions (Chat, UDP, SilentPass)
   ├─ L1  → DePIN mining gossip  |  Treasury ERC-20 ingress
-  └─ L2  → DLE specs, vectors, and blocked production gates
+  └─ L2  → DLE specs, vectors, lab explorer, L1 routing registry, and blocked production gates
 ```
 
 ## Choose the right layer
@@ -27,7 +27,7 @@ Developers
 - **Forward ciphertext by wallet / OpenPGP key ID** → L0. Layer Minus is a permissionless cloud: use it without a license; treat **every node as untrusted**; compose privacy routing and fragmentation. It does not implement Chat, VPN, mining totals, or payments. See [Permissionless cloud](../l0/permissionless-cloud.md).
 - **Join DePIN mining or L1 consensus** → L1 mining page. Guardian registration, runtime miners, Treasury miners, and L1 validators are **four different sets**.
 - **Move an ERC-20 into the CoNET asset set** → Treasury V3. A token address does not create a route. DLE admission is a later, separate machine and is **not live**.
-- **Write a parallel ledger** → L2 specifications. There is no production DLE SDK or public tip API in this book.
+- **Write a parallel ledger** → L2 specifications. There is no production DLE SDK or production tip API in this book. The lab explorer at [https://dle.conet.network/](https://dle.conet.network/) is Archive inspection. The L1 routing registry is readable; Archive Certificate is not live.
 
 ## Constants you will reuse
 
@@ -36,6 +36,8 @@ Developers
 | CoNET L1 | `chainId` **224422** |
 | Read RPC | `https://rpc1.conet.network` (primary), `https://publicrpc.conet.network` (backup) |
 | Explorer | `https://mainnet.conet.network` |
+| DLE lab explorer | [https://dle.conet.network/](https://dle.conet.network/) — isolated Archive UI, not CoNET L1 |
+| Global Archive Routing Registry | [`0x8B261eAECdFfeE9e7aC9fFe73386B0d6C9E76AfB`](https://mainnet.conet.network/address/0x8B261eAECdFfeE9e7aC9fFe73386B0d6C9E76AfB#code) — L1 routing facade |
 | AddressPGP | [`0x684b0ac760cEE9c9b85de36d69746420648Cf9e2`](https://mainnet.conet.network/address/0x684b0ac760cEE9c9b85de36d69746420648Cf9e2) |
 | GuardianNodesInfoV6 | [`0xBC6b53065b5647261396d002bDBA0d3396E0722f`](https://mainnet.conet.network/address/0xBC6b53065b5647261396d002bDBA0d3396E0722f) |
 | TreasuryBridgeV3 | [`0xa208982212978550594A7FEEB70a61665d129003`](https://mainnet.conet.network/address/0xa208982212978550594A7FEEB70a61665d129003) |

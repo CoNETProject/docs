@@ -43,6 +43,8 @@ The canonical Explorer is:
 
 Use it for blocks, transactions, addresses, tokens, contract source verification, and proxy metadata. Explorer indexing can lag the chain, so direct RPC remains the authority for current contract state.
 
+[https://dle.conet.network/](https://dle.conet.network/) is the **DLE lab explorer**, not this L1 Explorer. Its lab `eth_chainId` `0x44c45` is not CoNET L1. The Archives page may overlay participant wallets read from the L1 [Global Archive Routing Registry](../l2/routing-registry.md) on `224422`. See [DLE explorer](../l2/explorer.md).
+
 ## Client guidance
 
 - Read contract views and balances directly from an active RPC where practical.

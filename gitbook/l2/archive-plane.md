@@ -30,6 +30,28 @@ Standbys do not occupy certificate signer slots unless a finalized membership tr
 
 Operator independence is not inferred from distinct wallet addresses. `OperatorDomainRegistryV1` defines challengeable identity, infrastructure, and role-domain commitments used by membership decisions and bound into `membershipRoot`.
 
+## DLE Chain ID and Global Archive Routing Registry
+
+Whitepaper §5.2.0d freezes the protocol Chain ID as the hosting archive **`groupId`**. Gossip, `tokenId` hash, a locally assumed default chain id, and explorer hostnames are **not** routing truth.
+
+The CoNET L1 **Global Archive Routing Registry** stores every live group, every participating archive **wallet**, and every hosted chain **NFT id**. The facade is **deployed and Explorer-verified**. Production addresses, the bootstrap roster, and the public explorer display are on [Global Archive Routing Registry](routing-registry.md).
+
+Required views:
+
+| View | Returns | Use |
+| --- | --- | --- |
+| `liveGroupIds()` | Live `groupId`s, ascending | Enumerate DLE Chain IDs |
+| `archivesOf(groupId)` | Five active + two standby EOAs | Who votes; dedicated history committee |
+| `chainsOf(groupId)` | Hosted chain NFT ids | Which tips this Chain ID hosts |
+| `route(chainNftId)` | `groupId` (= DLE Chain ID) | Chain routing |
+| `historyProviders(chainNftId)` | `archivesOf(route(chainNftId))` | Authoritative history providers |
+
+To locate a tip: `groupId = route(nftId)`, then contact `historyProviders(nftId)`. A wallet not listed for that group at the relevant membership epoch is not the canonical host.
+
+Do **not** write public explorer hostnames into Solidity constants. The registry stores wallets, `groupId`s, and NFT ids only. [https://dle.conet.network/](https://dle.conet.network/) is the lab UI; it may display wallets read from this registry, but the hostname is not routing truth.
+
+`OperatorDomainRegistryV1`, `AssetBurnMintGateway`, and Archive Certificate remain **not** production-live. A listed participant wallet is routing identity only. Do not invent a substitute roster from lab `/health` when the L1 `archivesOf` read is available.
+
 ## Availability before finality
 
 The archive path is not a storage-only acknowledgement. Before a non-nil precommit, each voting archive implementation must:
@@ -69,9 +91,13 @@ The specification lists open production blockers:
 
 Until those blockers close, the normative specification states that no archive signer may be enabled for production.
 
+A public isolated lab and [DLE explorer](explorer.md) do **not** close those gates. Observed 2026-08-14: `/health` reports `producesBlocks: false` and `hasTipVm: false`; 7×7 mesh health is heartbeat quorum, not Archive Certificate; the 30-day qualification counters remain at zero.
+
+Dual TypeScript Archive A/B in [CoNET-DLE](https://github.com/CoNET-project/CoNET-DLE) is in-repo evidence. It does **not** satisfy the independent second-language production blocker.
+
 ## Source anchors
 
-- Whitepaper: §§5.2–5.2.1; §§6.2 and 6.5; §§7.8–7.9
+- Whitepaper: §§5.2–5.2.0d; §5.2.1; §§6.2 and 6.5; §§7.8–7.9
 - `DLE-Archive-Tendermint-Conformance-Spec.md`: §§1–11
 - `DLE-OperatorDomainRegistryV1-Spec.md`: §§2–11
 - [Normative sources](specs-index.md) — paths and precedence

@@ -8,7 +8,7 @@ English whitepaper:
 
 [Decentralization Cluster multi-chain.md](https://github.com/CoNET-project/CoNET-DLE/blob/main/src/whitepaper/Decentralization%20Cluster%20multi-chain.md)
 
-Reviewed revision: **2026-08-13**
+Reviewed revision: **2026-08-14** (DLE Chain ID ≡ archive `groupId`; L1 Global Archive Routing Registry — §5.2.0d)
 
 Paired translation:
 
@@ -60,6 +60,10 @@ The Canvas index is:
 
 `src/canvas/README.md`
 
+The public [DLE explorer](explorer.md) at [https://dle.conet.network/](https://dle.conet.network/) is a **non-normative lab UI**. Its `/health`, `/rpc`, and `/api/v2/dle` payloads describe the isolated 30-day Archive lab. They do not amend the whitepaper or the three `DLE-*Spec.md` files.
+
+The deployed [Global Archive Routing Registry](routing-registry.md) on CoNET L1 is **production bytecode** for the §5.2.0d routing facade. It does not close Archive Certificate, asset-ingress, or 30-day qualification gates.
+
 Other planning notes, issue discussions, marketing pages, and this GitBook are also non-normative unless a normative source explicitly incorporates them.
 
 ## Citation rules
@@ -73,7 +77,7 @@ When asserting protocol behavior:
 
 ## Source anchors
 
-- Whitepaper front matter — revision, normative-spec links, and non-normative Canvas notice
+- Whitepaper front matter and §5.2.0d — revision, DLE Chain ID, Global Archive Routing Registry, and non-normative Canvas notice
 - Archive conformance specification §11 — frozen machine boundary and production blockers
 - Asset gateway invariant specification §10 — mandatory formal-verification release gate
 - Operator registry specification §§2–11 — canonical identity and policy-root semantics
@@ -81,6 +85,8 @@ When asserting protocol behavior:
 ## Related
 
 - [L2 development](../developers/l2.md) — implementer how-to
+- [Global Archive Routing Registry](routing-registry.md) — deployed L1 facade
+- [DLE explorer](explorer.md) — [https://dle.conet.network/](https://dle.conet.network/)
 - [Cross-chain assets in DLE](cross-chain-assets.md) — Treasury-to-DLE admission and conservation digest
 - [Decentralized cross-chain Treasury](../l1/cross-chain-treasury.md) — production L1 route and quorum boundary
 
