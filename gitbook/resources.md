@@ -105,9 +105,13 @@ Paths below are relative to the named **public repository**.
 
 | Topic | Public file |
 | --- | --- |
+| Developer index | This book: [Developers](developers/README.md) |
 | How applications use Layer Minus | This book: [How to use Layer Minus](l0/using-l0.md) |
-| SI client how-to | This book: [SI developer guide](l0/si-developer-guide.md) |
+| L0 client how-to | This book: [L0 development](developers/l0.md) · [SI developer guide](l0/si-developer-guide.md) |
 | Chat client how-to | This book: [Chat developer guide](l0/chat-developer-guide.md) |
+| DePIN mining how-to | This book: [Participate in mining](developers/l1-mining.md) |
+| ERC-20 Treasury ingress | This book: [Bring an ERC-20 into CoNET](developers/l1-erc20-bridge.md) |
+| L2 / DLE how-to | This book: [L2 development](developers/l2.md) |
 | L0 threat grades | This book: [Security limits](l0/security-limits.md) |
 | Layer Minus node behavior | [CoNET-project/CoNET-SI](https://github.com/CoNET-project/CoNET-SI) |
 | Layer Minus client/data plane | [CoNET-project/CoNET-DL](https://github.com/CoNET-project/CoNET-DL) |

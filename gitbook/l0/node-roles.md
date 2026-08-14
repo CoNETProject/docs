@@ -68,7 +68,7 @@ Mining aggregates and L1 staking belong to the accounting and consensus layers. 
 
 ## Guarantees and non-guarantees
 
-Role separation limits plaintext exposure and prevents a mailbox from learning the client's direct IP on the intended A/B/C path. It does not make SI nodes trusted, guarantee that every registered Guardian is live, or prevent colluding or globally observing parties from correlating connections.
+Role separation limits plaintext exposure and prevents a mailbox from learning the client's direct IP on the intended A/B/C path. It does **not** make SI nodes trusted. **Any Layer Minus node may be malicious.** Applications must still fragment data, encrypt to the recipient, and verify compute. See [Permissionless cloud and zero-trust applications](permissionless-cloud.md). Role split also does not guarantee that every registered Guardian is live, or prevent colluding or globally observing parties from correlating connections.
 
 Availability depends on current entry health, route correctness, writable sessions, and client retries. Chain registration alone cannot satisfy those runtime conditions.
 

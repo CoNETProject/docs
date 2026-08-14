@@ -158,6 +158,7 @@ See [Cross-chain assets in CoNET-DLE](../l2/cross-chain-assets.md) for that seco
 
 ## Related
 
+- [Bring an ERC-20 into CoNET](../developers/l1-erc20-bridge.md) — developer how-to
 - [Core L1 assets](assets.md)
 - [Cross-chain assets in CoNET-DLE](../l2/cross-chain-assets.md)
 - [Miner-matched order-book exchange](../applications/miner-orderbook-dex.md)

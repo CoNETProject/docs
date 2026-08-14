@@ -6,7 +6,7 @@ Public site: [https://gitbook.conet.network/l0/si-developer-guide.html](https://
 
 CoNET-SI is the Layer Minus **service node**. It accepts OpenPGP armor on `POST /post`, reads the recipient **key ID**, and either forwards the armor or decrypts **once** when the key is local. It does not implement Chat, VPN, payments, or history. Those are [application compositions](using-l0.md).
 
-Use this page to build a client against SI. For a Chat product on top of the same plane, continue with the [Chat developer guide](chat-developer-guide.md).
+Use this page to build a client against SI. Developer-track index: [L0 development](../developers/l0.md). For a Chat product on top of the same plane, continue with the [Chat developer guide](chat-developer-guide.md).
 
 ## What you are calling
 
@@ -74,6 +74,8 @@ application object
 ### 2. Signed SI command (mailbox B decrypts)
 
 Encrypt `{ message, signMessage }` to **B’s route PGP**. `message` is `JSON.stringify(command)`. `signMessage` is EIP-191 `wallet.signMessage(message)`. SI `checkSign` recovers `walletAddress` and must match the signer.
+
+That `walletAddress` is the **routing** EOA (`isMyRoute`, listen pool, last-hop GB). It does **not** have to be the sender or recipient EOA inside a user-PGP Chat body. Apps that want a stronger split register AddressPGP on a dedicated routing wallet. See [wallet-addressed peer identity](wallet-address-p2p.md#routing-wallet-versus-sender--recipient-wallets).
 
 Typical use: Chat listen, mining listen, `gossip_delivery_ack`, `wallet_online_query`, UDP listen/relay (no `Securitykey`), SilentPass / SOCKS commands.
 
@@ -467,6 +469,7 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 
 ## Related
 
+- [L0 development](../developers/l0.md)
 - [How to use Layer Minus](using-l0.md)
 - [Chat developer guide](chat-developer-guide.md)
 - [Zero-trust mailbox routing](mailbox-routing.md)

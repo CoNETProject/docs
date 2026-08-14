@@ -14,7 +14,9 @@ Operational facts in this book come from current source code, deployed contracts
 
 ### L0 — communication
 
-[Layer Minus](l0/README.md) is a **PGP / wallet-address forwarding network**. It retains TCP/IP as the physical transport but does not treat an IP address as the application identity. Wallet addresses, OpenPGP keys, and on-chain route registration provide the identity and routing inputs. If a node can decrypt an outer layer and the inner OpenPGP key ID is not local, SI forwards the inner armor. [How to use L0](l0/using-l0.md) is application-layer work: each product chooses wallets, encryption targets, and the object carried inside the envelope.
+[Layer Minus](l0/README.md) is a **permissionless decentralized cloud** and a **PGP / wallet-address forwarding network**. Anyone may use it. Participants may offer CPU / GPU, forward traffic, and storage for **GB**. It retains TCP/IP as the physical transport but does not treat an IP address as the application identity. Wallet addresses, OpenPGP keys, and on-chain route registration provide the identity and routing inputs. If a node can decrypt an outer layer and the inner OpenPGP key ID is not local, SI forwards the inner armor.
+
+**Any node may be malicious.** Developers compose privacy routing, data fragmentation, and other client cryptography so that privacy-first communications, storage, compute, and decentralized AI do not trust a single host. See [Permissionless cloud and zero-trust applications](l0/permissionless-cloud.md). [How to use L0](l0/using-l0.md) is application-layer work: each product chooses wallets, encryption targets, and the object carried inside the envelope.
 
 A sender posts recipient-encrypted traffic to an entry node. The network routes it to the recipient's mailbox without requiring the sender to connect directly to that mailbox. An application mailbox listener also enters through a node other than the mailbox. This is the [A → B / C → B mailbox model](l0/mailbox-routing.md). Infrastructure mining collectors use a separate direct SI-listen path and must not be copied into Chat, presence, acknowledgement, or UDP delivery.
 
@@ -71,12 +73,14 @@ The comparison below is architectural, not a throughput or anonymity benchmark.
 | Question | Read |
 | --- | --- |
 | How are peers identified and messages forwarded? | [How to use L0](l0/using-l0.md), [wallet-addressed P2P](l0/wallet-address-p2p.md), [mailbox routing](l0/mailbox-routing.md) |
-| How do I write an SI or Chat client? | [SI developer guide](l0/si-developer-guide.md), [Chat developer guide](l0/chat-developer-guide.md) |
+| Why is L0 a permissionless cloud, and why trust no node? | [Permissionless cloud and zero-trust applications](l0/permissionless-cloud.md) |
+| How do I write an SI or Chat client? | [L0 development](developers/l0.md), [SI developer guide](l0/si-developer-guide.md), [Chat developer guide](l0/chat-developer-guide.md) |
+| How do I participate in DePIN mining? | [Participate in mining](developers/l1-mining.md) |
 | What does L0 actually protect? | [Security limits and threat grades](l0/security-limits.md) |
 | Which chain and endpoints are current? | [Network identity](l1/chain-identity.md), [RPC and Explorer](l1/rpc-explorer.md) |
 | What L1 decentralization facts can an outsider reproduce? | [Decentralization and verifiability](l1/decentralization.md) |
-| How can an external ERC-20 enter CoNET and later use DLE? | [Cross-chain Treasury](l1/cross-chain-treasury.md), [cross-chain assets in DLE](l2/cross-chain-assets.md) |
+| How can an external ERC-20 enter CoNET and later use DLE? | [Bring an ERC-20 into CoNET](developers/l1-erc20-bridge.md), [Cross-chain Treasury](l1/cross-chain-treasury.md), [cross-chain assets in DLE](l2/cross-chain-assets.md) |
 | How could miner matching support a non-custodial order book? | [Miner-matched order-book exchange](applications/miner-orderbook-dex.md) |
-| What does DLE actually specify? | [Design thesis](l2/design-thesis.md), [normative specifications](l2/specs-index.md) |
+| What does DLE actually specify? | [L2 development](developers/l2.md), [Design thesis](l2/design-thesis.md), [normative specifications](l2/specs-index.md) |
 | What is usable versus under development? | [Applications](applications/README.md) |
 | Where are source and live-service references? | [Resources](resources.md) |

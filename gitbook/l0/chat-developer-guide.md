@@ -4,7 +4,7 @@
 
 Public site: [https://gitbook.conet.network/l0/chat-developer-guide.html](https://gitbook.conet.network/l0/chat-developer-guide.html)
 
-L0 only forwards OpenPGP by wallet / key ID. Chat is an **application composition**: user-PGP business envelopes, mailbox listen, dual receipts, presence, and an optional encrypted history track. Product maturity and UX limits live on [DePIN Chat](../applications/depin-chat.md). SI primitives and reusable helpers live on the [SI developer guide](si-developer-guide.md).
+L0 only forwards OpenPGP by wallet / key ID. Chat is an **application composition**: user-PGP business envelopes, mailbox listen, dual receipts, presence, and an optional encrypted history track. Product maturity and UX limits live on [DePIN Chat](../applications/depin-chat.md). SI primitives and reusable helpers live on the [SI developer guide](si-developer-guide.md). Developer-track index: [L0 development](../developers/l0.md).
 
 Public packages: [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-sdk) · [`@conet.project/chat-sdk`](https://www.npmjs.com/package/@conet.project/chat-sdk). Reference clients: SilentPassUI [`cashtree`](https://github.com/CoNET-project/SilentPassUI/tree/cashtree) (consumer) and [`cashtrees`](https://github.com/CoNET-project/SilentPassUI/tree/cashtrees) (merchant).
 
@@ -30,6 +30,9 @@ Do **not** encrypt business Chat to an AA Smart Wallet unless that AA has its ow
 | Mailbox | A Guardian node. Current register API field `routeKeyID` is that node’s **domain** |
 | `@BeamioTag` | Discovery aid only. Resolve with **exact** username / `accountName` match, then use that EOA |
 | Presence | Mailbox listen-pool via `wallet_online_query`. Ignore `searchKey.routeOnline` (SI no longer writes it) |
+| Optional split | **Routing EOA** for AddressPGP + listen / ACK / presence; **sender / recipient EOA** only inside the encrypted envelope |
+
+Current Beamio clients often use one EOA for all of the above. A new app can split them: register and listen with a routing wallet, encrypt to that row’s inbox user PGP, and put the product `from` / display wallet only in layer ②/③. Mailbox B then sees the routing EOA. Do not also write the product wallet into listen JSON or hop-sigs. See [Routing wallet versus sender / recipient wallets](wallet-address-p2p.md#routing-wallet-versus-sender--recipient-wallets).
 
 Register and `searchKey` samples: [SI developer guide](si-developer-guide.md#sample-register-a-mailbox-route).
 
@@ -341,6 +344,7 @@ Walk this order. Do not skip to “the parser is broken.”
 
 ## Related
 
+- [L0 development](../developers/l0.md)
 - [SI developer guide](si-developer-guide.md)
 - [How to use Layer Minus](using-l0.md)
 - [Zero-trust mailbox routing](mailbox-routing.md)

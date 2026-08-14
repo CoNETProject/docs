@@ -139,6 +139,8 @@ No wallet or exchange should represent a bridged balance as DLE-backed before an
 
 ## Related
 
+- [Bring an ERC-20 into CoNET](../developers/l1-erc20-bridge.md) — L1 Treasury how-to
+- [L2 development](../developers/l2.md) — implementer how-to
 - [Decentralized cross-chain Treasury](../l1/cross-chain-treasury.md)
 - [Core L1 assets](../l1/assets.md)
 - [Miner-matched order-book exchange](../applications/miner-orderbook-dex.md)

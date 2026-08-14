@@ -41,6 +41,8 @@ The target design has five main parts:
 5. [Economics](economics.md) — the three-ledger funding model
 6. [Normative sources](specs-index.md) — controlling documents, evidence, and non-normative material
 
+Developer how-to: [L2 development](../developers/l2.md).
+
 ## Source anchors
 
 - Public repository: [CoNET-project/CoNET-DLE](https://github.com/CoNET-project/CoNET-DLE)

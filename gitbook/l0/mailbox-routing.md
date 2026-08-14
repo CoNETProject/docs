@@ -2,7 +2,7 @@
 
 **Evidence level: Implemented capability.** The delivery path below is specified by the current protocol and implemented in CoNET-SI and participating clients; deployment health remains separate evidence.
 
-Mailbox routing is the specified Layer Minus **forwarding** protocol. It separates the node that accepts a client connection from the node that stores ciphertext for the destination wallet.
+Mailbox routing is the specified Layer Minus **forwarding** protocol. It separates the node that accepts a client connection from the node that stores ciphertext for the destination wallet. It is one piece of the [permissionless cloud](permissionless-cloud.md): **do not trust A, B, or C**. Any of them may be malicious. Privacy comes from encryption and role split, not from picking an honest operator.
 
 L0 stops at “deliver this OpenPGP armor to the mailbox of this key.” Chat schemas, POS permission types, acknowledgements, and UI are [application combinations](using-l0.md) of the same path.
 
@@ -10,8 +10,8 @@ L0 stops at “deliver this OpenPGP armor to the mailbox of this key.” Chat sc
 
 | Symbol | Role |
 | --- | --- |
-| **S** | Sender |
-| **R** | Recipient wallet with an AddressPGP registration |
+| **S** | Sender of the **business** envelope (application EOA; may differ from any routing wallet) |
+| **R** | AddressPGP row that owns the inbox user PGP and mailbox B. This may be a dedicated **routing wallet**, not the product display / payment EOA |
 | **A** | Healthy entry used for sending |
 | **B** | Mailbox selected by R's route binding |
 | **C** | Healthy entry used for listening |
@@ -22,8 +22,8 @@ For the intended route, `A ≠ B` and `C ≠ B`. A and C may be different entrie
 
 ### Send: S → A → B
 
-1. S resolves R's `userPublicKeyArmored`.
-2. S signs the application envelope with its EOA.
+1. S resolves R's `userPublicKeyArmored` (the inbox key on R's AddressPGP row).
+2. S signs the application envelope with its **sender** EOA. That EOA does not have to be R, and R does not have to be the recipient's display wallet.
 3. S encrypts the complete envelope to **R's user OpenPGP key**.
 4. Optionally, S wraps that armor in one or more **outer OpenPGP layers** addressed to A or to a hop chain. The first `/post` then shows the **outer** key ID to a path observer.
 5. S posts the armored ciphertext to healthy entry A over **HTTP or HTTPS**. Because the body is already ciphertext, **HTTP is sufficient** and is the intended client path where TLS SNI or JA3/JA4 would be classified or blocked.

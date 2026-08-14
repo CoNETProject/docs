@@ -1,6 +1,6 @@
 {
   "title": "CoNET Documentation",
-  "description": "Layer Minus wallet-addressed communication, CoNET L1, and the CoNET-DLE protocol design",
+  "description": "Developer how-tos, Layer Minus, CoNET L1, and the CoNET-DLE protocol design",
   "author": "CoNET Project",
   "language": "en",
   "gitbook": ">=3.0.0",
@@ -19,6 +19,7 @@
   },
   "links": {
     "sidebar": {
+      "Developers": "https://gitbook.conet.network/developers/",
       "CoNET Website": "https://conet.network",
       "Documentation source": "https://github.com/CoNETProject/docs"
     }

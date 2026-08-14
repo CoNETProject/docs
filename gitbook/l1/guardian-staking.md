@@ -62,6 +62,8 @@ Registry membership is publicly readable. Admission is not permissionless: `addN
 - [Chain identity](chain-identity.md) — chain and endpoint authority
 - [CoNET-DLE economics](../l2/economics.md) — separate L2 economic ledgers
 
+Developer how-to: [Participate in mining](../developers/l1-mining.md).
+
 ## Next
 
 [RPC and Explorer →](rpc-explorer.md)

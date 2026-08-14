@@ -43,9 +43,41 @@ wallet address
   └─ route key ID ──────── selected mailbox B
 ```
 
-Current Beamio Chat and POS-permission traffic targets the recipient **EOA** because that is where user PGP material is normally registered. An AA address is not an interchangeable destination unless it has its own valid AddressPGP registration.
+Current Beamio Chat and POS-permission traffic often use **one** EOA for AddressPGP, listen, and envelope `from`. That is the simple default. It is **not** required.
 
 Human-readable tags are an application lookup aid, not the protocol identity. When an application resolves `@BeamioTag`, it must select an exact account match or use an explicit wallet hint. Prefix-search `results[0]` is not authoritative.
+
+## Routing wallet versus sender / recipient wallets
+
+L0 forwards by **OpenPGP key ID** and authenticates SI commands with whatever EOA signed `walletAddress`. An application **may use different EOAs** for network routing and for the people in the product.
+
+| Wallet | What it does | Who sees it |
+| --- | --- | --- |
+| **Routing wallet** | AddressPGP mailbox row; listen / ACK / presence `walletAddress`; last-hop **GB** meter | Mailbox B, hop-sig GB accounting, `wallet_online_query` |
+| **Sender wallet** | Chat / business envelope `from` and the EIP-191 that binds that body | Recipient after decrypt; **not** required on the hop header |
+| **Recipient wallet** | Product identity of the inbox owner (display, payments, POS) | Application layer; may differ from the routing EOA |
+
+```text
+App identity (sender / recipient EOA)
+  └─ signs and names the business envelope
+
+Routing wallet (separate EOA)
+  ├─ AddressPGP: inbox user PGP + mailbox B
+  ├─ listen / ACK / presence (route-PGP commands)
+  └─ GB credit on the last signed command hop
+```
+
+**Why split:** mailbox B, entry metadata, and hop GB see the **routing** EOA. They do not need the user’s payment, social, or display wallet. Changing C or rotating the routing wallet does not force a new product identity.
+
+**How to wire it:**
+
+1. Create a routing EOA. Generate the **inbox** user PGP on the client. Register AddressPGP (`regiestChatRoute`) **on the routing wallet**.
+2. Listen, `gossip_delivery_ack`, and `wallet_online_query` sign with the **routing** wallet. `isMyRoute` is that EOA.
+3. Encrypt business armor to the **inbox user PGP** registered on the routing wallet (that key ID is what SI routes).
+4. Put the **sender / recipient** EOAs only inside the encrypted application object (`from`, display id, payment id).
+5. Keep the mapping **routing EOA ↔ app EOA** in the client. Do not write both onto `X-CoNET-Hop-Sigs`.
+
+**What this does not hide:** funding the routing wallet from a master wallet on L1 still links them on-chain. Putting both addresses in the same **plaintext** command, log, or hop header undoes the split. L0 will not invent stealth addresses or ZK membership. See [security limits](security-limits.md).
 
 ## Guarantees and non-guarantees
 

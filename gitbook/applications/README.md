@@ -73,6 +73,7 @@ The pages in this section distinguish observed implementation surfaces from broa
 
 ## Related
 
+- [Developers](../developers/README.md)
 - [How to use Layer Minus](../l0/using-l0.md)
 - [SI developer guide](../l0/si-developer-guide.md)
 - [Chat developer guide](../l0/chat-developer-guide.md)

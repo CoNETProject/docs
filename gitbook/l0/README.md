@@ -2,9 +2,22 @@
 
 **Evidence level: Implemented capability.** CoNET-SI, LayerMinus workers, and current application integrations implement the protocol surfaces identified below. Availability and client coverage remain deployment-specific.
 
-Layer Minus is CoNET's **PGP / wallet-address forwarding network**. It runs **above the existing TCP/IP Internet**; it does not replace IP routing or define a new physical network. Its job is to move ciphertext from an entry to the mailbox (or egress) named by a recipient OpenPGP key, while keeping a peer's durable identity as a **wallet**, not as the IP used for one connection.
+## Developer docs
 
-How to use L0 is **application-layer development**. Chat, SilentPass, mining gossip, UDP frames, and Beamio control messages are **combinations** of the same forwarding primitives. They are not extra L0 protocols. Start with [How to use Layer Minus](using-l0.md), then the [SI developer guide](si-developer-guide.md) and [Chat developer guide](chat-developer-guide.md).
+**Build on Layer Minus:** [L0 development](../developers/l0.md) — SI `POST /post` samples and the Chat module guide.
+
+| Task | Page |
+| --- | --- |
+| Cloud model and zero-trust composition | [Permissionless cloud and zero-trust applications](permissionless-cloud.md) |
+| Client against CoNET-SI | [SI developer guide](si-developer-guide.md) |
+| Chat envelopes, listen, receipts | [Chat developer guide](chat-developer-guide.md) |
+| All developer tracks (L0 / L1 mining / ERC-20 / L2) | [Developers](../developers/README.md) |
+
+Layer Minus is a **permissionless, decentralized cloud** and, on the wire, CoNET's **PGP / wallet-address forwarding network**. Anyone may use it. Participants may join by offering **CPU / GPU compute**, **network forward**, and **storage**, and earn **GB** for useful ciphertext work. It runs **above the existing TCP/IP Internet**; it does not replace IP routing or define a new physical network.
+
+Its job is to move ciphertext from an entry to the mailbox (or egress) named by a recipient OpenPGP key, while keeping a peer's durable identity as a **wallet**, not as the IP used for one connection. **Any one node may be malicious.** Developers therefore compose **privacy routing + data fragmentation + client cryptography** so that no node is trusted with plaintext or a reconstructable whole. That is how privacy-first **communications, storage, compute, and decentralized AI** are built. Thesis: [Permissionless cloud and zero-trust applications](permissionless-cloud.md).
+
+How to use L0 is **application-layer development**. Chat, SilentPass, mining gossip, UDP frames, and Beamio control messages are **combinations** of the same forwarding primitives. They are not extra L0 protocols. Start with [How to use Layer Minus](using-l0.md), then the [L0 development](../developers/l0.md) track.
 
 ## What it is
 
@@ -71,7 +84,7 @@ When clients follow the A/B/C route and cryptographic keys remain secure:
 
 - entries and mailboxes do not receive business plaintext;
 - the mailbox sees an entry as its network peer rather than a direct client connection; and
-- changing an entry or mailbox does not change the wallet identity.
+- changing an entry or mailbox does not change the wallet identity. An application may also keep a **routing wallet** (AddressPGP + listen) separate from sender / recipient wallets inside the encrypted envelope.
 
 Layer Minus does **not** promise anonymity against a global observer, hide the client IP from the selected entry, make traffic-analysis metadata disappear, or guarantee delivery after an entry returns HTTP 200. It also does not make every HTTP-shaped flow indistinguishable from ordinary browsing. Fetch-and-Close is a short-session mode, not a mix network. Chat SSE is a traffic fingerprint. Long-term user OpenPGP is not forward-secret. A/B/C names roles, not independent operators. See [security limits and threat grades](security-limits.md).
 
@@ -88,9 +101,9 @@ The mailbox, Chat listen, offline ciphertext store, acknowledgements, presence q
 
 ## Next
 
-1. [How to use Layer Minus](using-l0.md) — forwarding primitives and how applications combine them.
-2. [SI developer guide](si-developer-guide.md) — `POST /post`, command catalog, and TypeScript samples.
-3. [Chat developer guide](chat-developer-guide.md) — envelopes, listen, receipts, presence, and history.
+1. [Permissionless cloud and zero-trust applications](permissionless-cloud.md) — who may join, what is rewarded, and why no node is trusted.
+2. [L0 development](../developers/l0.md) — SI `/post` samples and the Chat module guide.
+3. [How to use Layer Minus](using-l0.md) — forwarding primitives and how applications combine them.
 4. [The TCP/IP substrate](tcp-ip.md) — prerequisite, not a competing protocol.
 5. [The IP-address privacy problem](tcp-ip-privacy.md) — the threat model and its limits.
 6. [Wallet-addressed peer identity](wallet-address-p2p.md) — AddressPGP and key roles.

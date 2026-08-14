@@ -4,7 +4,7 @@
 
 This page states what Layer Minus actually protects. It answers common over-claims: Fetch-and-Close is not an anonymity protocol; Chat SSE is a traffic fingerprint; long-term user OpenPGP keys do not provide forward secrecy; a valid EOA signature does not by itself stop replay; A/B/C role names are not independent operators.
 
-L0 remains a [PGP / wallet-address forwarding network](using-l0.md). Stronger privacy modes are **application compositions** unless SI implements them.
+L0 remains a [permissionless decentralized cloud](permissionless-cloud.md) whose live wire is a [PGP / wallet-address forwarding network](using-l0.md). **Any node may be malicious.** Stronger privacy modes are **application compositions** (privacy routing + fragmentation + client crypto) unless SI implements them.
 
 Public source for the live plane: [CoNET-project/CoNET-SI](https://github.com/CoNET-project/CoNET-SI).
 
@@ -43,17 +43,33 @@ The current book already treats Fetch-and-Close as optional. Chat and mining use
 
 ## Outer envelope and nested PGP hops
 
+Byte-level freeze: [X-CoNET-Hop-Sigs v1](hop-sigs.md). The header is a **compact miner signature** used to meter forwarded bytes. It is **not** a public `HopRecordV1` itinerary (`messageId`, inner/outer hashes, previous-hop hash, hopIndex). That extra JSON would let a path observer reconstruct the forward chain.
+
 SI routing is not limited to “one key ID, never decrypt.” After a **local** decrypt **once**:
 
 1. If the plaintext is still OpenPGP armor, read the inner `getEncryptionKeyIDs()`.
 2. If that inner key ID **is** this node's route PGP, treat it as an attack: emit socket `end` and stop. Do not peel again on the same node.
-3. If the inner key ID is **not** this node, read SI-to-SI `X-CoNET-Hop-Sigs`. More than **3** hop signatures (or a count that cannot take another hop) is an all-node flood: emit `end` and **do not** forward.
-4. Otherwise **forward the inner armor** and append this node's hop signature. When the destination SI ends the socket, the previous hop closes and frees that connection.
-5. If the plaintext is a signed mailbox / egress command, the last hop verifies hop signatures and meters those prior-hop bytes against the **user** wallet for **GB**.
+3. If the inner key ID is **not** this node, read SI-to-SI `X-CoNET-Hop-Sigs`. More than **3** hop signatures (or a count that cannot take another hop) is an all-node flood: emit `end` and **do not** forward. The packet is **discarded**.
+4. Otherwise **forward the inner armor** and append this node's miner hop signature. When the destination SI ends the socket, the previous hop closes and frees that connection.
+5. If the plaintext is signed JSON `{ message, signMessage }`, the last hop verifies hop signatures, meters those prior-hop bytes against the **user** wallet for **GB**, and runs the API command (listen, proxy, storage, WASM / container, and so on).
 
-An application can therefore wrap a user-PGP business message to entry A, or to a short hop chain (at most three SI-to-SI signatures). A first-hop path observer then sees the **outer** key ID, not R's. Each peel node still learns the **next** key ID, time, and size. Extra hops are extra **GB**. This is not a mix network and does not replace padding.
+The client `POST /post` body is **only** OpenPGP armor and **must not** carry `X-CoNET-Hop-Sigs`. If the outer key ID is not a routable node / mailbox, A responds **404**. A then miner-signs and forwards to B; B sees the header because A created it.
 
-Current Chat clients may still post a single user-PGP layer (A forwards without decrypting). The peel rule is available to any client that wraps.
+### Loop protection
+
+A loop that never reaches a valid recipient inside **3** miner signatures is discarded. `A → D → A` or `A → D → E → D` cannot complete a useful delivery or invent GB. The protocol therefore does **not** publish a previous-hop hash chain.
+
+Adjacent and header checks already stop the useful cases:
+
+- inner key ID equals this node → `end`;
+- this miner wallet already appears in the hop list → refuse append;
+- hop count already 3 → `end`.
+
+There is **one** budget: **3 miner signatures**. Do not add a second `maxPeels` / `maxForwardHops` pair.
+
+An application can wrap a user-PGP business message to entry A, or use a short hop chain. A first-hop path observer then sees the **outer** key ID, not R's. Each peel node still learns the **next** key ID, time, and size. Extra hops are extra **GB**. This is not a mix network and does not replace padding.
+
+Current Chat clients may still post a single user-PGP layer (A forwards without decrypting when the key maps to a mailbox). The peel rule is available to any client that wraps.
 
 ## Chat SSE is a primary L0 traffic fingerprint
 
@@ -71,14 +87,15 @@ An ISP or entry C can observe:
 
 Content remains OpenPGP-encrypted. Metadata can still support inferences about when a user is online, how often messages arrive, device sleep/wake, and that a chat-like application is in use.
 
-### Proposed receive modes (not implemented)
+### Receive modes
 
-| Mode | Intended behavior | Status |
+| Mode | Mechanism | Status |
 | --- | --- | --- |
-| **Realtime** | Long-lived SSE; low latency; current Chat / POS / mining / UDP listen | **Implemented** |
-| **Privacy poll** | Randomized short polls, batch fetch, optional padding and dummy polls; higher latency; weaker online and arrival-time correlation | **Not implemented** |
+| **Realtime** | Long-lived SSE. The listen command inside route-PGP carries the user’s `Securitykey`; the node encrypts SSE downlink with that key. Intermediate entries that only forward armor do not receive it. | **Implemented** |
+| **Entry rotation** | The user may close C and open another SSE through a different healthy entry at any time. That breaks a long-lived bind to one ingress. It does **not** remove the SSE shape on the new C. | **Implemented** (client choice) |
+| **Privacy poll** | Randomized short polls, batch fetch, optional padding and dummy polls | **Not implemented** |
 
-A client could offer both. That choice is application-layer. Current SI mailbox delivery is store-then-push over SSE.
+Do not set every client to the same fixed poll period if a poll mode is added later — that creates a new sync fingerprint. Current SI mailbox delivery is store-then-push over SSE.
 
 ## Long-term user OpenPGP is not forward-secret
 
@@ -100,11 +117,39 @@ It does **not** currently specify or implement:
 
 Encrypted Chat history (IPFS fragments + `ChatIndexRegistry`) is likewise keyed from long-term EOA/OpenPGP material. Compromise of that authority can expose recoverable history.
 
-### Proposed hybrid (not implemented)
+### Chat crypto profile (roadmap)
 
-Keep AddressPGP as the wallet-identity and mailbox-routing root. After an OpenPGP (or equivalent) first handshake, move ongoing one-to-one content into an X25519 / X3DH + Double Ratchet session, and use MLS only if a group product is specified. Until that composition exists, do not describe Chat as forward-secret.
+Acknowledging the gap does not raise the live grade. Until a later profile ships, do not describe Chat as forward-secret.
 
-On-demand new wallets reduce *future* correlation after a leak; they do not decrypt-protect already captured armor.
+| Profile | Cryptography | Status |
+| --- | --- | --- |
+| **V1** | Long-term recipient OpenPGP (per-message session key wrapped to that key) | **Live** |
+| **V2** | AddressPGP / OpenPGP handshake → X25519 identity and prekey bundle → Double Ratchet session keys on later messages; L0 still carries the ratchet ciphertext | **Planned** |
+| **V3** | MLS (or equivalent tree-based group key agreement) instead of one PGP encrypt per member | **Research** |
+
+AddressPGP remains the wallet identity, offline discovery, mailbox route, initial handshake, and session-recovery root. On-demand new wallets reduce *future* correlation after a leak; they do not decrypt-protect already captured V1 armor.
+
+## HTTP versus HTTPS (neither is “more private”)
+
+The `/post` body is **only** OpenPGP ciphertext. Confidentiality of business content does **not** come from TLS. That does **not** mean “HTTP is more private than HTTPS.”
+
+| | HTTP | HTTPS |
+| --- | --- | --- |
+| **Hides from an ISP** | No SNI, no JA3/JA4, no certificate fingerprint, no TLS handshake | `/post` body, JSON wrap, ASCII armor, outer key ID, content-length |
+| **Shows to an ISP** | `POST /post`, JSON, armor, outer key ID, length; active drop / delay / replay / fake status | SNI / certificate / JA3/JA4; a fixed entry domain; TLS client fingerprint |
+| **Channel** | No TLS authentication of the hop | Authenticated, integrity-protected channel |
+
+### Carrier decision
+
+| Environment | Recommended carrier |
+| --- | --- |
+| Ordinary Internet / browser page served over HTTPS | **HTTPS** + OpenPGP body (mixed content forbids `http://`) |
+| SNI / certificate blocking | **HTTP** + OpenPGP body |
+| High privacy, delay acceptable | HTTP or HTTPS + **outer envelope** (wrap to A) |
+| Payments / POS / Treasury / AA control | **HTTPS preferred** + **application consumed-nonce** (not hop-sigs) |
+| Research / diagnostics | Label the capture; **not** a privacy baseline |
+
+Protocol rule: both HTTP and HTTPS are valid client carriers. SI-to-SI stays HTTP `:80`. Do not advertise plain HTTP as the default privacy mode for every environment.
 
 ## Plain HTTP allows active path attacks
 
@@ -119,7 +164,7 @@ OpenPGP and EOA signatures stop a path observer from **quietly rewriting plainte
 - forcing client retries;
 - measuring whether a mailbox accepted a copy.
 
-`checkSign` in CoNET-SI recovers the EOA from `personal_sign(message)` and checks it against `walletAddress`. That is authentication of **that exact string**, not a consumed-nonce store.
+`checkSign` in CoNET-SI recovers the EOA from `personal_sign(message)` and checks it against `walletAddress`. That is authentication of **that exact string**, not a consumed-nonce store. `X-CoNET-Hop-Sigs` is also **not** an anti-replay store — it meters miner-forwarded bytes ([hop-sigs v1](hop-sigs.md)).
 
 Partial anti-replay exists only on some **route-key commands**:
 
@@ -130,19 +175,26 @@ Partial anti-replay exists only on some **route-key commands**:
 | UDP listen / relay / uplink | EIP-191 + `timestamp` within ±600 s; payload size cap | No replay window beyond the skew |
 | Chat `sendId` | Application field; clients may drop duplicates | Not an SI mailbox invariant |
 
-A correct EOA signature therefore does **not** automatically reject a previously valid message.
+A correct EOA signature therefore does **not** automatically reject a previously valid message. Replaying the same valid armor to entry 1, 2, and 3 can duplicate mailbox store, push, APNs, or application handling unless the **application** consumes an id.
 
-### Required application bindings (normative for new compositions)
+### Required application bindings (normative for payments / POS / control)
 
-Non-idempotent application objects (payments, POS authorization, UDP session creation, spend) must bind at least:
+Do **not** put a full `L0SignedObjectV1` on the hop header. That would publish `messageId` / `payloadHash` to every SI hop.
 
-`messageId`, `nonce`, `timestamp` / `expiry`, `senderWallet`, `recipientWallet`, `commandType`, `payloadHash`, `protocolVersion`.
+Non-idempotent application objects (payments, POS authorization, AA / Treasury control, spend) must bind at least `messageId`, `nonce`, `timestamp` / `expiry`, `senderWallet`, `recipientWallet`, `commandType`, `payloadHash` **inside** the encrypted application object, and persist **consumed** identifiers at the consumer:
 
-The consuming mailbox or application must persist **consumed** identifiers. Do not treat TLS, HTTP 2xx, or `checkSign` alone as that store.
+| Location | Store |
+| --- | --- |
+| Recipient / Chat client | `sendId` / application `messageId` |
+| POS / payment / AA / Treasury | Durable consumed nonce — **not** a 600-second window alone |
+| UDP | Sliding sequence window (upgrade; not live) |
+| GB accounting | Verified hop rows (`w,t,n,h,k,s`) on the last command hop |
+
+Do not treat TLS, HTTP 2xx, `checkSign`, or hop-sigs alone as that store.
 
 ### TLS 1.3 0-RTT (not used by the HTTP-first path)
 
-The intended client `/post` path is plain HTTP. If a future Fetch-and-Close client uses TLS 1.3 0-RTT for performance, 0-RTT has **no inherent anti-replay** ([RFC 8446](https://www.rfc-editor.org/rfc/rfc8446.html)). Non-idempotent operations must still consume application nonces.
+If a future Fetch-and-Close client uses TLS 1.3 0-RTT for performance, 0-RTT has **no inherent anti-replay** ([RFC 8446](https://www.rfc-editor.org/rfc/rfc8446.html)). Non-idempotent operations must still consume application nonces.
 
 ## Mailbox isolation fails under collusion
 
@@ -197,18 +249,23 @@ A **long-lived** wallet used for Chat, POS, Beamio, mining, L1 transfers, DLE, B
 
 A wallet is more autonomous than an IP. It is **not** automatically harder to correlate than an IP.
 
-### Proposed layered identities (application, not L0)
+### Layered identities (application, not L0)
+
+L0 will forward whatever key ID it is given. Isolation is an **application registration** policy.
+
+**Available now:** use a **routing wallet** for AddressPGP, listen, ACK, presence, and hop GB, and keep **sender / recipient** EOAs only inside the encrypted envelope. Mailbox B does not need the payment or display wallet. How to wire it: [wallet-addressed peer identity](wallet-address-p2p.md#routing-wallet-versus-sender--recipient-wallets).
 
 ```text
 Master wallet
-  ├── Chat identity
-  ├── POS identity
-  ├── BT session identity
-  ├── DLE payment identity
-  └── Temporary network identity
+  ├── Routing wallet     ← mailbox + listen + GB (what B sees)
+  ├── Chat / display
+  ├── POS
+  ├── BT session
+  ├── DLE payment
+  └── Temporary network
 ```
 
-Delegation proofs can authorize a child wallet in one plane without putting the master wallet on every envelope. L0 will forward whatever key ID it is given. Isolation is an application registration policy. [How to use L0](using-l0.md) already allows on-demand new wallets; it does not hide the link if the application reuses one EOA everywhere.
+This does **not** hide an on-chain gas or token transfer from master → routing wallet. Putting both addresses in one plaintext command or hop header undoes the split. Delegation proofs, stealth addresses, or ZK membership are **not** L0 features.
 
 ## Current L0 threat grades
 
@@ -236,8 +293,10 @@ Grades describe the **current SI + intended A/B/C client path**, not a future ra
 
 - Fetch-and-Close as mix-net or anonymity.
 - Chat SSE as metadata-private presence.
-- OpenPGP-to-AddressPGP as Double Ratchet / MLS.
-- `checkSign` as anti-replay for payments or POS.
+- OpenPGP-to-AddressPGP as Double Ratchet / MLS (that is Chat crypto **V2/V3**, not live V1).
+- `checkSign` or `X-CoNET-Hop-Sigs` as anti-replay for payments or POS.
+- A detailed hop JSON (`HopRecordV1`) as required for loop safety — the cap is **3 miner signatures**, then discard.
+- HTTP as “more private than HTTPS.”
 - A/B/C as independent-operator anonymity.
 - UDP forward as native realtime UDP.
 - One wallet as an unlinkable identity across products.
@@ -253,6 +312,7 @@ Grades describe the **current SI + intended A/B/C client path**, not a future ra
 ## Next
 
 - [How to use Layer Minus](using-l0.md) — compose only the primitives that exist.
+- [X-CoNET-Hop-Sigs v1](hop-sigs.md) — compact miner hop encoding and failure codes.
 - [HTTP transport and Fetch-and-Close](http-mimicry.md) — short-session carrier.
 - [Zero-trust mailbox routing](mailbox-routing.md) — A/B/C roles.
 - [Wallet-addressed peer identity](wallet-address-p2p.md) — key roles and reuse risk.

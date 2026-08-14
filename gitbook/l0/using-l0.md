@@ -2,7 +2,9 @@
 
 **Evidence level: Implemented capability.** CoNET-SI implements the forwarding plane described here. Chat, SilentPass, mining, UDP, and Beamio control flows are **application compositions** of that plane. They are not additional L0 protocols.
 
-Layer Minus is a **PGP / wallet-address forwarding network**. It accepts an OpenPGP envelope, reads the recipient **key ID**, and either forwards that armor or — if this node can decrypt — peels an inner OpenPGP layer and forwards when the inner key ID is not local. It does not define a product, a message schema, a VPN, or a payment flow.
+Layer Minus is a **permissionless decentralized cloud** whose live wire is a **PGP / wallet-address forwarding network**. Anyone may use it. Participants offer **forward bandwidth**, **storage**, and **CPU / GPU compute** and are rewarded in **GB** for useful ciphertext work. It accepts an OpenPGP envelope, reads the recipient **key ID**, and either forwards that armor or — if this node can decrypt — peels an inner OpenPGP layer and forwards when the inner key ID is not local. It does not define a product, a message schema, a VPN, or a payment flow.
+
+**Do not trust any node.** A Layer Minus host may drop, log, or lie. Privacy-first apps combine **privacy routing**, **data fragmentation**, and other client cryptography so that communications, storage, compute, and decentralized AI never hand a reconstructable secret to one operator. See [Permissionless cloud and zero-trust applications](permissionless-cloud.md).
 
 How to use L0 is therefore **application-layer development**: pick wallets, pick encryption targets, put an application object inside the envelope, and combine the forwarding primitives that already exist.
 
@@ -10,14 +12,18 @@ How to use L0 is therefore **application-layer development**: pick wallets, pick
 
 A Layer Minus node does the following:
 
-1. Accept `POST` with `{ data: <OpenPGP armor> }` over HTTP (HTTPS optional).
+1. Accept `POST` with `{ data: <OpenPGP armor> }` over HTTP (HTTPS optional). The client **must not** send `X-CoNET-Hop-Sigs`.
 2. Read `getEncryptionKeyIDs()` from the OpenPGP **side channel**.
-3. If that key ID **is not** this node's route PGP, look up the key and forward the **same armor** to its mailbox over HTTP `:80`, appending `X-CoNET-Hop-Sigs` (cap **3**). If the destination SI emits socket `end`, close and free this hop.
-4. If the key ID **is** this node's route PGP, **decrypt once**. Then:
+3. If that key ID is **not a routable node / mailbox**, respond **404**.
+4. If that key ID **is not** this node's route PGP but **is** routable, miner-sign the **same armor** and forward it to its mailbox over HTTP `:80` (`X-CoNET-Hop-Sigs`, cap **3**). If the destination SI emits socket `end`, close and free this hop.
+5. If the key ID **is** this node's route PGP, **decrypt once**. Then:
    - if the plaintext is still OpenPGP armor and the inner side-channel key ID **is this node**, treat it as an attack: emit socket `end` and stop;
-   - if the inner key ID **is not** this node, check SI-to-SI hop signatures (`X-CoNET-Hop-Sigs`). More than **3** signatures, or a count that cannot take another hop, is an all-node flood: emit `end` and **do not** forward;
-   - otherwise forward the **inner** armor and append this node's hop signature;
-   - if the plaintext is a signed `{ message, signMessage }` command, the last hop verifies hop signatures and meters those prior-hop bytes against the **user** wallet for **GB**.
+   - if the inner key ID **is not** this node, check SI-to-SI hop signatures. More than **3** signatures, or a count that cannot take another hop, is an all-node flood: emit `end` and **discard**;
+   - otherwise forward the **inner** armor and append this node's miner hop signature;
+   - if this node is the mailbox, store the armor and, when a listen SSE is attached, encrypt the downlink with the user’s listen `Securitykey`;
+   - if the plaintext is signed JSON `{ message, signMessage }`, the last hop verifies hop signatures, meters those prior-hop bytes against the **user** wallet for **GB**, and runs the API command (listen, proxy, storage, WASM / container, and so on).
+
+Byte-level header rules: [X-CoNET-Hop-Sigs v1](hop-sigs.md). The header is miner signatures for **GB metering**. It is not a detailed forward JSON.
 
 That peel-and-forward step is the **outer envelope** and **nested multi-hop** primitive. A node decrypts **at most one** local layer. An application may wrap a user-PGP business message to an entry (or to a short hop chain). A path observer of the first `/post` then sees the **outer** key ID, not the inner recipient. Each node that can decrypt still learns the **next** key ID. Extra hops are extra forwarded bytes and therefore extra **GB**. When a destination SI ends the socket, the previous hop closes and frees that connection.
 
@@ -30,11 +36,13 @@ Any application
   │  put application JSON (or AES frames) inside
   ▼
 L0 forwarding plane
-  POST armor → read key ID
-    ├─ not local → HTTP :80 forward same armor + hop signature
+  POST armor (no hop header) → read key ID
+    ├─ not a routable node → 404
+    ├─ not local → HTTP :80 forward same armor + miner hop signature
     └─ local decrypt once → same-node inner PGP → end (attack)
-                          → inner key ≠ local and hop sigs ≤ 3 → forward inner
-                          → else run signed command; last hop meters prior hops to the user
+                          → inner key ≠ local and hop sigs < 3 → forward inner
+                          → mailbox → store / SSE (SSE encrypted with listen Securitykey)
+                          → else run signed JSON command; last hop meters prior hops to the user
 ```
 
 L0 names a peer as **wallet + OpenPGP material**. IP addresses remain TCP/IP locators for one hop. Changing entry, mailbox, or device does not change the wallet unless the **application** creates a new one.
@@ -54,13 +62,22 @@ Do not treat [DePIN Chat](../applications/depin-chat.md) or [SilentPass](../appl
 
 ## Application developer loop
 
-Every L0-using client repeats the same loop. Only the inner object and the encryption target change. Copy-paste TypeScript for `POST /post` and the command catalog is in the [SI developer guide](si-developer-guide.md). Chat envelopes, listen, receipts, and presence are in the [Chat developer guide](chat-developer-guide.md).
+Every L0-using client repeats the same loop. Only the inner object and the encryption target change. Copy-paste TypeScript for `POST /post` and the command catalog is in the [SI developer guide](si-developer-guide.md). Chat envelopes, listen, receipts, and presence are in the [Chat developer guide](chat-developer-guide.md). The developer-track index is [L0 development](../developers/l0.md).
 
-### 1. Create or reuse a wallet
+### 1. Create wallets (routing can be separate)
 
-The protocol identity is an **EOA**. Generate one, or reuse an existing wallet. An AA Smart Wallet is not a destination unless it has its own AddressPGP registration.
+The protocol identity of a **mailbox row** is an **EOA**. Generate one, or reuse an existing wallet. An AA Smart Wallet is not a destination unless it has its own AddressPGP registration.
 
-If a wallet or key is later exposed, the application can create an **on-demand new wallet**, generate a new user PGP pair, and register again. L0 has no “account recovery” of its own; it just starts forwarding to the new key ID.
+For higher privacy, **do not reuse the same EOA** for routing and for the people in the product:
+
+| EOA | Register / sign | Purpose |
+| --- | --- | --- |
+| **Routing wallet** | AddressPGP + listen / ACK / presence | Mailbox B, hop **GB**, online query |
+| **Sender / recipient wallet** | Encrypted application envelope only | Chat `from`, payments, POS, display |
+
+SI routes the **inbox user PGP** registered on the routing wallet. The product can name a different sender or recipient EOA inside that ciphertext. Details: [Routing wallet versus sender / recipient wallets](wallet-address-p2p.md#routing-wallet-versus-sender--recipient-wallets).
+
+If a wallet or key is later exposed, the application can create an **on-demand new wallet**, generate a new user PGP pair, and register again. L0 has no “account recovery” of its own; it just starts forwarding to the new key ID. Rotating only the routing wallet does not require a new product identity.
 
 ### 2. Register public bindings on L1
 
@@ -89,7 +106,7 @@ Wrong target breaks the model: business JSON encrypted to B lets the mailbox rea
 
 Sign the inner object with the EOA (`{ message, signMessage }`), OpenPGP-encrypt it, and `POST` `{ data: armor }` to a healthy entry **A ≠ B**.
 
-HTTP is sufficient because the body is already ciphertext. HTTPS is optional at the same handler. SI-to-SI forwarding is HTTP on port 80.
+HTTP is sufficient for **payload** confidentiality because the body is already ciphertext. HTTPS is optional at the same handler and is the usual browser / payment carrier. Neither is “more private” in every dimension — [HTTP versus HTTPS](security-limits.md#http-versus-https-neither-is-more-private). SI-to-SI forwarding is HTTP on port 80.
 
 The POST hides the **sender** from the mailbox: B sees an entry hop and a recipient key ID, not S's client IP.
 
@@ -132,7 +149,9 @@ The same forwarding plane is reused. Only the inner object and key roles change.
 | **UDP frames** | User-PGP `udp_subscribe`; route-PGP listen / relay / uplink | AES-256-GCM session, adapters, codecs |
 | **SilentPass access** | Route-PGP `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` through an entry | Device tunnel or local proxy, admission, path rotation |
 | **On-demand new wallet** | New EOA + new user PGP + new AddressPGP row | Application identity rotation after a leak or for a new role |
-| **Outer envelope / nested PGP hops** | Encrypt to a node that can decrypt once; if the inner key ID is not local and `X-CoNET-Hop-Sigs` ≤ 3, SI forwards and signs the hop | Hides the inner recipient key ID from the first-hop path observer; last hop meters prior hops to the user; same-node inner PGP ends the socket |
+| **Split routing / app wallets** | AddressPGP + listen on a **routing** EOA; sender / recipient only inside user-PGP | Mailbox and hop GB do not see the product wallet. Mapping stays in the client |
+| **Fragmented storage / compute / AI** | Same forwarding plane + hash-addressed ciphertext fragments + untrusted WASM / GPU jobs | Privacy-first surfaces. No node holds a reconstructable whole. See [permissionless cloud](permissionless-cloud.md) |
+| **Outer envelope / nested PGP hops** | Encrypt to a node that can decrypt once; if the inner key ID is not local and hop signatures stay under **3**, SI miner-signs and forwards the inner armor | Hides the inner recipient key ID from the first-hop path observer; last hop meters prior hops to the user; same-node inner PGP or a hop that never reaches a recipient is discarded. Encoding: [hop-sigs v1](hop-sigs.md) |
 
 A new product should start from this table: reuse the forwarding primitives, then invent only the inner protocol it actually needs.
 
@@ -161,10 +180,12 @@ Document those as upgrades or product options. Do not describe them as the live 
 
 ## Next
 
-1. [SI developer guide](si-developer-guide.md) — live `/post` contract, command catalog, and samples.
-2. [Chat developer guide](chat-developer-guide.md) — Chat envelopes, listen, receipts, and presence.
-3. [Wallet-addressed peer identity](wallet-address-p2p.md) — EOA, user PGP, route PGP.
-4. [Zero-trust mailbox routing](mailbox-routing.md) — `S → A → B` and `R → C → B → R`.
-5. [UDP frame forwarding](udp-forward.md) — one composition that adds a symmetric key.
-6. [Security limits](security-limits.md) — live threat grades versus proposed upgrades.
-7. [Applications](../applications/README.md) — products that combine L0 with L1 and UI.
+1. [L0 development](../developers/l0.md) — developer-track index for SI and Chat.
+2. [SI developer guide](si-developer-guide.md) — live `/post` contract, command catalog, and samples.
+3. [Chat developer guide](chat-developer-guide.md) — Chat envelopes, listen, receipts, and presence.
+4. [Wallet-addressed peer identity](wallet-address-p2p.md) — EOA, user PGP, route PGP.
+5. [Zero-trust mailbox routing](mailbox-routing.md) — `S → A → B` and `R → C → B → R`.
+6. [X-CoNET-Hop-Sigs v1](hop-sigs.md) — compact miner hop header (not a path JSON).
+7. [UDP frame forwarding](udp-forward.md) — one composition that adds a symmetric key.
+8. [Security limits](security-limits.md) — live threat grades versus proposed upgrades.
+8. [Applications](../applications/README.md) — products that combine L0 with L1 and UI.

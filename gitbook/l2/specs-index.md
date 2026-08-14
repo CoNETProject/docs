@@ -80,6 +80,7 @@ When asserting protocol behavior:
 
 ## Related
 
+- [L2 development](../developers/l2.md) — implementer how-to
 - [Cross-chain assets in DLE](cross-chain-assets.md) — Treasury-to-DLE admission and conservation digest
 - [Decentralized cross-chain Treasury](../l1/cross-chain-treasury.md) — production L1 route and quorum boundary
 
