@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+/**
+ * DEPRECATED — do not use as the content source of truth.
+ *
+ * gitbook.conet.network is authored in-repo under `gitbook/` (L0/L1/L2 rewrite).
+ * Historical doceng.conet.network mirror lives in `archive/doceng-mirror/`.
+ *
+ * This file remains only for occasional offline comparison. It must never overwrite
+ * `gitbook/` without an explicit, one-off operator decision.
+ *
+ * Prefer: edit markdown in `gitbook/` → `npm run build` → `./scripts/deployGitbook.sh`
+ */
+console.error(
+	'[deprecated] sync-from-doceng is disabled. Author docs in gitbook/; see archive/doceng-mirror/ for the old mirror.',
+)
+process.exit(1)

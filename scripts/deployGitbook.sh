@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+# Deploy CoNET HonKit site → gitbook.conet.network on 38.102.126.50
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+BOOK_DIR="${ROOT}/gitbook"
+REMOTE_HOST="${REMOTE_HOST:-38.102.126.50}"
+REMOTE_USER="${REMOTE_USER:-root}"
+REMOTE_WWW="${REMOTE_WWW:-/var/www/gitbook.conet.network}"
+DOMAIN="${DOMAIN:-gitbook.conet.network}"
+NGINX_AVAIL="/etc/nginx/sites-available/${DOMAIN}.conf"
+NGINX_ENABLED="/etc/nginx/sites-enabled/${DOMAIN}.conf"
+NGINX_TEMPLATE="${ROOT}/scripts/gitbook.conet.network.conf"
+REMOTE_NGINX_TEMPLATE="/tmp/${DOMAIN}.deploy.conf"
+RENDERED_NGINX="$(mktemp)"
+trap 'rm -f "${RENDERED_NGINX}"' EXIT
+
+sed \
+	-e "s|__DOMAIN__|${DOMAIN}|g" \
+	-e "s|__REMOTE_WWW__|${REMOTE_WWW}|g" \
+	"${NGINX_TEMPLATE}" > "${RENDERED_NGINX}"
+
+if [[ "${1:-}" == "--sync" ]]; then
+	echo "ERROR: doceng sync is deprecated. Author content under gitbook/ (see archive/doceng-mirror/)." >&2
+	exit 1
+fi
+
+echo "==> Install + build HonKit"
+cd "${BOOK_DIR}"
+npm ci
+rm -rf _book
+npm run build
+test -f _book/index.html
+rm -f _book/package.json _book/package-lock.json
+
+echo "==> Ensure remote web root"
+ssh -o BatchMode=yes "${REMOTE_USER}@${REMOTE_HOST}" \
+	"mkdir -p '${REMOTE_WWW}' /var/www/certbot/.well-known/acme-challenge"
+
+echo "==> Rsync static site"
+rsync -avz --delete \
+	-e 'ssh -o BatchMode=yes' \
+	"${BOOK_DIR}/_book/" \
+	"${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WWW}/"
+
+echo "==> Install nginx vhost"
+scp -o BatchMode=yes "${RENDERED_NGINX}" \
+	"${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_NGINX_TEMPLATE}"
+
+echo "==> TLS + reload nginx"
+ssh -o BatchMode=yes "${REMOTE_USER}@${REMOTE_HOST}" bash -s -- \
+	"${DOMAIN}" "${NGINX_AVAIL}" "${NGINX_ENABLED}" "${REMOTE_WWW}" "${REMOTE_NGINX_TEMPLATE}" <<'REMOTE'
+set -euo pipefail
+DOMAIN="$1"
+NGINX_AVAIL="$2"
+NGINX_ENABLED="$3"
+REMOTE_WWW="$4"
+REMOTE_NGINX_TEMPLATE="$5"
+trap 'rm -f "${REMOTE_NGINX_TEMPLATE}"' EXIT
+
+ln -sfn "${NGINX_AVAIL}" "${NGINX_ENABLED}"
+
+if [[ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
+  # HTTP-only bootstrap for first cert
+  cat > "${NGINX_AVAIL}" <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
+    location ^~ /.well-known/acme-challenge/ {
+        alias /var/www/certbot/.well-known/acme-challenge/;
+        default_type "text/plain";
+    }
+    location = /l0/silentpass-vpn.html {
+        return 301 /applications/silentpass-vpn.html;
+    }
+    location = /l0/silentpass-vpn {
+        return 301 /applications/silentpass-vpn.html;
+    }
+    location = /l0/silentpass-vpn.md {
+        return 301 /applications/silentpass-vpn.html;
+    }
+    location = /applications.html {
+        return 301 /applications/;
+    }
+    location / {
+        root ${REMOTE_WWW};
+        index index.html;
+        try_files \$uri \$uri/ \$uri.html \$uri/index.html =404;
+    }
+}
+EOF
+  nginx -t
+  systemctl restart nginx
+  certbot certonly --webroot -w /var/www/certbot \
+    -d "${DOMAIN}" \
+    --non-interactive --agree-tos \
+    --register-unsafely-without-email \
+    --keep-until-expiring
+fi
+
+# The checked-in template is the single source for the final TLS vhost.
+install -m 0644 "${REMOTE_NGINX_TEMPLATE}" "${NGINX_AVAIL}"
+
+nginx -t
+# Full restart: reload alone has left stale workers on this host before
+systemctl restart nginx
+echo "nginx OK for ${DOMAIN}"
+REMOTE
+
+echo "==> Smoke"
+sleep 1
+SMOKE_PATHS=(
+	"/"
+	"/overview.html"
+	"/l0/mailbox-routing.html"
+	"/l1/rpc-explorer.html"
+	"/l1/cross-chain-treasury.html"
+	"/l2/design-thesis.html"
+	"/l2/cross-chain-assets.html"
+	"/applications/"
+	"/applications/silentpass-vpn.html"
+	"/applications/miner-orderbook-dex.html"
+	"/use-cases/decentralized-sns.html"
+	"/resources.html"
+)
+for path in "${SMOKE_PATHS[@]}"; do
+	status="$(curl --fail --silent --show-error --output /dev/null --write-out '%{http_code}' "https://${DOMAIN}${path}")"
+	echo "${status} https://${DOMAIN}${path}"
+done
+
+REDIRECTS=(
+	"/l0/silentpass-vpn.html|/applications/silentpass-vpn.html"
+	"/l0/silentpass-vpn|/applications/silentpass-vpn.html"
+	"/l0/silentpass-vpn.md|/applications/silentpass-vpn.html"
+	"/applications.html|/applications/"
+)
+for mapping in "${REDIRECTS[@]}"; do
+	IFS='|' read -r source_path target_path <<< "${mapping}"
+	read -r status redirect_url < <(
+		curl --silent --show-error --output /dev/null --max-redirs 0 \
+			--write-out '%{http_code} %{redirect_url}\n' \
+			"https://${DOMAIN}${source_path}"
+	)
+	expected_url="https://${DOMAIN}${target_path}"
+	if [[ "${status}" != "301" || "${redirect_url}" != "${expected_url}" ]]; then
+		echo "ERROR: redirect ${source_path} returned ${status} ${redirect_url}; expected 301 ${expected_url}" >&2
+		exit 1
+	fi
+	echo "${status} https://${DOMAIN}${source_path} -> ${redirect_url}"
+done
+echo "Deployed: https://${DOMAIN}/"

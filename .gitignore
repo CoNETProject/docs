@@ -5,6 +5,10 @@
 # Transifex
 .tx/
 
-# sphinx build
-_build/
+# Legacy sphinx
+archive/_build/
 *.mo
+
+# HonKit
+gitbook/node_modules/
+gitbook/_book/

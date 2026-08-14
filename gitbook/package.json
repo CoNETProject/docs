@@ -1,0 +1,13 @@
+{
+  "name": "conet-gitbook",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Self-hosted CoNET protocol GitBook (HonKit) — L0 / L1 / L2",
+  "scripts": {
+    "build": "honkit build",
+    "serve": "honkit serve"
+  },
+  "devDependencies": {
+    "honkit": "^6.0.2"
+  }
+}

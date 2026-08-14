@@ -1,0 +1,478 @@
+# SI developer guide
+
+**Evidence level: Implemented capability.** This page documents how an application talks to a live **CoNET-SI** node. The command names, POST body, and encryption targets match current CoNET-SI and Beamio clients. Availability of any one Guardian domain is deployment-specific.
+
+Public site: [https://gitbook.conet.network/l0/si-developer-guide.html](https://gitbook.conet.network/l0/si-developer-guide.html)
+
+CoNET-SI is the Layer Minus **service node**. It accepts OpenPGP armor on `POST /post`, reads the recipient **key ID**, and either forwards the armor or decrypts **once** when the key is local. It does not implement Chat, VPN, payments, or history. Those are [application compositions](using-l0.md).
+
+Use this page to build a client against SI. For a Chat product on top of the same plane, continue with the [Chat developer guide](chat-developer-guide.md).
+
+## What you are calling
+
+| Piece | Role |
+| --- | --- |
+| **CoNET-SI** | HTTP/HTTPS entry, SI-to-SI HTTP `:80` forward, mailbox store, SSE listen pools, presence, delivery ACK, UDP relay, SilentPass commands |
+| **AddressPGP** | L1 binding of an EOA to user PGP and a mailbox route key |
+| **GuardianNodesInfoV6** | Public node list: domain, IP, route public key |
+| **Your application** | Wallet, OpenPGP keys, inner JSON schema, UI |
+
+Public node source: [CoNET-project/CoNET-SI](https://github.com/CoNET-project/CoNET-SI) · npm [`@conet.project/mvp-si`](https://www.npmjs.com/package/@conet.project/mvp-si).
+
+## Wire contract
+
+Every client request is the same shape:
+
+```http
+POST /post HTTP/1.1
+Host: {domain}.conet.network
+Content-Type: application/json
+
+{"data":"<OpenPGP armored message>"}
+```
+
+Optional field on the JSON object (not inside the armor):
+
+| Field | Meaning |
+| --- | --- |
+| `data` | Required. Full OpenPGP armor (`-----BEGIN PGP MESSAGE-----` …) |
+| `beamioNoPush` | Optional `true`. Skip APNs / offline push for this delivery |
+
+Client → entry may use **HTTP or HTTPS**. HTTPS is common in browsers because mixed content forbids `http://` from an `https://` page. **HTTP is sufficient** for confidentiality: the body is already OpenPGP ciphertext. **SI → SI** forwarding is **HTTP on port 80** only. Do not treat an entry TLS certificate problem as “the DePIN mesh is down.”
+
+Typical URLs:
+
+```text
+https://{domain}.conet.network/post
+http://{domain}.conet.network/post
+```
+
+Do not invent a new hostname. Use the Guardian **domain** from `getAllNodes`. Do not default-dial mailbox **B** for Chat, listen, ACK, presence, or UDP. Pick a healthy entry **A** or **C** with `A ≠ B` and `C ≠ B`. LayerMinus mining collectors are the documented exception: they dial the target SI directly.
+
+A **404** with a body such as `body has not PGP message` means SI rejected invalid armor. That is an intentional reject, not proof that the node process is down.
+
+HTTP **200** on send, or an SSE handshake on listen, is **transport progress**. It is not proof that an application decrypted, verified, or rendered the payload.
+
+## Two payload families
+
+Do not mix encryption targets.
+
+### 1. Opaque business armor (SI forwards, does not decrypt)
+
+Encrypt to the **recipient’s user PGP**. SI only sees the OpenPGP key ID and routes to that key’s mailbox.
+
+Typical use: Chat text, typed application JSON, `udp_subscribe` (contains the AES key), sender delivery receipts.
+
+```text
+application object
+  → optional EIP-191 envelope  (Chat uses this)
+  → base64(JSON)
+  → OpenPGP encrypt to R userPublicKeyArmored
+  → POST { data } to entry A ≠ B
+```
+
+### 2. Signed SI command (mailbox B decrypts)
+
+Encrypt `{ message, signMessage }` to **B’s route PGP**. `message` is `JSON.stringify(command)`. `signMessage` is EIP-191 `wallet.signMessage(message)`. SI `checkSign` recovers `walletAddress` and must match the signer.
+
+Typical use: Chat listen, mining listen, `gossip_delivery_ack`, `wallet_online_query`, UDP listen/relay (no `Securitykey`), SilentPass / SOCKS commands.
+
+```text
+command object  (includes walletAddress)
+  → message = JSON.stringify(command)
+  → signMessage = personal_sign(message)
+  → base64(JSON.stringify({ message, signMessage }))
+  → OpenPGP encrypt to B route public key
+  → POST { data } to entry C ≠ B
+```
+
+## Live command catalog
+
+Source: CoNET-SI `localNodeCommandSocket`. Encrypt the command family to **route PGP** unless the table says otherwise.
+
+| `command` | Encrypt to | HTTP / SSE | Notes |
+| --- | --- | --- | --- |
+| `mining` + `listenKind: "chat"` | Own mailbox **B** route PGP | Long SSE via entry **C ≠ B** | Chat / Merchant OS / Alliance mailbox. Required fields: `walletAddress`, `algorithm: "aes-256-cbc"`, `Securitykey` (session key) |
+| `mining` (omit `listenKind`) | Target SI route PGP | Infrastructure SSE | LayerMinus mining. SI defaults `listenKind` to `"mining"`. Not a Chat shortcut |
+| `gossip_delivery_ack` | **B** route PGP | Entry **C ≠ B** | After the client ingested user-PGP armor. Fields: `walletAddress`, `armorHash` (`keccak256(utf8(full armor))`), `timestamp` (unix seconds, ±600s), optional `sendId` |
+| `wallet_online_query` | Contact’s mailbox **B** route PGP | Entry **C ≠ B** | Presence. Fields: `walletAddress` (signer), `targetWallet`, `timestamp` (±600s). Success: `{ ok: true, wallet, online, listenAgeMs, nodeWallet }`. Do **not** use chain `routeOnline` |
+| `udp_subscribe` | UDP server **user** PGP | Entry **A ≠ B** | Contains `Securitykey`. SI rejects encryption to B (`encrypt_to_udp_server_user_pgp`) |
+| `udp_listen` / `udp_server_listen` / `udp_relay` / `udp_uplink` / `udp_unlisten` | **B** route PGP | Entry ≠ B | No `Securitykey`. See [UDP frame forwarding](udp-forward.md) |
+| `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` | Egress node route PGP | Product-specific | Paid proxy; not a Chat path |
+
+Old clients that omit `listenKind` on `mining` are treated as mining. A Chat client **must** send `listenKind: "chat"` so SI does not apply mining-only pool policy to the mailbox SSE.
+
+## SI hop behavior (do not fight it)
+
+When SI forwards to another SI it may append `X-CoNET-Hop-Sigs` (base64 JSON, max **3** EIP-191 hop signatures). Application clients **do not** set this header on the first `/post`.
+
+After a **local** decrypt:
+
+- if the plaintext is still OpenPGP **for the same node**, SI treats it as an attack, emits socket `end`, and **does not peel again**;
+- if the inner key ID is another node, SI forwards the **inner** armor when hop-sig count can still grow (cap 3);
+- more than 3 hop signatures, or a count that cannot take another hop, is an all-node flood: `end`, no forward;
+- if the destination SI emits `end`, the previous hop closes and frees that socket;
+- on a **signed command** path, the last hop may add verified prior-hop bytes to that wallet’s gossip **GB** meter. A mailbox store of user-PGP armor (no command decrypt) cannot charge the user.
+
+Optional outer wrap: encrypt a user-PGP business message to an **entry** route key so the first `/post` observer sees the outer key ID. Each peel node still learns the **next** key ID. This is not a mix network. See [security limits](security-limits.md).
+
+## Constants
+
+| Item | Value |
+| --- | --- |
+| CoNET L1 | `chainId` **224422** |
+| Read RPC | `https://rpc1.conet.network` (primary), `https://publicrpc.conet.network` (backup). Do not use deprecated `rpc.conet.network` |
+| AddressPGP | [`0x684b0ac760cEE9c9b85de36d69746420648Cf9e2`](https://mainnet.conet.network/address/0x684b0ac760cEE9c9b85de36d69746420648Cf9e2) |
+| GuardianNodesInfoV6 | [`0xBC6b53065b5647261396d002bDBA0d3396E0722f`](https://mainnet.conet.network/address/0xBC6b53065b5647261396d002bDBA0d3396E0722f) |
+| Compatibility register API | `POST https://beamio.app/api/regiestChatRoute` (spelling is live) |
+
+## Sample: discover Guardian nodes
+
+```ts
+import { ethers } from 'ethers'
+
+const CONET_RPC = 'https://rpc1.conet.network'
+const GUARDIAN_NODES = '0xBC6b53065b5647261396d002bDBA0d3396E0722f'
+
+const guardianAbi = [
+  'function getAllNodes(uint256 start, uint256 length) view returns (tuple(uint256 id, string PGP, string PGPKey, string ip_addr, string regionName)[])',
+]
+
+export type SiNode = {
+  nftNumber: number
+  armoredPublicKey: string
+  domain: string
+  ip_addr: string
+  region: string
+}
+
+export async function listGuardianNodes(): Promise<SiNode[]> {
+  const provider = new ethers.JsonRpcProvider(CONET_RPC)
+  const c = new ethers.Contract(GUARDIAN_NODES, guardianAbi, provider)
+  const pages = await Promise.all([c.getAllNodes(0, 400), c.getAllNodes(400, 800)])
+  const out: SiNode[] = []
+  for (const row of pages.flat()) {
+    // Live clients: PGP = base64 route public key; PGPKey = Guardian domain.
+    const armored = Buffer.from(String(row.PGP), 'base64').toString('utf8')
+    const domain = String(row.PGPKey)
+    if (!domain || !armored.includes('BEGIN PGP')) continue
+    out.push({
+      nftNumber: Number(row.id),
+      armoredPublicKey: armored,
+      domain,
+      ip_addr: String(row.ip_addr),
+      region: String(row.regionName),
+    })
+  }
+  return out
+}
+
+export function postUrl(domain: string, https = true): string {
+  return `${https ? 'https' : 'http'}://${domain}.conet.network/post`
+}
+```
+
+Pick entries that are **not** the recipient mailbox domain. Keep a small health set: mark a domain bad on timeout / non-2xx, prefer previously healthy domains, then retry another wave.
+
+## Sample: resolve AddressPGP
+
+```ts
+const ADDRESS_PGP = '0x684b0ac760cEE9c9b85de36d69746420648Cf9e2'
+
+const pgpAbi = [
+  'function searchKey(address to) view returns (string userPgpKeyID, string userPublicKeyArmored, string routePgpKeyID, string routePublicKeyArmored, bool routeOnline)',
+]
+
+export type AddressPgpRecord = {
+  userPgpKeyID: string
+  userPublicKeyArmored: string
+  routePgpKeyID: string
+  routePublicKeyArmored: string
+}
+
+export async function searchAddressPgp(eoa: string): Promise<AddressPgpRecord | null> {
+  const provider = new ethers.JsonRpcProvider(CONET_RPC)
+  const c = new ethers.Contract(ADDRESS_PGP, pgpAbi, provider)
+  const r = await c.searchKey(ethers.getAddress(eoa))
+  const userArmored = Buffer.from(String(r.userPublicKeyArmored), 'base64').toString('utf8')
+  const routeArmored = Buffer.from(String(r.routePublicKeyArmored), 'base64').toString('utf8')
+  if (!userArmored.includes('BEGIN PGP')) return null
+  return {
+    userPgpKeyID: String(r.userPgpKeyID),
+    userPublicKeyArmored: userArmored,
+    routePgpKeyID: String(r.routePgpKeyID),
+    routePublicKeyArmored: routeArmored,
+  }
+  // Ignore routeOnline. Presence is mailbox listen-pool only (wallet_online_query).
+}
+```
+
+Encrypt **business** armor to `userPublicKeyArmored` of the recipient **EOA**. An AA Smart Wallet is not a destination unless it has its own AddressPGP row.
+
+## Sample: register a mailbox route
+
+Current clients generate an ECC OpenPGP key, take the **encryption subkey** ID (`getKeyIDs()[1]`, uppercase hex), choose a Guardian **domain** as mailbox, and call the compatibility API. The live field name is `routeKeyID`; clients pass that **domain**, not the hex key ID.
+
+```ts
+import { generateKey } from 'openpgp'
+
+export async function generateUserPgp() {
+  const { privateKey, publicKey } = await generateKey({
+    type: 'ecc',
+    curve: 'curve25519',
+    userIDs: [{ name: 'conet', email: 'conet@localhost' }],
+    format: 'armored',
+  })
+  const { readKey } = await import('openpgp')
+  const keyObj = await readKey({ armoredKey: publicKey })
+  const keyID = keyObj.getKeyIDs()[1].toHex().toUpperCase()
+  return { privateKey, publicKey, keyID }
+}
+
+export async function registerChatRoute(opts: {
+  eoaPrivateKey: string
+  publicKeyArmored: string
+  keyID: string
+  encrypKeyArmored: string
+  mailboxDomain: string
+}): Promise<boolean> {
+  const wallet = new ethers.Wallet(opts.eoaPrivateKey)
+  const res = await fetch('https://beamio.app/api/regiestChatRoute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      wallet: wallet.address,
+      keyID: opts.keyID,
+      publicKeyArmored: Buffer.from(opts.publicKeyArmored, 'utf8').toString('base64'),
+      encrypKeyArmored: opts.encrypKeyArmored,
+      routeKeyID: opts.mailboxDomain,
+    }),
+  })
+  const json = await res.json().catch(() => ({}))
+  return res.ok && !!json?.ok
+}
+```
+
+`encrypKeyArmored` is an application backup of the user PGP private key (current clients AES-GCM encrypt it with material derived from the EOA). **Do not log** the EOA key, mnemonic, PGP private armor, `Securitykey`, or full hop signatures.
+
+After register, wait and re-read `searchKey(eoa)` until `userPgpKeyID` matches the local subkey ID.
+
+## Sample: encrypt a signed SI command
+
+```ts
+import { createMessage, encrypt, enums, readKey } from 'openpgp'
+import { ethers } from 'ethers'
+
+export async function encryptRouteCommand(
+  wallet: ethers.Wallet,
+  command: Record<string, unknown>,
+  routePublicKeyArmored: string,
+): Promise<string> {
+  const message = JSON.stringify(command)
+  const signMessage = await wallet.signMessage(message)
+  const literal = Buffer.from(JSON.stringify({ message, signMessage })).toString('base64')
+  const pgpMsg = await createMessage({ text: literal })
+  const encryptionKeys = await readKey({ armoredKey: routePublicKeyArmored })
+  return encrypt({
+    message: pgpMsg,
+    encryptionKeys,
+    config: { preferredCompressionAlgorithm: enums.compression.zlib },
+  })
+}
+
+export async function postArmor(
+  domain: string,
+  armored: string,
+  opts?: { https?: boolean; beamioNoPush?: boolean; acceptSse?: boolean; signal?: AbortSignal },
+): Promise<Response> {
+  const body: { data: string; beamioNoPush?: boolean } = { data: armored }
+  if (opts?.beamioNoPush) body.beamioNoPush = true
+  return fetch(postUrl(domain, opts?.https !== false), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json;charset=UTF-8',
+      ...(opts?.acceptSse ? { Accept: 'text/event-stream' } : {}),
+    },
+    body: JSON.stringify(body),
+    signal: opts?.signal,
+    cache: 'no-store',
+  })
+}
+```
+
+### Chat mailbox listen (`listenKind: "chat"`)
+
+```ts
+export async function openChatListen(opts: {
+  wallet: ethers.Wallet
+  ownRoutePublicKeyArmored: string
+  mailboxDomain: string
+  entryDomain: string
+  signal?: AbortSignal
+}): Promise<Response> {
+  if (opts.entryDomain === opts.mailboxDomain) {
+    throw new Error('entry C must not be mailbox B')
+  }
+  const Securitykey = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64')
+  const armored = await encryptRouteCommand(
+    opts.wallet,
+    {
+      command: 'mining',
+      listenKind: 'chat',
+      walletAddress: opts.wallet.address,
+      algorithm: 'aes-256-cbc',
+      Securitykey,
+    },
+    opts.ownRoutePublicKeyArmored,
+  )
+  const res = await postArmor(opts.entryDomain, armored, { acceptSse: true, signal: opts.signal })
+  if (!res.ok || !res.body) throw new Error(`listen HTTP ${res.status}`)
+  return res
+}
+```
+
+Read `res.body` as a byte stream. First frames are often a handshake or mining-shaped `{ status, epoch, … }` liveness listing. Those are **not** user-PGP business messages. A browser console line `[Gossip] Unknown format: {status, epoch…}` is that heartbeat. Keep the SSE open; reconnect on idle / drop with another random **C ≠ B**. Production clients use a `setTimeout` chain, not `setInterval`.
+
+### Presence query
+
+```ts
+export async function queryMailboxOnline(opts: {
+  wallet: ethers.Wallet
+  targetWallet: string
+  targetRoutePublicKeyArmored: string
+  mailboxDomain: string
+  entryDomain: string
+}): Promise<{ ok: boolean; online: boolean; error?: string }> {
+  if (opts.entryDomain === opts.mailboxDomain) {
+    throw new Error('entry C must not be mailbox B')
+  }
+  const armored = await encryptRouteCommand(
+    opts.wallet,
+    {
+      command: 'wallet_online_query',
+      walletAddress: opts.wallet.address,
+      targetWallet: ethers.getAddress(opts.targetWallet),
+      timestamp: Math.floor(Date.now() / 1000),
+    },
+    opts.targetRoutePublicKeyArmored,
+  )
+  const res = await postArmor(opts.entryDomain, armored)
+  const json = await res.json().catch(() => ({ ok: false, online: false, error: 'parse' }))
+  return json
+}
+```
+
+Treat only `ok === true` as trusted. On timeout or `not_my_route`, **keep** the last trusted `online` value. Do not write chain `routeOnline` into the UI.
+
+### Mailbox delivery ACK
+
+```ts
+export function hashPgpArmor(fullArmor: string): string {
+  return ethers.keccak256(ethers.toUtf8Bytes(fullArmor))
+}
+
+export async function postMailboxDeliveryAck(opts: {
+  wallet: ethers.Wallet
+  ownRoutePublicKeyArmored: string
+  mailboxDomain: string
+  entryDomain: string
+  armorHash: string
+  sendId?: string
+}): Promise<boolean> {
+  const armored = await encryptRouteCommand(
+    opts.wallet,
+    {
+      command: 'gossip_delivery_ack',
+      walletAddress: opts.wallet.address,
+      armorHash: opts.armorHash,
+      timestamp: Math.floor(Date.now() / 1000),
+      ...(opts.sendId ? { sendId: opts.sendId } : {}),
+    },
+    opts.ownRoutePublicKeyArmored,
+  )
+  const res = await postArmor(opts.entryDomain, armored)
+  return res.ok
+}
+```
+
+`armorHash` is `keccak256` of the **complete** inbound PGP armor string, `0x` + 64 hex.
+
+## Sample: post opaque user-PGP armor
+
+```ts
+export async function encryptUserPayload(
+  plaintextUtf8: string,
+  recipientUserPublicKeyArmored: string,
+): Promise<string> {
+  const pgpMsg = await createMessage({
+    text: Buffer.from(plaintextUtf8, 'utf8').toString('base64'),
+  })
+  const encryptionKeys = await readKey({ armoredKey: recipientUserPublicKeyArmored })
+  return encrypt({
+    message: pgpMsg,
+    encryptionKeys,
+    config: { preferredCompressionAlgorithm: enums.compression.zlib },
+  })
+}
+
+export async function postUserArmorToEntries(
+  armored: string,
+  entryDomains: string[],
+  mailboxDomain: string,
+): Promise<boolean> {
+  const targets = entryDomains.filter((d) => d && d !== mailboxDomain).slice(0, 4)
+  const results = await Promise.all(
+    targets.map(async (domain) => {
+      try {
+        const res = await postArmor(domain, armored)
+        return res.ok
+      } catch {
+        return false
+      }
+    }),
+  )
+  return results.some(Boolean)
+}
+```
+
+Chat wraps an EIP-191 envelope **before** this encrypt step. See the [Chat developer guide](chat-developer-guide.md).
+
+## Optional outer wrap (one extra hop)
+
+To hide the inner user-PGP key ID from the first `/post` observer, encrypt the **already-built** user-PGP armor to an **entry** route public key, then POST that outer armor to that same entry. SI decrypts once and forwards the inner armor if the inner key is not local. Do not wrap so the inner key is again this node. Do not build a hop chain longer than SI will accept (cap **3** SI-to-SI signatures).
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "openpgp": "^5.11.0"
+  }
+}
+```
+
+Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 helper. Run OpenPGP encrypt/decrypt **off the UI thread** (Web Worker) if the page must stay responsive.
+
+## Checklist
+
+- [ ] POST body is `{ data: <armor> }` to `{domain}.conet.network/post`
+- [ ] Business encrypt-to **user PGP**; commands encrypt-to **route PGP**
+- [ ] Chat listen includes `listenKind: "chat"` and uses **C ≠ B**
+- [ ] Send / ACK / presence / UDP do not default-dial mailbox B
+- [ ] EIP-191 `signMessage` covers the exact `message` string SI will verify
+- [ ] Failures do not log private keys, full PGP private armor, or `Securitykey`
+- [ ] HTTP 200 / SSE Connected is not treated as application delivery
+- [ ] Presence uses `wallet_online_query`, not `searchKey.routeOnline`
+
+## Related
+
+- [How to use Layer Minus](using-l0.md)
+- [Chat developer guide](chat-developer-guide.md)
+- [Zero-trust mailbox routing](mailbox-routing.md)
+- [Wallet-addressed peer identity](wallet-address-p2p.md)
+- [HTTP transport](http-mimicry.md)
+- [UDP frame forwarding](udp-forward.md)
+- [Security limits](security-limits.md)
+- [DePIN Chat product page](../applications/depin-chat.md)
+- [Resources](../resources.md)
