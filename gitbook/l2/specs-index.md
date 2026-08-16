@@ -8,7 +8,7 @@ English whitepaper:
 
 [Decentralization Cluster multi-chain.md](https://github.com/CoNET-project/CoNET-DLE/blob/main/src/whitepaper/Decentralization%20Cluster%20multi-chain.md)
 
-Reviewed revision: **2026-08-15** (EIP-155 plane Chain ID `0x44c45` vs Group ID = L1 register tx hash; L1 uint `groupId` is a storage key only — §5.2.0d)
+Reviewed revision: **2026-08-16** (EIP-155 plane Chain ID `0x44c45` vs Group ID = L1 register tx hash; L1 uint `groupId` is a storage key only — §5.2.0d; lab M6 second Group ID is a laboratory hash until `registerLiveGroup`)
 
 Paired translation:
 

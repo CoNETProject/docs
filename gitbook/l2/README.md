@@ -11,8 +11,10 @@ This GitBook section is an **explanatory digest**. It does not create protocol r
 | Field | Canonical value |
 | --- | --- |
 | EIP-155 Chain ID (CoNET-DLE Testnet) | **281669** (`0x44c45`) |
-| User-visible Group ID | L1 bootstrap register tx `0x3076a806…6f2ad0` |
-| L1 uint `groupId` (storage key) | bootstrap **1** |
+| User-visible Group ID (first group) | L1 bootstrap register tx `0x3076a806…6f2ad0` |
+| Lab M6 second Group ID | `0x7b3b8eb9…7f9b1a07` — laboratory hash, **not** an L1 register tx |
+| Live archive groups \(G_e\) | **2** on `GET /health` (`liveGroupCount`) after lab M6 fission |
+| L1 uint `groupId` (storage key) | bootstrap **1** (first group only) |
 | Explorer | `https://dle.conet.network` |
 | Archives | `https://dle.conet.network/archives` |
 | Lab health | `https://dle.conet.network/health` |
@@ -28,7 +30,7 @@ The routing registry lives on CoNET L1. Bootstrap storage key `groupId = 1` hold
 
 CoNET L1 is a live network. DLE is not documented here as a fully launched production system.
 
-This digest was checked against the whitepaper revision dated **2026-08-15**.
+This digest was checked against the whitepaper revision dated **2026-08-16**. Lab M6 fission is a laboratory gather (`liveGroupCount: 2`); it is **not** 30-day qualification and the second Group ID is **not** yet an L1 `registerLiveGroup` transaction.
 
 The source set includes frozen product decisions, executable vectors, a bounded formal-model result, and TypeScript archive reference work. It also records unresolved production gates. In particular:
 

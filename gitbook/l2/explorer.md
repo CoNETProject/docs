@@ -13,14 +13,15 @@ The explorer is a read-only inspection surface for the isolated 30-day DLE Archi
 | Lab health | `https://dle.conet.network/health` |
 | Lab RPC | `https://dle.conet.network/rpc` |
 | EIP-155 Chain ID (CoNET-DLE Testnet) | **281669** (`0x44c45`) |
-| User-visible Group ID | L1 bootstrap register tx `0x3076a806…6f2ad0` |
-| L1 uint `groupId` (storage key) | bootstrap **1** |
+| User-visible Group ID (first group) | L1 bootstrap register tx `0x3076a806…6f2ad0` |
+| Lab M6 second Group ID | `0x7b3b8eb959dcc0f7…7f9b1a07` = `keccak256(utf8("dle.lab.group.m6.g2.v1"))` — **not** an L1 register tx |
+| L1 uint `groupId` (storage key) | bootstrap **1** (first group only) |
 | Product name | CoNET-DLE Explorer |
 | Source | [CoNET-project/CoNET-DLE `explorer/`](https://github.com/CoNET-project/CoNET-DLE/tree/main/explorer) |
 | Same-origin backends | `GET /health`, `POST /rpc`, `GET /api/v2/dle` |
-| Lab agent | `dle-30d-lab` |
+| Lab agent | `dle-30d-lab` (first group). Second group is `dle-m6-g2` and is not the public nginx upstream. |
 | Lab runtime | Node.js Archive process, `command: archive` |
-| Observed 2026-08-15 | `/health` `ok: true`; **`liveGroupCount`: 1**; Home metric **Clusters** (not Tip height) |
+| Observed 2026-08-16 | `/health` `ok: true`; **`liveGroupCount`: 2**; Home metric **Clusters** = 2 (not Tip height). Second Group ID is a lab hash with **no** Blockscout `/tx/` link. |
 
 This hostname is an authorized CoNET path. Do **not** invent additional `dle.*` hostnames, and do **not** write explorer hostnames into Solidity constants. Production routing truth is the deployed L1 [Global Archive Routing Registry](routing-registry.md), not this URL.
 
@@ -33,6 +34,7 @@ It shows:
 - whether the proxied Archive process is healthy
 - whether that process produces blocks or has a tip VM (**both are false**)
 - CoNET-DLE Testnet `eth_chainId` (`0x44c45`) and the bootstrap **Group ID** (L1 register tx) as a hash capsule
+- **Clusters** (\(G_e\)): live archive groups. Lab M6 fission shows **2**. The second Group ID is a laboratory hash, not an L1 `registerLiveGroup` transaction
 - heartbeat / health events
 - fixture Archive rows used by the UI
 - each Archive’s **participant wallet** (local seed, then a trusted L1 `archivesOf` overlay)
@@ -54,7 +56,7 @@ These public HTML routes returned `200` on 2026-08-14:
 
 | Path | Role |
 | --- | --- |
-| [`/`](https://dle.conet.network/) | Home: health, CoNET-DLE Testnet chain id `0x44c45` plus **Group ID** capsule (bootstrap register tx; opens Blockscout `/tx/…`; no “Decimal 281,669. Not CoNET L1 224422.” hint), **Clusters** (\(G_e\); genesis / no fission = 1), certificate status. No Tip height panel |
+| [`/`](https://dle.conet.network/) | Home: health, CoNET-DLE Testnet chain id `0x44c45` plus **Group ID** capsule (first-group bootstrap register tx; opens Blockscout `/tx/…`; no “Decimal 281,669. Not CoNET L1 224422.” hint), **Clusters** (\(G_e\); lab M6 = 2; second Lab Group ID capsule has **no** `/tx/` link), certificate status. No Tip height panel |
 | [`/events`](https://dle.conet.network/events) | Heartbeat and health events from `/api/v2/dle/events` |
 | [`/archives`](https://dle.conet.network/archives) | 5+2 lab roster; each row has a distinct participant wallet (AddressCapsule). L1 `archivesOf(1)` is the trusted overlay |
 | [`/certificates`](https://dle.conet.network/certificates) | Certificate page; current payload is `available: false` |
@@ -84,8 +86,11 @@ Observed shape on 2026-08-14:
   "isolatedFromElCl": true,
   "lastQuorumOk": true,
   "lastPeerOk": 6,
-  "liveGroupCount": 1,
-  "liveGroupIds": ["0x3076a806de71ab75b2d48063cc3f1e7d8f8e3d54cb1d45a7469c75c9276f2ad0"]
+  "liveGroupCount": 2,
+  "liveGroupIds": [
+    "0x3076a806de71ab75b2d48063cc3f1e7d8f8e3d54cb1d45a7469c75c9276f2ad0",
+    "0x7b3b8eb959dcc0f75a309fcc16e7f840efe76dc27f2ef0d4eca8b8617f9b1a07"
+  ]
 }
 ```
 
@@ -95,12 +100,13 @@ Read this as **lab process health**, not BFT quorum and not Archive Certificate.
 
 Schema `DleExplorerApiV1`. The Home page uses **`liveGroupCount` / `liveGroupIds`** for the **Clusters** card (not tip height), plus certificate availability and the allowed JSON-RPC method list. Tip **hash** may still appear as a capsule.
 
-Observed 2026-08-15:
+Observed 2026-08-16:
 
-- `liveGroupCount`: `1` (genesis cluster; no fission)
-- `liveGroupIds`: `[bootstrap register tx hash]` (legacy lab nodes may still emit `dle.lab.group.v1` until redeployed)
+- `liveGroupCount`: `2` (lab M6 fission; **not** 30-day qualification)
+- `liveGroupIds`: `[first-group L1 register tx hash, lab M6 G2 hash]`. The second id is `keccak256(utf8("dle.lab.group.m6.g2.v1"))`, **not** an L1 `registerLiveGroup` transaction. Home must not link it to Blockscout `/tx/`.
+- Legacy lab nodes may still emit `dle.lab.group.v1`; Explorer canonicalizes that alias to the first-group hash so it does not count as a third cluster
 - `tip.height` after AC is typically `"0x1"` and is **not** shown as a Home metric
-- `certificate.available`: lab networked AC may be true; still not 30-day qualification
+- `certificate.available`: first-group lab networked AC may be true; still not 30-day qualification
 
 Related reads:
 
@@ -132,8 +138,9 @@ The explorer Home page states the same rule: DLE has no tip VM, so `eth_call`, `
 | --- | --- | --- |
 | **CoNET L1 chain id** | `224422` / `0x36ca6` | CoNET L1 RPC, explorer, and contracts. See [RPC and explorer](../l1/rpc-explorer.md). |
 | **EIP-155 Chain ID** | `0x44c45` / `281669` | CoNET-DLE Testnet. Wallets / `eth_chainId`. See [Archive plane](archive-plane.md). |
-| **Group ID** | L1 register tx `0x3076a806…6f2ad0` | Distinguishes archive groups. Home capsule label **Group ID**. |
-| **L1 uint `groupId`** | bootstrap `1` | Solidity storage key only. Not shown as Group ID. |
+| **Group ID** (first group) | L1 register tx `0x3076a806…6f2ad0` | Distinguishes the genesis archive group. Home capsule under Chain ID. Click opens Blockscout `/tx/…`. |
+| **Lab M6 Group ID** (second group) | `0x7b3b8eb9…7f9b1a07` | Laboratory fission hash. Home **Lab Group ID** capsule under Clusters. **No** Blockscout `/tx/` link. L1 `registerLiveGroup` is still pending. |
+| **L1 uint `groupId`** | bootstrap `1` | Solidity storage key for the first group only. Not shown as Group ID. |
 
 Do not configure a wallet, bridge, or dapp to `0x44c45` as if it were CoNET L1 or a launched DLE tip chain.
 
