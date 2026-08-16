@@ -25,14 +25,14 @@ For integration details, see [RPC and Explorer](l1/rpc-explorer.md). For validat
 
 | Path | Use |
 | --- | --- |
-| [`/`](https://dle.conet.network/) | Home: health, isolated chain id, tip / certificate status |
+| [`/`](https://dle.conet.network/) | Home: health, CoNET-DLE Testnet chain id `0x44c45`, Group ID capsule, tip / certificate status |
 | [`/archives`](https://dle.conet.network/archives) | 5+2 roster + participant wallets (L1 overlay) |
 | [`/events`](https://dle.conet.network/events) [`/certificates`](https://dle.conet.network/certificates) | Lab events; certificate page is empty |
 | `GET /health` | Isolated Archive process health |
 | `GET /api/v2/dle` | Explorer snapshot (`DleExplorerApiV1`) |
 | `POST /rpc` | Read-only DLE facade (`dle_info`, `dle_tip`, `eth_chainId`, …). No tip VM. |
 
-Lab `eth_chainId` `0x44c45` is **not** the production DLE Chain ID. Production Chain ID is archive `groupId` (whitepaper §5.2.0d). Digest: [DLE explorer](l2/explorer.md).
+`eth_chainId` `0x44c45` is **CoNET-DLE Testnet** (EIP-155 plane id). User-visible **Group ID** is the bootstrap group’s L1 register transaction hash (whitepaper §5.2.0d). Digest: [DLE explorer](l2/explorer.md).
 
 ## Global Archive Routing Registry (CoNET L1)
 
@@ -109,7 +109,7 @@ Public source and a finished product are different claims.
 | --- | --- | --- |
 | L0 SI / DL | Public repositories and npm packages | Production Layer Minus nodes and clients |
 | L1 contracts | [beamio-APP/BeamioContract](https://github.com/beamio-APP/BeamioContract) plus Explorer verification | Live `chainId` 224422; GitHub snapshot last pushed **2026-03-10**, so treat Explorer-verified bytecode as current |
-| CoNET-DLE design | [CoNET-project/CoNET-DLE](https://github.com/CoNET-project/CoNET-DLE) — bilingual whitepaper (rev **2026-08-14**), three `DLE-*Spec.md` files, TLA model, explorer SPA | Normative design; not a launched production L2. Public lab UI: [dle.conet.network](https://dle.conet.network/). L1 routing facade deployed: [registry](l2/routing-registry.md) |
+| CoNET-DLE design | [CoNET-project/CoNET-DLE](https://github.com/CoNET-project/CoNET-DLE) — bilingual whitepaper (rev **2026-08-15**), three `DLE-*Spec.md` files, TLA model, explorer SPA | Normative design; not a launched production L2. Public lab UI: [dle.conet.network](https://dle.conet.network/) (Testnet `0x44c45` + Group ID hash). L1 routing facade deployed: [registry](l2/routing-registry.md) |
 | Archive second implementation | Listed as an open production blocker in the public Archive spec | Not complete; production archive signing is forbidden until the spec’s blockers close |
 | DEX client | No public exchange client repository identified | Design study |
 | BT / DCDN client | No CoNET BitTorrent or DCDN client repository identified | Under development; do not treat upstream WebTorrent as the CoNET product |

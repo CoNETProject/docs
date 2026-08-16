@@ -4,15 +4,23 @@ This page is the **production reference for the public DLE explorer UI**. It is 
 
 The explorer is a read-only inspection surface for the isolated 30-day DLE Archive lab. It does not produce blocks, does not execute `eth_call`, and does not mint or burn assets.
 
-| Item | Value |
+## Network facts
+
+| Field | Canonical value |
 | --- | --- |
-| **Public host** | [https://dle.conet.network/](https://dle.conet.network/) |
-| **Product name** | CoNET-DLE Explorer |
-| **Source** | [CoNET-project/CoNET-DLE `explorer/`](https://github.com/CoNET-project/CoNET-DLE/tree/main/explorer) |
-| **Same-origin backends** | `GET /health`, `POST /rpc`, `GET /api/v2/dle` |
-| **Lab agent** | `dle-30d-lab` |
-| **Lab runtime** | Node.js Archive process, `command: archive` |
-| **Observed 2026-08-14** | `/health` `ok: true`; heartbeat peer count `6`; certificate `available: false`; tip height `0x0` and `finalized: false` |
+| Explorer | `https://dle.conet.network` |
+| Archives | `https://dle.conet.network/archives` |
+| Lab health | `https://dle.conet.network/health` |
+| Lab RPC | `https://dle.conet.network/rpc` |
+| EIP-155 Chain ID (CoNET-DLE Testnet) | **281669** (`0x44c45`) |
+| User-visible Group ID | L1 bootstrap register tx `0x3076a806…6f2ad0` |
+| L1 uint `groupId` (storage key) | bootstrap **1** |
+| Product name | CoNET-DLE Explorer |
+| Source | [CoNET-project/CoNET-DLE `explorer/`](https://github.com/CoNET-project/CoNET-DLE/tree/main/explorer) |
+| Same-origin backends | `GET /health`, `POST /rpc`, `GET /api/v2/dle` |
+| Lab agent | `dle-30d-lab` |
+| Lab runtime | Node.js Archive process, `command: archive` |
+| Observed 2026-08-15 | `/health` `ok: true`; **`liveGroupCount`: 1**; Home metric **Clusters** (not Tip height) |
 
 This hostname is an authorized CoNET path. Do **not** invent additional `dle.*` hostnames, and do **not** write explorer hostnames into Solidity constants. Production routing truth is the deployed L1 [Global Archive Routing Registry](routing-registry.md), not this URL.
 
@@ -24,7 +32,7 @@ It shows:
 
 - whether the proxied Archive process is healthy
 - whether that process produces blocks or has a tip VM (**both are false**)
-- the lab's isolated `eth_chainId`
+- CoNET-DLE Testnet `eth_chainId` (`0x44c45`) and the bootstrap **Group ID** (L1 register tx) as a hash capsule
 - heartbeat / health events
 - fixture Archive rows used by the UI
 - each Archive’s **participant wallet** (local seed, then a trusted L1 `archivesOf` overlay)
@@ -46,7 +54,7 @@ These public HTML routes returned `200` on 2026-08-14:
 
 | Path | Role |
 | --- | --- |
-| [`/`](https://dle.conet.network/) | Home: health, isolated chain id, tip / certificate status, JSON-RPC method list |
+| [`/`](https://dle.conet.network/) | Home: health, CoNET-DLE Testnet chain id `0x44c45` plus **Group ID** capsule (bootstrap register tx; opens Blockscout `/tx/…`; no “Decimal 281,669. Not CoNET L1 224422.” hint), **Clusters** (\(G_e\); genesis / no fission = 1), certificate status. No Tip height panel |
 | [`/events`](https://dle.conet.network/events) | Heartbeat and health events from `/api/v2/dle/events` |
 | [`/archives`](https://dle.conet.network/archives) | 5+2 lab roster; each row has a distinct participant wallet (AddressCapsule). L1 `archivesOf(1)` is the trusted overlay |
 | [`/certificates`](https://dle.conet.network/certificates) | Certificate page; current payload is `available: false` |
@@ -70,11 +78,14 @@ Observed shape on 2026-08-14:
   "hasTipVm": false,
   "chainId": 281669,
   "chainIdHex": "0x44c45",
+  "chainName": "CoNET-DLE Testnet",
   "port": 27101,
   "agent": "dle-30d-lab",
   "isolatedFromElCl": true,
   "lastQuorumOk": true,
-  "lastPeerOk": 6
+  "lastPeerOk": 6,
+  "liveGroupCount": 1,
+  "liveGroupIds": ["0x3076a806de71ab75b2d48063cc3f1e7d8f8e3d54cb1d45a7469c75c9276f2ad0"]
 }
 ```
 
@@ -82,14 +93,14 @@ Read this as **lab process health**, not BFT quorum and not Archive Certificate.
 
 ### `GET /api/v2/dle`
 
-Schema `DleExplorerApiV1`. The Home page uses this snapshot for tip height, certificate availability, and the allowed JSON-RPC method list.
+Schema `DleExplorerApiV1`. The Home page uses **`liveGroupCount` / `liveGroupIds`** for the **Clusters** card (not tip height), plus certificate availability and the allowed JSON-RPC method list. Tip **hash** may still appear as a capsule.
 
-Observed 2026-08-14:
+Observed 2026-08-15:
 
-- `tip.height`: `"0x0"`
-- `tip.finalized`: `false`
-- `certificate.available`: `false`
-- `certificate.reason`: `Networked Archive Certificate is not produced in this scaffold.`
+- `liveGroupCount`: `1` (genesis cluster; no fission)
+- `liveGroupIds`: `[bootstrap register tx hash]` (legacy lab nodes may still emit `dle.lab.group.v1` until redeployed)
+- `tip.height` after AC is typically `"0x1"` and is **not** shown as a Home metric
+- `certificate.available`: lab networked AC may be true; still not 30-day qualification
 
 Related reads:
 
@@ -107,7 +118,7 @@ This is a **read-only DLE facade**, not an Ethereum execution RPC.
 | `dle_info` | Archive lab info; `producesBlocks: false`; `hasTipVm: false` | Process identity |
 | `dle_tip` | Height `0x0`; `finalized: false` | No production tip |
 | `dle_getArchiveCertificate` | `available: false` | Certificate not produced |
-| `eth_chainId` | `"0x44c45"` | Isolated lab id only |
+| `eth_chainId` | `"0x44c45"` | CoNET-DLE Testnet EIP-155 id |
 | `eth_blockNumber` | `"0x0"` | No tip blocks |
 | `eth_call` | `-32601` | Rejected: no tip VM |
 | `eth_estimateGas` | rejected | No tip VM |
@@ -120,8 +131,9 @@ The explorer Home page states the same rule: DLE has no tip VM, so `eth_call`, `
 | Identifier | Value | Use |
 | --- | --- | --- |
 | **CoNET L1 chain id** | `224422` / `0x36ca6` | CoNET L1 RPC, explorer, and contracts. See [RPC and explorer](../l1/rpc-explorer.md). |
-| **Production DLE Chain ID** | Archive `groupId` after bind | Whitepaper §5.2.0d. Not an EVM id. See [Archive plane](archive-plane.md). |
-| **Lab `eth_chainId`** | `0x44c45` / `281669` | Isolated 30-day lab only. The explorer Home page says this is **not** the production DLE Chain ID. |
+| **EIP-155 Chain ID** | `0x44c45` / `281669` | CoNET-DLE Testnet. Wallets / `eth_chainId`. See [Archive plane](archive-plane.md). |
+| **Group ID** | L1 register tx `0x3076a806…6f2ad0` | Distinguishes archive groups. Home capsule label **Group ID**. |
+| **L1 uint `groupId`** | bootstrap `1` | Solidity storage key only. Not shown as Group ID. |
 
 Do not configure a wallet, bridge, or dapp to `0x44c45` as if it were CoNET L1 or a launched DLE tip chain.
 
@@ -146,7 +158,7 @@ The public UI being live does **not** close these whitepaper / spec gates:
 - Do not send asset, swap, or UserOp traffic to `POST /rpc`.
 - Do not publish lab host IPs, `billingRef` values, or SSH targets from explorer fixtures.
 - Do not write `dle.conet.network` into contract constants.
-- Do not use lab `0x44c45` as the production DLE Chain ID.
+- Do not treat `0x44c45` as CoNET L1 or as Group ID. Do not display L1 uint `1` as Group ID.
 
 ## See also
 

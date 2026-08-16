@@ -30,9 +30,9 @@ Validator consensus, Guardian participation, and application state are related b
 
 ### L2 — specialized parallel ledgers
 
-[CoNET-DLE](l2/README.md) specifies Decentralization Clusters and parallel atomic ledger classes for asset, storage, and trade activity. The design moves high-frequency application events away from one globally serial execution lane while retaining explicit archive, finality, and settlement rules. The protocol **DLE Chain ID** is the hosting archive `groupId`, not CoNET L1 `224422`.
+[CoNET-DLE](l2/README.md) specifies Decentralization Clusters and parallel atomic ledger classes for asset, storage, and trade activity. The design moves high-frequency application events away from one globally serial execution lane while retaining explicit archive, finality, and settlement rules. **EIP-155 Chain ID** is unique for the DLE plane (**CoNET-DLE Testnet** `0x44c45` / `281669`). User-visible **Group ID** is that archive group’s L1 register transaction hash. Neither is CoNET L1 `224422`.
 
-The L2 section is a digest of the English whitepaper (revision **2026-08-14**) and normative specifications. It states design maturity separately from L0/L1 production status. A public [lab explorer](l2/explorer.md) at [https://dle.conet.network/](https://dle.conet.network/) inspects isolated Archive health and participant wallets. The L1 [Global Archive Routing Registry](l2/routing-registry.md) is deployed; that does not launch Archive Certificate or asset ingress.
+The L2 section is a digest of the English whitepaper (revision **2026-08-15**) and normative specifications. It states design maturity separately from L0/L1 production status. A public [lab explorer](l2/explorer.md) at [https://dle.conet.network/](https://dle.conet.network/) inspects isolated Archive health, testnet `0x44c45`, and the bootstrap Group ID hash. The L1 [Global Archive Routing Registry](l2/routing-registry.md) is deployed; that does not launch Archive Certificate or asset ingress.
 
 For an ERC-20 issued elsewhere, entering CoNET L1 and activating DLE are different transitions. Treasury route execution can establish a canonical CoNET representation; [DLE asset admission](l2/cross-chain-assets.md) additionally requires its own pool, oracle, registry, gateway, conservation, and release gates.
 

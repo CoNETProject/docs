@@ -6,22 +6,31 @@ Whitepaper §5.2.0d requires a CoNET L1 registry of every live archive group, ev
 
 Public UI: [https://dle.conet.network/](https://dle.conet.network/) and [https://dle.conet.network/archives](https://dle.conet.network/archives). Digest of the lab explorer: [DLE explorer](explorer.md).
 
-Do **not** write `dle.conet.network` into Solidity. The registry stores wallets, `groupId`s, and NFT ids only.
+Do **not** write `dle.conet.network` into Solidity. The registry stores wallets, uint `groupId` keys, and NFT ids. The user-visible Group ID is this group’s L1 register tx hash.
 
-## Deployed contract (CoNET L1 `224422`)
+## Network facts
 
 Observed and verified **2026-08-14**. Canonical address is the **UUPS proxy**.
 
-| Item | Value |
+| Field | Canonical value |
 | --- | --- |
-| **Proxy (canonical)** | [`0x8B261eAECdFfeE9e7aC9fFe73386B0d6C9E76AfB`](https://mainnet.conet.network/address/0x8B261eAECdFfeE9e7aC9fFe73386B0d6C9E76AfB#code) |
-| **Implementation** | [`0x65691CFc82D55eFbe03cE91f6Ab6109b6c73ab9d`](https://mainnet.conet.network/address/0x65691CFc82D55eFbe03cE91f6Ab6109b6c73ab9d#code) |
-| **Proxy name on Explorer** | `DLEERC1967Proxy` (`is_verified` and `is_partially_verified`) |
-| **Implementation name** | `GlobalArchiveRoutingRegistryV1` (`is_verified` and `is_partially_verified`) |
-| **Deploy / bootstrap block** | `840617` |
-| **Owner** | `0x87cAeD4e51C36a2C2ece3Aaf4ddaC9693d2405E1` |
-| **Bootstrap group** | `groupId = 1`, `membershipEpoch = 1`, `keyEpoch = 1` |
-| **Register tx** | [`0x3076a806de71ab75b2d48063cc3f1e7d8f8e3d54cb1d45a7469c75c9276f2ad0`](https://mainnet.conet.network/tx/0x3076a806de71ab75b2d48063cc3f1e7d8f8e3d54cb1d45a7469c75c9276f2ad0) |
+| Routing registry | [`0x8B261eAECdFfeE9e7aC9fFe73386B0d6C9E76AfB`](https://mainnet.conet.network/address/0x8B261eAECdFfeE9e7aC9fFe73386B0d6C9E76AfB#code) |
+| Implementation | [`0x65691CFc82D55eFbe03cE91f6Ab6109b6c73ab9d`](https://mainnet.conet.network/address/0x65691CFc82D55eFbe03cE91f6Ab6109b6c73ab9d#code) |
+| L1 `chainId` | **224422** (`0x36ca6`) |
+| EIP-155 Chain ID (CoNET-DLE Testnet) | **281669** (`0x44c45`) — not stored on this registry |
+| User-visible Group ID | this group’s **register tx** (below) |
+| L1 uint `groupId` (storage key) | bootstrap **1** |
+| Registry read RPC | `https://rpc1.conet.network` |
+| Backup RPC | `https://publicrpc.conet.network` |
+| L1 Explorer | `https://mainnet.conet.network` |
+| DLE explorer | `https://dle.conet.network` |
+| Archives | `https://dle.conet.network/archives` |
+| Proxy name on Explorer | `DLEERC1967Proxy` (`is_verified` and `is_partially_verified`) |
+| Implementation name | `GlobalArchiveRoutingRegistryV1` (`is_verified` and `is_partially_verified`) |
+| Deploy / bootstrap block | `840617` |
+| Owner | `0x87cAeD4e51C36a2C2ece3Aaf4ddaC9693d2405E1` |
+| Bootstrap group | `groupId = 1`, `membershipEpoch = 1`, `keyEpoch = 1` |
+| Register tx | [`0x3076a806de71ab75b2d48063cc3f1e7d8f8e3d54cb1d45a7469c75c9276f2ad0`](https://mainnet.conet.network/tx/0x3076a806de71ab75b2d48063cc3f1e7d8f8e3d54cb1d45a7469c75c9276f2ad0) |
 
 Read this contract on `https://rpc1.conet.network` or `https://publicrpc.conet.network`. Do not use deprecated `https://rpc.conet.network`.
 
@@ -40,15 +49,15 @@ A wallet listed here is a **routing identity**. It is not a Guardian honesty pro
 
 | View | Returns | Use |
 | --- | --- | --- |
-| `liveGroupIds()` | Live `groupId`s, ascending | Enumerate DLE Chain IDs |
-| `archivesOf(groupId)` | Five active + two standby EOAs | Who belongs to that group |
-| `chainsOf(groupId)` | Hosted chain NFT ids | Which tips this Chain ID hosts |
-| `route(chainNftId)` | `groupId` (= DLE Chain ID) | Chain routing |
+| `liveGroupIds()` | Live L1 uint keys (Solidity). Archive HTTP facade maps them to **Group ID hashes** | Enumerate groups |
+| `archivesOf(groupId)` | Five active + two standby EOAs | Who belongs to that group. Solidity takes uint `1`; UI shows the register tx as Group ID |
+| `chainsOf(groupId)` | Hosted chain NFT ids | Which tips this **group** hosts |
+| `route(chainNftId)` | L1 uint on-chain; protocol facade returns the **Group ID hash** | Chain routing to a group — not EIP-155 |
 | `historyProviders(chainNftId)` | `archivesOf(route(chainNftId))` | Authoritative history providers |
 
 `route` and `historyProviders` revert `UnknownChain` until a chain NFT is bound. Bootstrap group `1` currently has a roster and **no** bound tip NFT.
 
-To locate a bound tip: `groupId = route(nftId)`, then contact `historyProviders(nftId)`. A wallet not listed for that group at the relevant membership epoch is not the canonical host.
+To locate a bound tip: facade `route(nftId)` returns the **Group ID hash**, then contact `historyProviders(nftId)`. A wallet not listed for that group at the relevant membership epoch is not the canonical host.
 
 ## Bootstrap roster (`archivesOf(1)`)
 
@@ -83,8 +92,9 @@ Selector `archivesOf(uint64)` is `0xd3a448be`. The result is seven left-padded a
 | Identifier | Value | Use |
 | --- | --- | --- |
 | CoNET L1 `chainId` | `224422` / `0x36ca6` | This registry lives here |
-| Production DLE Chain ID | archive `groupId` after bind | Whitepaper §5.2.0d. Bootstrap group is `1` |
-| Lab `eth_chainId` | `0x44c45` / `281669` | Isolated explorer lab only. Not this registry |
+| EIP-155 Chain ID | CoNET-DLE Testnet `0x44c45` / `281669` | Wallets / `eth_chainId`. Not this registry’s storage key |
+| User-visible Group ID | L1 register tx `0x3076a806…6f2ad0` | Distinguishes archive groups (whitepaper §5.2.0d) |
+| L1 uint `groupId` | bootstrap `1` | Solidity storage key only |
 
 ## See also
 

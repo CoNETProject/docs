@@ -8,7 +8,7 @@ English whitepaper:
 
 [Decentralization Cluster multi-chain.md](https://github.com/CoNET-project/CoNET-DLE/blob/main/src/whitepaper/Decentralization%20Cluster%20multi-chain.md)
 
-Reviewed revision: **2026-08-14** (DLE Chain ID ≡ archive `groupId`; L1 Global Archive Routing Registry — §5.2.0d)
+Reviewed revision: **2026-08-15** (EIP-155 plane Chain ID `0x44c45` vs Group ID = L1 register tx hash; L1 uint `groupId` is a storage key only — §5.2.0d)
 
 Paired translation:
 
@@ -77,7 +77,7 @@ When asserting protocol behavior:
 
 ## Source anchors
 
-- Whitepaper front matter and §5.2.0d — revision, DLE Chain ID, Global Archive Routing Registry, and non-normative Canvas notice
+- Whitepaper front matter and §5.2.0d — revision, EIP-155 plane Chain ID, Group ID = L1 register tx hash, Global Archive Routing Registry, and non-normative Canvas notice
 - Archive conformance specification §11 — frozen machine boundary and production blockers
 - Asset gateway invariant specification §10 — mandatory formal-verification release gate
 - Operator registry specification §§2–11 — canonical identity and policy-root semantics

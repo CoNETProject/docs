@@ -15,17 +15,18 @@ There is no general-purpose tip VM and no free-form cross-tip call mechanism. Ap
 
 ## Identifiers (whitepaper §5.2.0d)
 
-The protocol **DLE Chain ID** is the hosting archive **`groupId`** (`archiveGroupId[tokenId]` after bind). Clients, explorers, RPC routers, and certificates must use that integer.
+CoNET-DLE has two user-visible identifiers. **EIP-155 Chain ID** is unique for the plane (`eth_chainId` / wallets). **CoNET-DLE Testnet** is `0x44c45`. **Group ID** is that archive group’s L1 **register transaction hash**. L1 `archiveGroupId[tokenId]` remains a uint storage key.
 
-| Identifier | Meaning | Must not be used as DLE Chain ID |
+| Identifier | Meaning | Must not be used as |
 | --- | --- | --- |
-| **Archive `groupId`** | Monotonic L1 group number for one live 5-active + 2-standby roster | — (this **is** the DLE Chain ID) |
-| CoNET L1 EVM `chainId` | Settlement L1 `224422` / `0x36ca6` | Tip routing or Archive Certificate shard id |
-| Lab / isolated EVM id | e.g. explorer lab `eth_chainId` `0x44c45` | Production DLE Chain ID or group membership |
+| **EIP-155 Chain ID** | Unique uint for this DLE plane. Testnet = `0x44c45` | Group membership or tip identity |
+| **Group ID** | L1 register tx hash of one 5-active + 2-standby roster | EIP-155 chain id or tip NFT id |
+| **L1 uint `groupId`** | Registry storage key (`nextGroupId`, `archiveGroupId[tokenId]`). Bootstrap = `1` | User-visible Group ID or EIP-155 |
+| CoNET L1 EVM `chainId` | Settlement L1 `224422` / `0x36ca6` | DLE plane id, Group ID, tip routing |
 | Tip / chain NFT id | L1 ERC-1155 `tokenId` of one atomic ledger | Group roster or “which archives vote” |
-| Archive NFT id | One archive node’s registration NFT | DLE Chain ID or tip identity |
+| Archive NFT id | One archive node’s registration NFT | EIP-155, Group ID, or tip identity |
 
-Bootstrap starts with **one** live group. Fission when \(U_e \ge 7\) allocates a new unused `groupId`; dissolved ids are never reused. The public [DLE explorer](explorer.md) at [https://dle.conet.network/](https://dle.conet.network/) reports lab `0x44c45` and must not be read as this production Chain ID. The deployed L1 [routing registry](routing-registry.md) currently lists bootstrap `groupId = 1`.
+Bootstrap starts with **one** live group. Fission when \(U_e \ge 7\) allocates a new unused L1 uint **and** a new register tx hash; dissolved hashes and uints are never reused. The public [DLE explorer](explorer.md) at [https://dle.conet.network/](https://dle.conet.network/) reports testnet `0x44c45` plus the bootstrap Group ID hash. The deployed L1 [routing registry](routing-registry.md) still stores bootstrap uint `1`.
 
 ## What remains global
 

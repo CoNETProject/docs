@@ -30,9 +30,9 @@ Standbys do not occupy certificate signer slots unless a finalized membership tr
 
 Operator independence is not inferred from distinct wallet addresses. `OperatorDomainRegistryV1` defines challengeable identity, infrastructure, and role-domain commitments used by membership decisions and bound into `membershipRoot`.
 
-## DLE Chain ID and Global Archive Routing Registry
+## EIP-155 Chain ID, Group ID, and Global Archive Routing Registry
 
-Whitepaper §5.2.0d freezes the protocol Chain ID as the hosting archive **`groupId`**. Gossip, `tokenId` hash, a locally assumed default chain id, and explorer hostnames are **not** routing truth.
+Whitepaper §5.2.0d freezes **EIP-155 Chain ID** as the unique plane id (`eth_chainId`; testnet `0x44c45`) and **Group ID** as that group’s L1 register tx hash. Gossip, `tokenId` hash, a locally assumed default chain id, and explorer hostnames are **not** routing truth. L1 Solidity still stores a uint key; the protocol facade maps it to the register hash.
 
 The CoNET L1 **Global Archive Routing Registry** stores every live group, every participating archive **wallet**, and every hosted chain **NFT id**. The facade is **deployed and Explorer-verified**. Production addresses, the bootstrap roster, and the public explorer display are on [Global Archive Routing Registry](routing-registry.md).
 
@@ -40,10 +40,10 @@ Required views:
 
 | View | Returns | Use |
 | --- | --- | --- |
-| `liveGroupIds()` | Live `groupId`s, ascending | Enumerate DLE Chain IDs |
+| `liveGroupIds()` | Live Group ID hashes on the archive facade (L1 Solidity still returns uints) | Enumerate groups |
 | `archivesOf(groupId)` | Five active + two standby EOAs | Who votes; dedicated history committee |
-| `chainsOf(groupId)` | Hosted chain NFT ids | Which tips this Chain ID hosts |
-| `route(chainNftId)` | `groupId` (= DLE Chain ID) | Chain routing |
+| `chainsOf(groupId)` | Hosted chain NFT ids | Which tips this **group** hosts |
+| `route(chainNftId)` | **Group ID hash** on the protocol facade | Chain routing — not EIP-155 |
 | `historyProviders(chainNftId)` | `archivesOf(route(chainNftId))` | Authoritative history providers |
 
 To locate a tip: `groupId = route(nftId)`, then contact `historyProviders(nftId)`. A wallet not listed for that group at the relevant membership epoch is not the canonical host.
