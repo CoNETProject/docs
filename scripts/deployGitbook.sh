@@ -122,6 +122,7 @@ SMOKE_PATHS=(
 	"/l0/permissionless-cloud.html"
 	"/l0/using-l0.html"
 	"/l0/hop-sigs.html"
+	"/l0/peel-hop-listen.html"
 	"/l0/si-developer-guide.html"
 	"/l0/chat-developer-guide.html"
 	"/l0/mailbox-routing.html"

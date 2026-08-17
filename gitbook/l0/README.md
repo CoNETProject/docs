@@ -11,6 +11,7 @@
 | Cloud model and zero-trust composition | [Permissionless cloud and zero-trust applications](permissionless-cloud.md) |
 | Client against CoNET-SI | [SI developer guide](si-developer-guide.md) |
 | Chat envelopes, listen, receipts | [Chat developer guide](chat-developer-guide.md) |
+| Wrap-to-C listen timeouts | [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) |
 | All developer tracks (L0 / L1 mining / ERC-20 / L2) | [Developers](../developers/README.md) |
 
 Layer Minus is a **permissionless, decentralized cloud** and, on the wire, CoNET's **PGP / wallet-address forwarding network**. Anyone may use it. Participants may join by offering **CPU / GPU compute**, **network forward**, and **storage**, and earn **GB** for useful ciphertext work. It runs **above the existing TCP/IP Internet**; it does not replace IP routing or define a new physical network.
@@ -69,6 +70,7 @@ For the privacy-preserving path, **A is not B and C is not B**. Client `/post` m
 | Listen path | `R → entry C → mailbox B → R` |
 | Chat listen | `command: "mining"` with `listenKind: "chat"` |
 | Mining listen | Direct infrastructure SSE to the target SI with `command: "mining"` and `listenKind` omitted; SI defaults it to mining |
+| Nested peel / hop-sign | After a local decrypt, hop-sign the **inner UTF-8 armor string**. Hop-sign or next-hop connect failure is a **fast 404**, not a hung SSE. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) |
 | Delivery evidence | Entry acceptance or an SSE handshake is transport progress, **not** proof that the application processed the message |
 | UDP key exchange | Encrypt `udp_subscribe` to the UDP server's **user PGP**; never expose its symmetric key to mailbox B |
 
@@ -110,9 +112,10 @@ The mailbox, Chat listen, offline ciphertext store, acknowledgements, presence q
 5. [The IP-address privacy problem](tcp-ip-privacy.md) — the threat model and its limits.
 6. [Wallet-addressed peer identity](wallet-address-p2p.md) — AddressPGP and key roles.
 7. [Zero-trust mailbox routing](mailbox-routing.md) — the normative A/B/C delivery path.
-8. [HTTP transport and Fetch-and-Close](http-mimicry.md) — wire shape and short-session mode.
-9. [UDP frame forwarding](udp-forward.md) — one composition: symmetric payload relay without giving the key to B.
-10. [Security limits and threat grades](security-limits.md) — what the live plane does and does not protect.
-11. [Node and client roles](node-roles.md) — runtime responsibilities and boundaries.
+8. [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) — wrap-to-C listen field lesson.
+9. [HTTP transport and Fetch-and-Close](http-mimicry.md) — wire shape and short-session mode.
+10. [UDP frame forwarding](udp-forward.md) — one composition: symmetric payload relay without giving the key to B.
+11. [Security limits and threat grades](security-limits.md) — what the live plane does and does not protect.
+12. [Node and client roles](node-roles.md) — runtime responsibilities and boundaries.
 
 User-facing products are documented under [Applications](../applications/README.md), including [SilentPass](../applications/silentpass-vpn.md), [Beamio](../applications/beamio.md), and [DePIN Chat](../applications/depin-chat.md).

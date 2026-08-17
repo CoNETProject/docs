@@ -67,7 +67,7 @@ A earns GB for forwarding, not for reading content
 1. R resolves B's route public key.
 2. R signs a mailbox listen command and encrypts it to **B's route OpenPGP key**.
 3. R opens an HTTP/SSE request to healthy entry C.
-4. C forwards the opaque command to B over HTTP on port 80. If the client wrapped the listen command to C’s route key, C peels once and must hop-sign the **inner UTF-8 armor string** (OpenPGP.js 6 `Message.armor()` may be a stream / thenable — it is not safe to pass that object to `Buffer.byteLength(..., 'utf8')`). Hop-sign failure or C→B connect failure must return a fast **404**, not hang the client SSE.
+4. C forwards the opaque command to B over HTTP on port 80. If the client wrapped the listen command to C’s route key, C peels once and must hop-sign the **inner UTF-8 armor string**. Prefer the peel plaintext when it already contains `BEGIN PGP MESSAGE`. Do **not** pass an OpenPGP.js 6 `Message.armor()` stream / thenable into `Buffer.byteLength`. Hop-sign failure, non-UTF-8 armor, or C→B TCP timeout (~8s) must return a fast **404** and close the client socket. A log-only `uncaughtException` that leaves the SSE open is a protocol bug: the client waits until its ~12s `connect_timeout` while **B is never dialed**. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md).
 5. B decrypts the control command, verifies that R belongs to its route, and attaches the SSE response to the appropriate listen pool.
 6. B pushes stored and live business ciphertext through C; only R decrypts the business envelope.
 
@@ -137,6 +137,7 @@ Direct-to-B requests violate the privacy model even if they function. Other prot
 ## Next
 
 - [How to use Layer Minus](using-l0.md) explains how applications combine this forwarding path.
+- [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) is the field lesson for wrap-to-C listen (peel crash, hung SSE, `forward <clientIP>`).
 - [SI developer guide](si-developer-guide.md) and [Chat developer guide](chat-developer-guide.md) have TypeScript samples for `/post`, listen, and receipts.
 - [Security limits](security-limits.md) covers collusion, replay, and threat grades.
 - [Wallet-addressed peer identity](wallet-address-p2p.md) explains the keys used above.

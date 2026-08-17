@@ -131,7 +131,8 @@ Independent checks already on the node:
 | Another forward would make count **≥ 3** (cannot append) | `end` — never a fourth miner signature |
 | This node’s miner wallet **already appears** in `w[]` | refuse append (`end`) |
 | Header missing, unparsable, or fails recover | `end` |
-| Forward armor is not UTF-8 text (OpenPGP stream / thenable) | **404** — do not hang the client |
+| Forward armor is not UTF-8 text (OpenPGP.js 6 `armor()` stream / thenable) | **404** — coerce with `pgpArmorToUtf8String` first; prefer peel plaintext |
+| Hop-sign throws after a successful peel | **404** / socket `end` — a log-only `uncaughtException` must not leave the client SSE open |
 | C→B TCP connect exceeds ~8s | **404** |
 | Hop count exhausted before a valid recipient | **discard** |
 
@@ -162,6 +163,8 @@ Documentary names. HTTP/socket behavior is what clients observe.
 | `ERR_HOP_LIMIT` | More than 3 signatures, or no room to append | socket `end`; packet discarded |
 | `ERR_ROUTE_LOOP` | Inner key is this node, or this miner `w` already in the header | socket `end` |
 | `ERR_HOP_VERIFY` | `t` outside ±600 s or recover(`s`) ≠ `w` | that hop is not metered; invalid header → `end` |
+| `ERR_HOP_ARMOR_NOT_UTF8` | Hop-sig `n` / `h` cannot be computed because armor is a stream, thenable, or non-UTF-8 | **404** — do not hang until the client `connect_timeout` |
+| `ERR_NEXT_HOP_CONNECT` | C→B (or A→B) TCP connect exceeds ~8s | **404** |
 
 ## SSE return path (not a hop signature)
 
@@ -171,11 +174,12 @@ The user may **change entry C at any time** and open another SSE. That rotates t
 
 ## Implementation anchors
 
-- Compact record, domain, window, wallet-repeat guard: [CoNET-SI `siHopSigs.ts`](https://github.com/CoNET-project/CoNET-SI/blob/main/src/util/siHopSigs.ts)
+- Compact record, domain, window, wallet-repeat guard, UTF-8 armor coerce: [CoNET-SI `siHopSigs.ts`](https://github.com/CoNET-project/CoNET-SI/blob/main/src/util/siHopSigs.ts) (`pgpArmorToUtf8String`, `signAndAppendHop`)
 - Peel, 404 / `end`, forward, last-hop GB: [CoNET-SI `localNodeCommand.ts`](https://github.com/CoNET-project/CoNET-SI/blob/main/src/util/localNodeCommand.ts) (`postOpenpgpRouteSocket`, `forwardEncryptedSocket`, `creditUserGbFromHopSigs`)
 
 ## Next
 
+- [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) — wrap-to-C listen: peel plaintext, hung SSE, `forward <clientIP>`.
 - [How to use Layer Minus](using-l0.md) — when to wrap to A versus encrypt only to the recipient.
 - [Zero-trust mailbox routing](mailbox-routing.md) — A/B/C roles.
 - [Security limits](security-limits.md) — replay, HTTP versus HTTPS, SSE fingerprint, forward secrecy.

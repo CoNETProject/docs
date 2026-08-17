@@ -153,6 +153,15 @@ const command = {
 
 Keep listen on a Worker. Reconnect with another random **C ≠ B** after idle or drop. Use a `setTimeout` chain after the previous attempt finishes.
 
+| Client rule | Why |
+| --- | --- |
+| Start the ~12s `connect_timeout` **after** `fetch` | Wrap / `encrypt()` can burn the budget before C is even dialed |
+| Emit `listening` only after `res.ok` **and** `res.body` | 404 / empty body is a failed peel hop, not a live mailbox |
+| Exclude the failed `node.domain` on reconnect | One hung C should not be retried first |
+| Do not let `history.load` starve listen on a single Worker thread | Recover can run before `activeClient` exists |
+
+A peel-success SI log `forward <ip>` is the **client source IP**, not mailbox B. If C peels then throws on hop-sign (`Buffer.byteLength` / instance of `h`), **B is never dialed**. Switching C does not help until peelers return a UTF-8 armor string. See [Peel, hop-sig, and listen timeouts](peel-hop-listen.md).
+
 ## Sample: verify inbound
 
 ```ts
@@ -326,18 +335,22 @@ If you hand-roll, keep the same A/B/C and envelope rules so mailboxes stay inter
 
 Walk this order. Do not skip to “the parser is broken.”
 
-1. Recipient EOA equals the AddressPGP row you encrypted to (not AA, not a prefix-search collision).
-2. Recipient listen is up with `listenKind: "chat"` and SSE Connected. Epoch / listing heartbeats prove the pipe is alive; they are not inbound Chat. If the console shows heartbeats but no message, the mailbox stored armor and skipped live SSE, or the Worker dropped / failed to decrypt the frame.
-3. Mailbox logged `forWard SUCCESS` or `save to Local`. Offline users get a flush on next listen; the client must process that flush (do not skip the first SSE event) and dedupe `sendId`.
-4. Fake-armor **404** is SI rejecting bad PGP, not a down node.
-5. Sender used entries **A ≠ B**. Direct-to-B is not the product path.
-6. Recipient `isMyRoute` / wallet↔route hash consistency can block listen and presence without blocking user-PGP store.
+1. Recipient EOA equals the AddressPGP row you encrypted to (not AA, not a prefix-search collision). Never take `search-users` `results[0]`.
+2. Recipient listen is up with `listenKind: "chat"` and SSE Connected. Epoch / listing heartbeats prove the pipe is alive; they are not inbound Chat. If the console shows only `[Gossip] Unknown format` and no message, the business armor never entered **this** mailbox — do not conclude “the parser is broken.”
+3. If the Worker reports `connect_timeout` (~12s) and changing C still fails: check whether C **peeled** then threw on hop-sign (`string` / instance of `h`) and **never** `socketForward` to B. A log-only `uncaughtException` leaves the SSE open until the client timer. See [Peel, hop-sig, and listen timeouts](peel-hop-listen.md).
+4. SI `forward <ip>` after peel is the **client source IP**, not mailbox B.
+5. Mailbox logged `forWard SUCCESS` or `save to Local`. Offline users get a flush on next listen; the client must process that flush (do not skip the first SSE event) and dedupe `sendId`.
+6. Fake-armor **404** is SI rejecting bad PGP, not a down node.
+7. Sender used entries **A ≠ B**. Direct-to-B is not the product path.
+8. Recipient `isMyRoute` / wallet↔route hash consistency can block listen and presence without blocking user-PGP store.
 
 ## Checklist
 
 - [ ] Sender registered (`regiestChatRoute` + `searchKey` shows the local subkey)
 - [ ] Business encrypt-to recipient **EOA user PGP**; listen/ACK/presence encrypt-to **route PGP**
 - [ ] Listen includes `listenKind: "chat"` and **C ≠ B**
+- [ ] `connect_timeout` starts after `fetch`; `listening` requires `res.ok` + body
+- [ ] Peel / hop-sign failure is diagnosed before “switch C” or “parser broken”
 - [ ] `@tag` resolution is exact; no `results[0]`
 - [ ] Inbound verify recovers `from`; typed unwrap walks `text`
 - [ ] Dual receipts after ingest; receipts and POS permission are not Messages rows
@@ -351,6 +364,7 @@ Walk this order. Do not skip to “the parser is broken.”
 - [SI developer guide](si-developer-guide.md)
 - [How to use Layer Minus](using-l0.md)
 - [Zero-trust mailbox routing](mailbox-routing.md)
+- [Peel, hop-sig, and listen timeouts](peel-hop-listen.md)
 - [Wallet-addressed peer identity](wallet-address-p2p.md)
 - [UDP frame forwarding](udp-forward.md)
 - [Security limits](security-limits.md)

@@ -86,6 +86,8 @@ listenKind: "chat"
 
 Layer Minus mining clients omit `listenKind` and remain in the mining class. This distinction prevents chat-session lifecycle rules from being applied to mining listeners.
 
+A wrap-to-C listen that peels on C and then fails hop-sign must return a fast **404**. A hung SSE until the client `connect_timeout` means mailbox B was never dialed. See [Peel, hop-sig, and listen timeouts](../l0/peel-hop-listen.md).
+
 Presence is a mailbox observation:
 
 - the querying client sends `wallet_online_query` to the contact’s mailbox route key through an independent entry;

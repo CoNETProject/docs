@@ -138,8 +138,8 @@ After a **local** decrypt:
 
 - if the plaintext is still OpenPGP **for the same node**, SI treats it as an attack, emits socket `end`, and **does not peel again**;
 - if the plaintext is mailbox work JSON `{ data, NoPush? }` (not a signed `{ message, signMessage }`), SI unwraps the inner armor and delivers it locally; `NoPush: true` skips APNs;
-- if the inner key ID is another node, SI forwards the **inner UTF-8 armor string** when hop-sig count can still grow (cap 3); SI→SI HTTP is still only `{ data }`. Do **not** pass an OpenPGP.js 6 `Message.armor()` stream / thenable into hop-sig `n` / `h` (`Buffer.byteLength` requires a string). Prefer the peel plaintext armor when it already has `BEGIN PGP MESSAGE`;
-- hop-sign or C→B connect failure is a **404** (or socket `end`). Do not leave the client SSE open until its 12s connect timer;
+- if the inner key ID is another node, SI forwards the **inner UTF-8 armor string** when hop-sig count can still grow (cap 3); SI→SI HTTP is still only `{ data }`. Prefer the peel plaintext when it already has `BEGIN PGP MESSAGE`. Coerce with `pgpArmorToUtf8String` before hop-sig `n` / `h`. Do **not** pass an OpenPGP.js 6 `Message.armor()` stream / thenable (minified class `h`) into `Buffer.byteLength`;
+- hop-sign failure, non-UTF-8 armor, or C→B TCP timeout (~8s) is a **404** (or socket `end`). A log-only `uncaughtException` must still close the client socket. Do not leave the SSE open until the client’s ~12s `connect_timeout` — B was never dialed. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md);
 - more than 3 hop signatures, or a count that cannot take another hop, is an all-node flood: `end`, no forward;
 - if the destination SI emits `end`, the previous hop closes and frees that socket;
 - on a **signed command** path, the last hop may add verified prior-hop bytes to that wallet’s gossip **GB** meter. A mailbox store of user-PGP armor (no command decrypt) cannot charge the user.
@@ -379,6 +379,17 @@ Read `res.body` as a byte stream. First frames are often a handshake or mining-s
 
 Do **not** skip the first SSE frame unconditionally. Handshake and listing frames must be classified as liveness; a following `{ data: "<PGP armor>" }` (including an offline flush on reconnect) is business and must be decrypted. B stores inbound armor first (`saveLocal`), then best-effort SSE. B does not expire a healthy writable chat listen by wall-clock age. Keep the SSE open; reconnect on idle / drop with another random **C ≠ B**. Production clients use a `setTimeout` chain, not `setInterval`.
 
+Client listen contract (chat-sdk / SilentPassUI `gossip-core.ts`):
+
+| Rule | Why |
+| --- | --- |
+| Start the ~12s `connect_timeout` **after** `fetch` is issued | OpenPGP wrap can consume the budget; the abort then looks like “C never answered” |
+| Emit `listening` only after `res.ok` **and** a readable `res.body` | HTTP 404 / empty body is a failed hop, not a live mailbox SSE |
+| On `connect_timeout` / `Failed to fetch`, exclude that `node.domain` from the next C pick | One bad C should not be retried first |
+| Do not let `history.load` starve the listen loop on a single Worker thread | Recover can run before `activeClient` exists |
+
+A peel-success log `forward <ip>` is the **client source IP**, not mailbox B. If C peels then throws on hop-sign, switching C does not help until every peeler returns UTF-8 armor. See [Peel, hop-sig, and listen timeouts](peel-hop-listen.md).
+
 ### Presence query
 
 ```ts
@@ -505,6 +516,8 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 - [ ] POST body is `{ data: <armor> }` to `{domain}.conet.network/post`
 - [ ] Business encrypt-to **user PGP**; commands encrypt-to **route PGP**
 - [ ] Chat listen includes `listenKind: "chat"` and uses **C ≠ B**
+- [ ] `connect_timeout` starts after `fetch`; `listening` requires `res.ok` + body
+- [ ] SI hop-sign uses a UTF-8 armor string (peel plaintext / `pgpArmorToUtf8String`); hop-sign or C→B failure is a fast 404
 - [ ] Send / ACK / presence / UDP do not default-dial mailbox B
 - [ ] EIP-191 `signMessage` covers the exact `message` string SI will verify
 - [ ] Failures do not log private keys, full PGP private armor, or `Securitykey`
@@ -517,6 +530,8 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 - [How to use Layer Minus](using-l0.md)
 - [Chat developer guide](chat-developer-guide.md)
 - [Zero-trust mailbox routing](mailbox-routing.md)
+- [Peel, hop-sig, and listen timeouts](peel-hop-listen.md)
+- [X-CoNET-Hop-Sigs v1](hop-sigs.md)
 - [Wallet-addressed peer identity](wallet-address-p2p.md)
 - [HTTP transport](http-mimicry.md)
 - [UDP frame forwarding](udp-forward.md)

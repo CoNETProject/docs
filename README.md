@@ -55,7 +55,8 @@ Deployment requires SSH as `root@38.102.126.50`. DNS for `gitbook.conet.network`
 - Do not infer current endpoints, contracts, or deployment status from historical documentation.
 - Do not describe an entry HTTP success or SSE handshake as end-to-end delivery.
 - Do not describe a whitepaper design as deployed unless the deployment is independently identified.
-- **DePIN / L0 protocol-layer changes** (HTTP `/post` shape, encryption targets, mailbox work, hop-sigs, listenKind, UDP forward) must update **both** the L0 architecture pages and the developer pages in the same task, then deploy with `./scripts/deployGitbook.sh`. See `.cursor/rules/conet-depin-gitbook-sync.mdc`.
+- **DePIN / L0 protocol-layer changes** (HTTP `/post` shape, encryption targets, mailbox work, hop-sigs, peel / listen timeouts, listenKind, UDP forward) must update **both** the L0 architecture pages and the developer pages in the same task, then deploy with `./scripts/deployGitbook.sh`. See `.cursor/rules/conet-depin-gitbook-sync.mdc`.
+- **Tables / long hex:** keep `gitbook/styles/website.css` mounted from `book.json`. HonKit’s default `.markdown-section { overflow: hidden }` clips wide tables (66-char hashes in a Value column will hide Meaning). Do not “fix” that by truncating identifiers. See `.cursor/rules/conet-gitbook-update.mdc`.
 
 ## Source anchors
 
