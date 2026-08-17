@@ -91,6 +91,8 @@ The SI runtime labels long-lived sessions so that unrelated lifecycle policies d
 
 A completed HTTP request body does not make a receive-only SSE socket stale. SI checks whether the socket remains writable; chat-only timeout or zombie policy must not evict a mining session.
 
+Epoch / listing SSE frames (`{ status, epoch, ipaddress, … }` or `nodeWallets`) prove the listen pipe is alive. They are **not** business delivery. B must **not** treat a healthy writable chat listen as expired solely because `connectedAt` is older than a few seconds. Live SSE is skipped only when the socket is stale or unwritable; the armor is still stored (`saveLocal`). PGP key IDs used to attach a listen and to look up that listen must be compared case-insensitively (uppercase hex).
+
 ## Delivery and presence semantics
 
 Layer Minus exposes several milestones. They are not interchangeable:

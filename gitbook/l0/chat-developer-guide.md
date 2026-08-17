@@ -327,8 +327,8 @@ If you hand-roll, keep the same A/B/C and envelope rules so mailboxes stay inter
 Walk this order. Do not skip to “the parser is broken.”
 
 1. Recipient EOA equals the AddressPGP row you encrypted to (not AA, not a prefix-search collision).
-2. Recipient listen is up with `listenKind: "chat"` and SSE Connected — not only mining `Unknown format` heartbeats.
-3. Mailbox logged forward or `save to Local`. Offline users get a flush on next listen; client must dedupe `sendId`.
+2. Recipient listen is up with `listenKind: "chat"` and SSE Connected. Epoch / listing heartbeats prove the pipe is alive; they are not inbound Chat. If the console shows heartbeats but no message, the mailbox stored armor and skipped live SSE, or the Worker dropped / failed to decrypt the frame.
+3. Mailbox logged `forWard SUCCESS` or `save to Local`. Offline users get a flush on next listen; the client must process that flush (do not skip the first SSE event) and dedupe `sendId`.
 4. Fake-armor **404** is SI rejecting bad PGP, not a down node.
 5. Sender used entries **A ≠ B**. Direct-to-B is not the product path.
 6. Recipient `isMyRoute` / wallet↔route hash consistency can block listen and presence without blocking user-PGP store.

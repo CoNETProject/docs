@@ -374,7 +374,9 @@ export async function openChatListen(opts: {
 }
 ```
 
-Read `res.body` as a byte stream. First frames are often a handshake or mining-shaped `{ status, epoch, … }` liveness listing. Those are **not** user-PGP business messages. A browser console line `[Gossip] Unknown format: {status, epoch…}` is that heartbeat. Keep the SSE open; reconnect on idle / drop with another random **C ≠ B**. Production clients use a `setTimeout` chain, not `setInterval`.
+Read `res.body` as a byte stream. First frames are often a handshake or mining-shaped `{ status, epoch, … }` liveness listing. Those are **not** user-PGP business messages. A browser console line `[Gossip] Unknown format: {status, epoch…}` or a Worker `heartbeat` log is that listing. It proves the SSE is alive. It does **not** prove B forwarded user-PGP armor on that socket.
+
+Do **not** skip the first SSE frame unconditionally. Handshake and listing frames must be classified as liveness; a following `{ data: "<PGP armor>" }` (including an offline flush on reconnect) is business and must be decrypted. B stores inbound armor first (`saveLocal`), then best-effort SSE. B does not expire a healthy writable chat listen by wall-clock age. Keep the SSE open; reconnect on idle / drop with another random **C ≠ B**. Production clients use a `setTimeout` chain, not `setInterval`.
 
 ### Presence query
 
