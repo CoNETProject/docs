@@ -45,7 +45,7 @@ Detailed contract APIs, node operations, economics, and screen-by-screen product
 | --- | --- |
 | **L0 / Layer Minus** | PGP / wallet-address forwarding, including peel-and-forward when a node can decrypt an outer layer whose inner key ID is not local. Product behavior is an application combination — [How to use L0](../l0/using-l0.md). Do not claim mix-net anonymity, Chat forward secrecy, or operator-independent A/B/C — [security limits](../l0/security-limits.md) |
 | **L1 / CoNET** | Wallet identity, AddressPGP records, account and asset state, application registries, history pointers, and the [cross-chain Treasury](../l1/cross-chain-treasury.md) |
-| **L2 / CoNET-DLE** | Specified prospective settlement designs for multi-party or high-frequency accounting; not a production dependency until the documented release gates close |
+| **L2 / CoNET-DLE** | Specified prospective settlement designs for multi-party or high-frequency accounting; public lab explorer and repository honesty-track engines exist; not a production dependency until the documented release gates close. Review: [Lab honesty track](../l2/lab-honesty-track.md) |
 | **Application services** | Relaying, indexing, metadata delivery, local encrypted storage, and user-interface coordination where these are not direct protocol functions |
 
 An application can depend on more than one tier without becoming a new tier itself.

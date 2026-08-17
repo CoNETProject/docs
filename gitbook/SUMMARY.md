@@ -31,6 +31,7 @@
   * [Cross-chain assets in DLE](l2/cross-chain-assets.md)
   * [Economics digest](l2/economics.md)
   * [DLE explorer](l2/explorer.md)
+  * [Lab honesty track](l2/lab-honesty-track.md)
   * [Normative specifications](l2/specs-index.md)
 * [Developers](developers/README.md)
   * [L0 development](developers/l0.md)

@@ -111,7 +111,7 @@ Public source and a finished product are different claims.
 | --- | --- | --- |
 | L0 SI / DL | Public repositories and npm packages | Production Layer Minus nodes and clients |
 | L1 contracts | [beamio-APP/BeamioContract](https://github.com/beamio-APP/BeamioContract) plus Explorer verification | Live `chainId` 224422; GitHub snapshot last pushed **2026-03-10**, so treat Explorer-verified bytecode as current |
-| CoNET-DLE design | [CoNET-project/CoNET-DLE](https://github.com/CoNET-project/CoNET-DLE) — bilingual whitepaper (rev **2026-08-16**), three `DLE-*Spec.md` files, TLA model, explorer SPA | Normative design; not a launched production L2. Public lab UI: [dle.conet.network](https://dle.conet.network/) (Testnet `0x44c45` + first-group Group ID hash; lab M6 Clusters = 2). L1 routing facade deployed: [registry](l2/routing-registry.md) |
+| CoNET-DLE design | [CoNET-project/CoNET-DLE](https://github.com/CoNET-project/CoNET-DLE) — bilingual whitepaper (rev **2026-08-17**), three `DLE-*Spec.md` files, TLA model, explorer SPA | Normative design; not a launched production L2. Public lab UI: [dle.conet.network](https://dle.conet.network/) (Testnet `0x44c45` + first-group Group ID hash; lab M6 Clusters = 2). Honesty-track review: [Lab honesty track](l2/lab-honesty-track.md) (P12–P22 engine + tests; live keep-deploy not claimed). L1 routing facade deployed: [registry](l2/routing-registry.md) |
 | Archive second implementation | Listed as an open production blocker in the public Archive spec | Not complete; production archive signing is forbidden until the spec’s blockers close |
 | DEX client | No public exchange client repository identified | Design study |
 | BT / DCDN client | No CoNET BitTorrent or DCDN client repository identified | Under development; do not treat upstream WebTorrent as the CoNET product |
@@ -135,7 +135,7 @@ Paths below are relative to the named **public repository**.
 | L1 overlay operator / developer how-to | This book: [Applications — conet-l0d](applications/conet-l0d.md) · [Developers — conet-l0d](developers/conet-l0d.md) |
 | DePIN mining how-to | This book: [Participate in mining](developers/l1-mining.md) |
 | ERC-20 Treasury ingress | This book: [Bring an ERC-20 into CoNET](developers/l1-erc20-bridge.md) |
-| L2 / DLE how-to | This book: [L2 development](developers/l2.md) · [DLE explorer](l2/explorer.md) · [routing registry](l2/routing-registry.md) |
+| L2 / DLE how-to | This book: [L2 development](developers/l2.md) · [DLE explorer](l2/explorer.md) · [Lab honesty track](l2/lab-honesty-track.md) · [routing registry](l2/routing-registry.md) |
 | L0 threat grades | This book: [Security limits](l0/security-limits.md) |
 | Layer Minus node behavior | [CoNET-project/CoNET-SI](https://github.com/CoNET-project/CoNET-SI) |
 | Layer Minus client/data plane | [CoNET-project/CoNET-DL](https://github.com/CoNET-project/CoNET-DL) |
