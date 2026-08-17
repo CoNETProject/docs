@@ -199,7 +199,7 @@ Do not default to `--peer` against a single historic seed. Prefer several `--boo
 
 ## Optional: overlay P2P (`conet-l0d`)
 
-The public bootnodes and inbound **8400 / 4200 / 4300** above remain the **production default**. A Linux daemon can add a **static overlay** path (`100.64.0.0/10`) for NAT or hosts without a stable public IP. It does not replace public P2P for the 6-second slot. P1 outbound + inbound decrypt/TUN write-back exist in-crate; live mailbox SSE is not opened; `[l0]` defaults off.
+The public bootnodes and inbound **8400 / 4200 / 4300** above remain the **production default**. A Linux daemon can add a **static overlay** path (`100.64.0.0/10`) for NAT or hosts without a stable public IP. It does not replace public P2P for the 6-second slot. P1 outbound + inbound decrypt/TUN write-back + listen HTTP+SSE worker exist in-crate (mock-tested, unsigned mining); production SI listen is not opened; `[l0]` defaults off.
 
 - Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.md)
 - CLI, config, owned TUN / iptables: [Developers — conet-l0d](conet-l0d.md)

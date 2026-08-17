@@ -8,7 +8,7 @@ Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.
 L1 ports and public bootnodes: [Run an L1 node](l1-node.md)  
 Forwarding plane: [L0 development](l0.md) · [How to use Layer Minus](../l0/using-l0.md)
 
-Whitepaper / `RULES.md` revision **2026-08-17** (milestone eval 21:50Z: crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back in-crate; live mailbox SSE not opened; lab binary `[l0]` off). A change to those files must update **this page and the Applications page** in the same task. A **new SI command** must also update L0 protocol pages (`using-l0`, mailbox routing, SI developer guide) — do not document a live command on only one side.
+Whitepaper / `RULES.md` revision **2026-08-17** (milestone eval 22:45Z: crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back + listen HTTP+SSE worker in-crate, mock-tested, unsigned mining; production SI listen not opened; lab binary `[l0]` off). A change to those files must update **this page and the Applications page** in the same task. A **new SI command** must also update L0 protocol pages (`using-l0`, mailbox routing, SI developer guide) — do not document a live command on only one side.
 
 ## What you build
 
@@ -49,7 +49,7 @@ The daemon **owns** TUN and iptables. Do not ship a second operator `iptables` s
 | `systemd/conet-l0d.service` | `ExecStart=start` / `ExecStop=stop`; `CAP_NET_ADMIN`; no raw iptables |
 | `whitepaper/` | Design pair (EN + zh-CN), revision **2026-08-17** |
 | `docs/MVP.md` | Accepted crate MVP |
-| `docs/P1.md` | Overlay `/post` encrypt + mailbox wrap + POST; inbound decrypt + TUN write-back in-crate; `[l0]` default off; live mailbox SSE not opened |
+| `docs/P1.md` | Overlay `/post` encrypt + mailbox wrap + POST; inbound decrypt + TUN write-back; listen HTTP+SSE worker in-crate (mock-tested, unsigned mining); `[l0]` default off; production SI listen not opened |
 | `RULES.md` | Engineering constraints + GitBook lockstep |
 
 ## Config shape
@@ -79,13 +79,21 @@ tcp_ports = [4200]
 # Optional P1 client. Default off. Do not POST plaintext as data.
 # Encrypt to peer user PGP, wrap { data, NoPush: true } to B route PGP,
 # POST only { "data": outerArmor }. Inbound decrypt + TUN write-back is
-# in-crate when routing_key_file is an OpenPGP secret cert. Live mailbox
-# SSE is not opened. Do not put Securitykey in a B-decryptable listen command.
+# in-crate when routing_key_file is an OpenPGP secret cert. Listen HTTP+SSE
+# is in-crate when enabled plus listen_entries, mailbox_route_pgp_file
+# (this host's B route PUBLIC key), routing_eoa, and routing_key_file.
+# The listen command is unsigned in this revision; production SI checkSign
+# will reject. Tests use wiremock only. Do not put Securitykey in a
+# B-decryptable listen command.
 # [l0]
 # enabled = false
 # rpc = "https://rpc1.conet.network"
 # address_pgp = "0x684b0ac760cEE9c9b85de36d69746420648Cf9e2"
 # entries = ["https://<existing-guardian>.conet.network"]
+# listen_entries = ["https://<existing-guardian>.conet.network"]
+# routing_eoa = "0x<dedicated-routing-eoa>"
+# routing_key_file = "/etc/conet-l0d/routing.key"
+# mailbox_route_pgp_file = "/etc/conet-l0d/self-mailbox-route.asc"
 #
 # Per-peer public key files (lab override; do not log contents):
 # user_pgp_file = "/etc/conet-l0d/peer-user.asc"
@@ -173,7 +181,7 @@ Content-Type: application/json
 
 `listenKind: "l1p2p"` is a **design reservation**, not a current SI pool label. Chat / mining / udp pools stay isolated. If you add a real command, update [using-l0](../l0/using-l0.md), [mailbox routing](../l0/mailbox-routing.md), and the [SI developer guide](../l0/si-developer-guide.md) in the same task.
 
-Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and the peer has **user PGP** plus **route PGP** files and at least one entry, P1 encrypts the overlay envelope to the peer user PGP, wraps `{ data, NoPush: true }` to mailbox B route PGP, and POSTs only `{ "data": outerArmor }` to a healthy entry A ≠ B. Inbound: decrypt user-PGP armor → overlay envelope → raw IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Listen command shape is `command: mining` + `listenKind: "chat"` with **no** `Securitykey`. `[l0]` defaults **off**. A lab host may install that binary without enabling `[l0]`. Live mailbox SSE is **not** opened. Do not claim production mailbox delivery. Do not treat `p2p_stream_*` as current SI.
+Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and the peer has **user PGP** plus **route PGP** files and at least one entry, P1 encrypts the overlay envelope to the peer user PGP, wraps `{ data, NoPush: true }` to mailbox B route PGP, and POSTs only `{ "data": outerArmor }` to a healthy entry A ≠ B. Inbound: decrypt user-PGP armor → overlay envelope → raw IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Listen HTTP+SSE worker POSTs unsigned `mining` + `listenKind: "chat"` (no `Securitykey`) to entry C ≠ B when `listen_entries`, `mailbox_route_pgp_file`, `routing_eoa`, and the user secret are set. `[l0]` defaults **off**. A lab host may install that binary without enabling `[l0]`. Production SI listen is **not** opened (unsigned listen fails `checkSign`). Do not claim production mailbox delivery. Do not treat `p2p_stream_*` as current SI.
 
 ## Failure semantics
 
