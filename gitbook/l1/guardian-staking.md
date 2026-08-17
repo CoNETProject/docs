@@ -19,7 +19,7 @@ Operational liveness depends on reachable services, valid routing registration, 
 
 > **Registered Guardian count, live Guardian count, and active-miner count are different measurements.**
 
-A temporary difference between those counts is not evidence that L1 consensus has lost validators.
+A temporary difference between those counts is not evidence that L1 consensus has lost validators. The Guardian registry snapshot (**472** IPs / owners) is the **L0 DePIN** scale. It is close to `ValidatorDepositRedeem.totalStakedValidatorCount()` (**475**) because that contract ledger tracks VDR-managed Guardian binds, not because CoNET L1 has only ~475 Beacon validators. Consensus-layer `validator_index` values already pass **2000**. See [L1 decentralization](decentralization.md).
 
 ## Separation from validators
 
@@ -50,7 +50,7 @@ Wallet-address routing is intended to reduce dependence on a fixed public servic
 
 Read Guardian-related chain state through `https://rpc1.conet.network`, with `https://publicrpc.conet.network` as backup. Do not use the deprecated `https://rpc.conet.network`. Inspect contracts and transactions at `https://mainnet.conet.network`.
 
-Registry membership is publicly readable. Admission is not permissionless: `addNode` and `removeNode` require `adminList`. Unique owner addresses, region labels, and the difference between those figures and L1 validator stake are recorded in [L1 decentralization](decentralization.md).
+Registry membership is publicly readable. Admission is not permissionless: `addNode` and `removeNode` require `adminList`. Unique owner addresses, region labels, and the difference between the L0 Guardian count, the VDR stake ledger, and Beacon `validator_index` are recorded in [L1 decentralization](decentralization.md).
 
 ## Source anchors
 

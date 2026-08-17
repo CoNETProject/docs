@@ -35,7 +35,7 @@ L0 does not remove IP from the Internet. It moves **application identity and rou
 
 - **Understand the architecture:** begin with the [System overview](overview.md), then read L0 → L1 → L2.
 - **Integrate with a live network:** use [RPC and Explorer](l1/rpc-explorer.md) and [Resources](resources.md). The [DLE explorer](l2/explorer.md) is a separate lab UI, not CoNET L1.
-- **Reproduce L1 decentralization facts:** read [Decentralization and verifiability](l1/decentralization.md).
+- **Reproduce L1 decentralization facts:** read [Decentralization and verifiability](l1/decentralization.md). Keep Beacon `validator_index`, the VDR stake ledger, and the L0 Guardian registry as three different counts.
 - **Build against the live stack:** start at [Developers](developers/README.md) — [L0](developers/l0.md), [mining](developers/l1-mining.md), [ERC-20 Treasury](developers/l1-erc20-bridge.md), [L2 specs](developers/l2.md).
 - **Read L0 limits before claiming privacy:** [Security limits and threat grades](l0/security-limits.md).
 - **Follow a cross-chain asset:** read the [decentralized Treasury](l1/cross-chain-treasury.md), the separate [DLE admission boundary](l2/cross-chain-assets.md), and the proposed [miner-matched exchange](applications/miner-orderbook-dex.md).

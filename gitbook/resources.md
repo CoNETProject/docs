@@ -17,7 +17,7 @@ CoNET L1 uses `chainId` **224422** (`0x36ca6`).
 
 `https://rpc.conet.network` is **deprecated**. It may be stale or on a divergent historical network even when it reports the same chain ID. Do not use it to decide whether a contract or transaction exists.
 
-For integration details, see [RPC and Explorer](l1/rpc-explorer.md). For validator, Guardian, stake, and governance views, see [L1 decentralization](l1/decentralization.md).
+For integration details, see [RPC and Explorer](l1/rpc-explorer.md). For Beacon `validator_index`, the VDR stake ledger, Guardian (L0) counts, and governance views, see [L1 decentralization](l1/decentralization.md). Do not treat `totalStakedValidatorCount()` as the Prysm active set.
 
 ## DLE lab explorer
 

@@ -23,8 +23,8 @@ EVM compatibility means that the chain executes Ethereum-style smart-contract by
 
 CoNET documentation uses two distinct node terms:
 
-- **L1 validators** participate in proof-of-stake consensus and determine the canonical L1 chain.
-- **Guardian Nodes** belong to the DePIN service plane of the [Layer Minus cloud](../l0/permissionless-cloud.md). They may offer routing, mailbox delivery, bandwidth, storage, and CPU / GPU work. A listed Guardian is **not** a trusted host and is **not** an L1 validator.
+- **L1 validators** participate in proof-of-stake consensus and determine the canonical L1 chain. Their consensus-layer identity is a Beacon / Prysm `validator_index` (already observed **≥ 2000**). Do not use `ValidatorDepositRedeem.totalStakedValidatorCount()` as that census.
+- **Guardian Nodes** belong to the DePIN service plane of the [Layer Minus cloud](../l0/permissionless-cloud.md). They may offer routing, mailbox delivery, bandwidth, storage, and CPU / GPU work. A listed Guardian is **not** a trusted host and is **not** an L1 validator. The registry snapshot near **472** is the **L0** scale.
 
 Network-layer privacy and censorship resistance are transport objectives. Wallet-address routing and DePIN overlays can reduce dependence on directly exposed service endpoints, but they are **not a consensus algorithm called “stealth consensus.”** L1 consensus remains proof of stake.
 

@@ -6,18 +6,19 @@ Public site: [https://gitbook.conet.network/developers/l1-mining.html](https://g
 
 “Mining” in CoNET is **not one role**. Before you write a client or provision a host, pick the set you actually mean.
 
-## Four sets (do not collapse them)
+## Five sets (do not collapse them)
 
 | Set | Plane | How membership is evidenced | What it is not |
 | --- | --- | --- | --- |
-| **L1 validators** | Proof-of-stake consensus | `ValidatorDepositRedeem` deposit / stake views | Not Guardian registration, not a live SI listener |
-| **Guardian Nodes** | DePIN registry on L1 | `GuardianNodesInfoV6.getAllNodes` | Not proof the process is online |
+| **L1 validators** | Proof-of-stake consensus (Geth + Prysm) | Beacon duties; Explorer block withdrawals carry `validator_index` (already **≥ 2000**, see [block 169843](https://mainnet.conet.network/block/169843)) | Not `totalStakedValidatorCount()`, not Guardian registration, not a live SI listener |
+| **VDR stake ledger** | Application contract on L1 | `ValidatorDepositRedeem.totalStakedValidatorCount()` (snapshot **475**) | Not the Prysm Beacon active set |
+| **Guardian Nodes** | L0 DePIN registry on L1 | `GuardianNodesInfoV6.getAllNodes` (snapshot **472** IPs / owners) | Not proof the process is online; not the L1 consensus census |
 | **Runtime miners** | LayerMinus ↔ SI gossip | A collector has a usable mining SSE and verifies the node signature | Not an L1 block voter |
 | **Treasury miners** | Bridge quorum | `TreasuryBridgeV3.miners()` | Not the Guardian owner list |
 
 A temporary gap between registered Guardians and live miners is expected after a restart or onboarding wave. It is not evidence that L1 consensus lost validators. See [L1 decentralization](../l1/decentralization.md).
 
-This page is the developer path for **DePIN mining gossip** (Guardian + LayerMinus). L1 validator operation is a separate consensus stack (Geth + Prysm, **32 CNET** per counted validator) and is described under [Validators](../l1/validators.md).
+This page is the developer path for **DePIN mining gossip** (Guardian + LayerMinus). L1 validator operation is a separate consensus stack (Geth + Prysm). The **32 CNET** unit applies to each **VDR-counted** deposit record, not to a claim that L1 has only ~475 consensus validators. See [Validators](../l1/validators.md).
 
 ## What DePIN mining is
 
@@ -126,12 +127,14 @@ cast call $G "getUniqueOwnerCount()(uint256)" --rpc-url $RPC
 cast call $VDR "totalStakedValidatorCount()(uint256)" --rpc-url $RPC
 ```
 
-Page `getAllNodes` as in the [SI node sample](../l0/si-developer-guide.md#sample-discover-guardian-nodes). Reproduce stake and region facts from [L1 decentralization](../l1/decentralization.md). Treat a failed RPC as untrusted; do not overwrite a previous success with zero.
+`getUniqueOwnerCount()` is the **L0 Guardian** scale. `totalStakedValidatorCount()` is the **VDR application ledger**. Neither is the Beacon active-set size. Confirm consensus-layer indexes from Explorer withdrawals (example: [block 169843](https://mainnet.conet.network/block/169843), `validator_index` **2000**).
+
+Page `getAllNodes` as in the [SI node sample](../l0/si-developer-guide.md#sample-discover-guardian-nodes). Reproduce the three-count table from [L1 decentralization](../l1/decentralization.md). Treat a failed RPC as untrusted; do not overwrite a previous success with zero.
 
 ## Related
 
 - [Guardian Nodes](../l1/guardian-staking.md) — registry vs runtime
-- [Validators](../l1/validators.md) — 32 CNET consensus role
+- [Validators](../l1/validators.md) — Beacon consensus role versus the VDR 32 CNET ledger
 - [Node and client roles](../l0/node-roles.md) — SI vs LayerMinus
 - [SI developer guide](../l0/si-developer-guide.md) — `/post` and command catalog
 - [Bring an ERC-20 into CoNET](l1-erc20-bridge.md) — Treasury miners are a different set

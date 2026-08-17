@@ -9,18 +9,20 @@ A live chain is evidence of **operation**. Decentralization requires additional 
 | Question | What is published here | What is not inferred |
 | --- | --- | --- |
 | Is L1 running? | Yes. Explorer reports continuous block production on `chainId` **224422**. | Continuous blocks do not prove operator independence. |
-| How many consensus validators are staked? | `ValidatorDepositRedeem.totalStakedValidatorCount()` | That count is not a Guardian count and not a live-miner count. |
-| How is validator stake sized? | Each counted validator is **32 CNET** (`VALIDATOR_STAKE_WEI`). | Uniform per-validator stake does not prove independent operators. |
-| How many Guardian service nodes are registered? | `GuardianNodesInfoV6.getAllNodes` length and `getUniqueOwnerCount()` | A unique owner address is not a unique legal or infrastructure operator. |
+| Has the Beacon / Prysm validator registry issued indexes past 2000? | Yes. [CoNET block 169843](https://mainnet.conet.network/block/169843) withdrawals include `validator_index` **2000** (and neighboring indexes **1987–2002**). | An issued index is not a current active-set census. Exited keys keep their index. |
+| How many validators does this `ValidatorDepositRedeem` currently count? | `totalStakedValidatorCount()` | That view is **not** the Prysm Beacon active set and **not** the L0 Guardian census. |
+| How is that VDR unit sized? | Each VDR-counted record is **32 CNET** (`VALIDATOR_STAKE_WEI`). | Uniform per-record stake does not prove independent operators. |
+| How many L0 Guardian / DePIN nodes are registered? | `GuardianNodesInfoV6.getAllNodes` length and `getUniqueOwnerCount()` | A unique owner address is not a unique legal or infrastructure operator. This is the **L0** scale, not the L1 consensus set. |
 | Where are Guardians labeled? | `getAllRegions()` and `getRegionNodes(region)` | Region labels are registry strings, not ASN, hosting, or jurisdiction proofs. |
 | Which clients produce blocks? | The documented production stack is **Geth + Prysm**. | No public client-diversity census (Lighthouse, Teku, Nethermind, Reth, and so on) is published for this chain. |
 | Who governs mutations? | Guardian writes are `adminList`-gated. ValidatorDepositRedeem is a UUPS proxy with admin-gated upgrades. Treasury miner quorum is a separate owner-managed set. | There is no published token-vote or DAO that elects L1 validators. |
 
 Do not collapse these ledgers:
 
-- **L1 validators** — proof-of-stake consensus participants.
-- **Guardian Nodes** — DePIN registry identities.
-- **Runtime miners / SI listeners** — currently reachable service processes.
+- **Beacon / Prysm validator indexes** — consensus-layer registry identities. Indexes past **2000** already appear in Explorer withdrawals.
+- **VDR staked records** — validators funded and bound through this version of `ValidatorDepositRedeem.fundAndDepositValidators`. The snapshot value **475** is this ledger, not the Beacon set.
+- **Guardian Nodes (L0 DePIN)** — registry IPs / owners. The snapshot value **472** is this L0 scale.
+- **Runtime miners / SI listeners** — currently reachable DePIN service processes.
 - **Treasury miners** — the allowlisted set that votes on TreasuryBridgeV3 operations.
 
 ## Observed snapshot
@@ -30,21 +32,37 @@ The following values were read from `https://rpc1.conet.network` at **2026-08-14
 | Measurement | Value | Source |
 | --- | --- | --- |
 | Explorer average block time | 6.0 s | `GET https://mainnet.conet.network/api/v2/stats` |
-| Staked L1 validators | **475** | `ValidatorDepositRedeem.totalStakedValidatorCount()` |
-| Validator deposit unit | **32 CNET** | `VALIDATOR_STAKE_WEI` |
-| Funded validator deposits | **15,200 CNET** | `fundedDepositTotal()` (= 475 × 32) |
-| Registered Guardian IPs | **472** | `getAllNodes(start, 1)` last occupied index + 1 |
+| Beacon validator index already observed | **≥ 2000** | [Block 169843](https://mainnet.conet.network/block/169843) withdrawals: `validator_index` **1987–2002** |
+| VDR-managed staked records | **475** | `ValidatorDepositRedeem.totalStakedValidatorCount()` |
+| VDR deposit unit | **32 CNET** | `VALIDATOR_STAKE_WEI` |
+| VDR funded principal | **15,200 CNET** | `fundedDepositTotal()` (= 475 × 32) |
+| Registered Guardian IPs (L0 DePIN) | **472** | `getAllNodes(start, 1)` last occupied index + 1 |
 | Unique Guardian owner addresses | **472** | `getUniqueOwnerCount()` |
 | Guardian regions | **7** | `getAllRegions()` |
 | Treasury miner set | **4** addresses | `TreasuryBridgeV3.miners()` |
 | Treasury execution quorum | **3** | `requiredVotes()` = `ceil(2N/3)` for N = 4 |
 | Treasury owner | `0x87cAeD4e51C36a2C2ece3Aaf4ddaC9693d2405E1` | `owner()`; this address is also one of the four miners |
 
-`475` validators and `472` Guardian IPs are close but **not the same number**. Do not report one as the other.
+**Do not label `totalStakedValidatorCount() = 475` as “Staked L1 validators.”** That was the earlier error on this page.
 
-## Validator stake
+`475` and `472` are close because they sit on the **same L0 / application scale**:
 
-`ValidatorDepositRedeem` at [`0xc71e246DD78B37C2fABc905D340932F28F503433`](https://mainnet.conet.network/address/0xc71e246DD78B37C2fABc905D340932F28F503433) is the UUPS proxy for validator deposits and beneficiary binding. The implementation is verified on the Explorer as `ValidatorDepositRedeem`.
+- **472** is the Guardian registry (L0 DePIN IPs / owners).
+- **475** is the current `ValidatorDepositRedeem` ledger: records funded through this contract’s `fundAndDepositValidators`, including Guardian ↔ validator bind and beneficiary accounting for that path. The contract uses the count as a **principal reserve** (`32 × totalStakedValidatorCount` CNET).
+
+Neither figure is the Prysm Beacon Chain active validator set. Consensus-layer indexes were already past **2000** on 2026-06-28 (block 169843). An issued index can belong to an exited validator, so **≥ 2000** is a lower bound on registry allocation, not a live headcount.
+
+## VDR stake ledger (not the Beacon set)
+
+`ValidatorDepositRedeem` at [`0xc71e246DD78B37C2fABc905D340932F28F503433`](https://mainnet.conet.network/address/0xc71e246DD78B37C2fABc905D340932F28F503433) is the UUPS proxy for **application-layer** validator deposits and Guardian beneficiary binding. The implementation is verified on the Explorer as `ValidatorDepositRedeem`.
+
+`totalStakedValidatorCount()` increments only through this contract’s `fundAndDepositValidators` and decrements on `settleFullExitPayout`. It can therefore record:
+
+- stake accounts completed through **this** VDR version;
+- Guardian ↔ validator bind / beneficiary relationships managed here;
+- a phase of deposits this contract custodied as the `0x01` withdrawal target.
+
+It does **not** enumerate every key the Prysm Beacon validator registry has ever activated. Earlier or parallel consensus deposits that never passed this VDR path are invisible to that counter. That is why **475** can coexist with Beacon `validator_index` **2000**.
 
 Protocol facts that can be checked without trusting this page:
 
@@ -57,11 +75,11 @@ cast call $VDR "VALIDATOR_STAKE_WEI()(uint256)" --rpc-url $RPC
 cast call $VDR "fundedDepositTotal()(uint256)" --rpc-url $RPC
 ```
 
-Because every counted validator uses the same 32 CNET unit, **address-level stake is uniform per validator**. Concentration, if it exists, is therefore an **operator- or key-control** question, not a “some validators posted 10,000 CNET and others posted 32 CNET” question.
+Because every **VDR-counted** record uses the same 32 CNET unit, address-level stake **on this ledger** is uniform per record. Concentration, if it exists, is therefore an **operator- or key-control** question, not a “some VDR records posted 10,000 CNET and others posted 32 CNET” question. That statement does not size the Beacon active set.
 
-The deposit-contract pointer on this proxy currently reads `0x4242424242424242424242424242424242424242`, the conventional consensus-layer deposit address used by the Prysm / Ethereum-style stack. That value identifies the consensus deposit path. It is not a CoNET application treasury.
+The deposit-contract pointer on this proxy currently reads `0x4242424242424242424242424242424242424242`, the conventional consensus-layer deposit address used by the Prysm / Ethereum-style stack. That value identifies the consensus deposit path this VDR uses when it does deposit. It is not a CoNET application treasury, and it does not imply that every Beacon validator was funded here.
 
-The Explorer’s generic `GET /api/v2/validators` route is **not available** for this chain type (`Endpoint not available for current chain type`). A per-pubkey CL-reward JSON exists at `https://beamio.app/api/v2/conet/validators/{pubkey}` for already-known BLS keys. It is not a validator-set census.
+The Explorer’s generic `GET /api/v2/validators` route is **not available** for this chain type (`Endpoint not available for current chain type`). Block withdrawals remain a public CL signal: they carry `validator_index`. A per-pubkey CL-reward JSON exists at `https://beamio.app/api/v2/conet/validators/{pubkey}` for already-known BLS keys. Neither endpoint is a complete validator-set census.
 
 ## Guardian independence and geography
 
@@ -122,7 +140,7 @@ L1 has several control planes. They are not one committee.
 - The canonical address is an ERC-1967 proxy.
 - Implementation upgrades use UUPS `_authorizeUpgrade` under the contract admin role.
 - `addAdmin` / `removeAdmin` and redeem-admin roles are explicit privileged functions.
-- Validator **stake size** is a constant (32 CNET). Validator **membership** still depends on deposit, registration, and admin-gated bindings such as `registerNodeValidators`.
+- VDR **record size** is a constant (32 CNET). VDR **membership** still depends on deposit, registration, and admin-gated bindings such as `registerNodeValidators`. That membership is not the Beacon validator registry.
 
 ### Cross-chain Treasury
 
@@ -148,17 +166,19 @@ Those absences are part of the current public record. They should be stated, not
 
 1. Confirm `chainId` **224422** on `https://rpc1.conet.network` (backup `https://publicrpc.conet.network`). Do not use deprecated `https://rpc.conet.network`.
 2. Read the Explorer contract pages and confirm `is_verified` or `is_partially_verified` for the Guardian registry, the VDR proxy, and the VDR implementation.
-3. Call the view functions listed above. Compare `fundedDepositTotal / 32 ether` with `totalStakedValidatorCount`.
-4. Page `getAllNodes(start, 1)` until the first empty start index; that index is the Guardian IP count.
-5. Sum `getRegionNodes` lengths and confirm they equal the Guardian IP count.
-6. Treat any failed RPC or Explorer response as **untrusted**. Do not overwrite a previous successful read with zero.
+3. Call the VDR views listed above. Compare `fundedDepositTotal / 32 ether` with `totalStakedValidatorCount` only as **VDR internal consistency**. Do not treat that quotient as the Beacon active-set size.
+4. On the Explorer, open a block with withdrawals (example: [169843](https://mainnet.conet.network/block/169843)) and read `validator_index`. Indexes past 2000 refute any claim that L1 consensus has only ~475 validators.
+5. Page `getAllNodes(start, 1)` until the first empty start index; that index is the **L0 Guardian** IP count.
+6. Sum `getRegionNodes` lengths and confirm they equal the Guardian IP count.
+7. Treat any failed RPC or Explorer response as **untrusted**. Do not overwrite a previous successful read with zero.
 
 ## Source anchors
 
 - [`GuardianNodesInfoV6`](https://mainnet.conet.network/address/0xBC6b53065b5647261396d002bDBA0d3396E0722f) — verified registry; public source also in [beamio-APP/BeamioContract](https://github.com/beamio-APP/BeamioContract)
-- [`ValidatorDepositRedeem` proxy](https://mainnet.conet.network/address/0xc71e246DD78B37C2fABc905D340932F28F503433) — `totalStakedValidatorCount`, `VALIDATOR_STAKE_WEI`, `fundedDepositTotal`
+- [`ValidatorDepositRedeem` proxy](https://mainnet.conet.network/address/0xc71e246DD78B37C2fABc905D340932F28F503433) — VDR `totalStakedValidatorCount`, `VALIDATOR_STAKE_WEI`, `fundedDepositTotal` (not the Beacon census)
+- [Block 169843 withdrawals](https://mainnet.conet.network/block/169843) — public `validator_index` **2000** on 2026-06-28
 - [`TreasuryBridgeV3`](https://mainnet.conet.network/address/0xa208982212978550594A7FEEB70a61665d129003) — miner quorum, not L1 consensus
-- [Validators](validators.md) — consensus role boundary
+- [Validators](validators.md) — consensus role versus VDR ledger
 - [Guardian Nodes](guardian-staking.md) — DePIN role boundary
 - [Resources](../resources.md) — public git map
 - [CoNET-DLE operator-domain spec](https://github.com/CoNET-project/CoNET-DLE/blob/main/src/whitepaper/DLE-OperatorDomainRegistryV1-Spec.md) — L2 identity/correlation design; not an L1 census

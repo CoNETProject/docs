@@ -22,10 +22,21 @@ The roles can be operated by related infrastructure, but they are not interchang
 
 - Guardian registration does not grant consensus voting power.
 - Validator status does not automatically register a Guardian service.
-- A count of registered Guardians is not a validator count.
+- A count of registered Guardians is not a Beacon validator count.
+- `ValidatorDepositRedeem.totalStakedValidatorCount()` is not a Beacon validator count.
 - A runtime Guardian-miner count is not evidence of L1 consensus participation.
 
 The term **validator committee** also appears in the CoNET-DLE design. That proposed per-ledger L2 committee is a separate protocol role and must not be confused with the validator set of CoNET L1.
+
+## Three counts that are not interchangeable
+
+| Count | Plane | What it measures | Snapshot / evidence |
+| --- | --- | --- | --- |
+| **Beacon `validator_index`** | L1 consensus (Prysm) | Indexes issued by the consensus-layer validator registry | [Block 169843](https://mainnet.conet.network/block/169843) withdrawals include index **2000** |
+| **`totalStakedValidatorCount()`** | Application contract | Records funded through this `ValidatorDepositRedeem` (`fundAndDepositValidators`), used as a 32 CNET principal reserve | **475** at the 2026-08-14 decentralization snapshot |
+| **Guardian `getAllNodes` / `getUniqueOwnerCount()`** | L0 DePIN registry | Registered Guardian IPs / owner addresses | **472** at the same snapshot |
+
+The 472–475 band is the **L0 Guardian / VDR-managed** scale. It is not the size of the Prysm active validator set. An issued Beacon index can belong to an exited validator, so **≥ 2000** is a lower bound on registry allocation, not a live headcount. Reproduce the current figures from [L1 decentralization](decentralization.md).
 
 ## Network-layer privacy objective
 
@@ -60,7 +71,7 @@ Running validators are not, by themselves, a decentralization report. Stake unit
 ## Source anchors
 
 - [Chain identity](chain-identity.md) — canonical network and endpoint policy
-- [L1 decentralization](decentralization.md) — reproducible counts, stake, clients, and governance
+- [L1 decentralization](decentralization.md) — Beacon index, VDR ledger, Guardian counts, clients, and governance
 - [Guardian Nodes](guardian-staking.md) — DePIN role boundary
 - [CoNET-DLE overview](../l2/README.md) — distinct L2 committee terminology
 

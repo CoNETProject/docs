@@ -27,7 +27,7 @@ Developers
 ## Choose the right layer
 
 - **Forward ciphertext by wallet / OpenPGP key ID** → L0. Layer Minus is a permissionless cloud: use it without a license; treat **every node as untrusted**; compose privacy routing and fragmentation. It does not implement Chat, VPN, mining totals, or payments. See [Permissionless cloud](../l0/permissionless-cloud.md).
-- **Join DePIN mining or L1 consensus** → L1 mining page. Guardian registration, runtime miners, Treasury miners, and L1 validators are **four different sets**.
+- **Join DePIN mining or L1 consensus** → L1 mining page. Guardian registration, the VDR stake ledger, runtime miners, Treasury miners, and L1 Beacon validators are **different sets**. `totalStakedValidatorCount()` (~475) is not the Prysm active set.
 - **Move an ERC-20 into the CoNET asset set** → Treasury V3. A token address does not create a route. DLE admission is a later, separate machine and is **not live**.
 - **Write a parallel ledger** → L2 specifications. There is no production DLE SDK or production tip API in this book. The lab explorer at [https://dle.conet.network/](https://dle.conet.network/) is Archive inspection (lab M6 **Clusters = 2**; the second Group ID is the G2 L1 register tx). The L1 routing registry is readable for both live groups; Archive Certificate is not a production object.
 
