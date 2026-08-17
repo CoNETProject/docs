@@ -155,7 +155,7 @@ The public UI being live does **not** close these whitepaper / spec gates:
 | 7×7 `/health` mesh | Heartbeat quorum only; seating green pill only when `seatingQualified === true` |
 | Participant wallets on `/archives` | Seven distinct EOAs; L1 overlay from `archivesOf(1)`. Extra `fd-08` is unofficial |
 | Global Archive Routing Registry | Deployed and verified — [routing registry](routing-registry.md) |
-| Laboratory honesty track P12–P23 | Engine + `153/153` tests. P23 keep-deploy **6/7 `LIVE_OK`** + fd-01 409→accept; fd-06 HTTP unstable — [Lab honesty track](lab-honesty-track.md) |
+| Laboratory honesty track P12–P24 | Engine + `154/154` tests. P23 keep-deploy **6/7 `LIVE_OK`** + fd-01 409→accept; fd-06 HTTP unstable. P24 isolated `node.ts` standby gate. Explorer overlays are **P25** — [Lab honesty track](lab-honesty-track.md) |
 | 30-day qualification | Not qualified (`100` rotations / `30` re-homes / `100` takeovers still at `0`; `pilotStartedAt` is null) |
 | Production Archive Certificate / OperatorDomain | Not claimed. First-group lab AC may exist; it is not a frozen L1 wrapper |
 | `OperatorDomainRegistryV1` / `AssetBurnMintGateway` | Not deployed as production DLE machines |

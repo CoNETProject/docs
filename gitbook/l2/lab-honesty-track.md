@@ -8,7 +8,7 @@ Developer how-to: [L2 development](../developers/l2.md). Explorer facts: [DLE ex
 
 ## Status in one sentence
 
-The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **153/153**). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable**. This is **not** 7/7 healthy and **not** a durable seven-host `officialStandbysReady`. `pilotStartedAt` remains **null**.
+The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **154/154** after P24). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable**. **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. This is **not** 7/7 healthy and **not** a durable seven-host `officialStandbysReady`. `pilotStartedAt` remains **null**.
 
 ## What is live
 
@@ -37,9 +37,10 @@ These gates replace laboratory HMAC envelopes with laboratory EIP-712 typed data
 | P19 | On-demand freeze-then-bind lab keccak | Live CL RANDAO |
 | P20 | Wait-hook honesty (hooks are not gossip) | Production DePIN gossip |
 | P21 | Lab BFT binds `hashIndexRoot`; tree `committedInAc` stays false | Production AC commitment |
-| P22 | `ArchiveStandbyReadiness`; extra `fd-08` does not count | Production OperatorDomain; wiring `node.ts` |
+| P22 | `ArchiveStandbyReadiness`; extra `fd-08` does not count | Production OperatorDomain |
+| P24 | Isolated `node.ts` uses the same `officialStandbysReady` callback as `lab-cli` | Production OperatorDomain; `sync.start()` against dummy peer URLs |
 
-`node.ts` is **not** wired to the new-chain official-standby gate. `lab-cli` may return `409` `ERR_NEWCHAIN_STANDBY_NOT_READY` until two official standbys are ready.
+`lab-cli` and isolated `node.ts` may return `409` `ERR_NEWCHAIN_STANDBY_NOT_READY` until two official standbys are ready. Isolated `node.ts` does **not** start the seating tick and does **not** freeze inventory.
 
 ## P23 live keep-deploy (landed, honest 6/7)
 
@@ -52,15 +53,20 @@ These gates replace laboratory HMAC envelopes with laboratory EIP-712 typed data
 
 fd-01 `POST /newchain/request` walked **409** `ERR_NEWCHAIN_STANDBY_NOT_READY` (`officialStandbyReadyCount=0` at `2026-08-17T23:13:41.428Z`) → **200** accept (`requestId` `0xe8229f1635d681d5b48430b5cd4a09e2c7787d4e4338a60c512ce9ab9d81b472`, `count=2` at `2026-08-17T23:18:22.095Z`).
 
-`officialStandbysReady` is **not** a durable seven-host true. After the accept window, some LIVE_OK hosts dropped back to `count=0` when inventory roots drifted. Extra `fd-08` stays unofficial. G2 BFT/ondemand stay off. `node.ts` is **not** wired. Evidence: CoNET-DLE `pilot/evidence/conet-dle-p23-live-2026-08/`.
+`officialStandbysReady` is **not** a durable seven-host true. After the accept window, some LIVE_OK hosts dropped back to `count=0` when inventory roots drifted. Extra `fd-08` stays unofficial. G2 BFT/ondemand stay off. Evidence: CoNET-DLE `pilot/evidence/conet-dle-p23-live-2026-08/`.
 
-Do **not** treat `153/153` unit tests alone as the live proof, and do **not** write “seven hosts already cut over and stay healthy.”
+Do **not** treat unit tests alone as the live proof, and do **not** write “seven hosts already cut over and stay healthy.”
+
+## P24 isolated `node.ts` gate (landed)
+
+`startArchiveNode` now passes the same `officialStandbysReady` callback into `createNewChainEngine` as `lab-cli` `syncHolder`. Extra `fd-08` still does not count. Isolated `node.ts` does **not** `sync.start()` and does **not** apply inventory freeze. Test: CoNET-DLE `runtime/test/node-standby-gate.test.ts`. Full `npm run runtime:test` **154/154**.
+
+This is **not** a live seven-host redeploy and **not** 7/7 healthy.
 
 ## Next laboratory gates (not landed)
 
 | Gate | Goal | Forbidden |
 | --- | --- | --- |
-| **P24** | Wire `node.ts` new-chain accept to the same `officialStandbysReady` callback as `lab-cli`. | Production OperatorDomain; changing `archiveSeating.ts`; claiming 7/7 healthy |
 | **P25** | Explorer read-only overlays for `officialStandbysReady` / `hashIndexCommittedInAc`. Green pills stay `seatingQualified === true` only. | Changing seating logic; painting overlays as production AC or 30-day |
 
 ## Parked
