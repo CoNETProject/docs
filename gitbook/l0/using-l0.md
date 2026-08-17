@@ -169,7 +169,7 @@ These are valid **application designs** on top of a forwarding network. They are
 | Privacy poll receive mode | Weaker Chat online / arrival-time fingerprint than SSE | Not implemented |
 | Double Ratchet / MLS after AddressPGP handshake | Forward secrecy and post-compromise security for Chat | Not implemented |
 | Operator-domain entry/mailbox exclusion | A/B/C as independent operators, not only roles | Not implemented on L0 |
-| L1 overlay TCP byte-stream (`conet-l0d`) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP on existing `/post` | Crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back + listen HTTP+SSE worker in-crate (mock-tested, unsigned mining), default off; lab binary may run with `[l0]` off; production SI listen not opened. No live SI `p2p_stream_*` / `listenKind: "l1p2p"`. Keep public P2P for the 6s slot |
+| L1 overlay TCP byte-stream (`conet-l0d`) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP on existing `/post` | Crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen HTTP+SSE worker in-crate (mock-tested), default off; lab binary may run with `[l0]` off; production SI listen not opened. No live SI `p2p_stream_*` / `listenKind: "l1p2p"`. Keep public P2P for the 6s slot |
 
 Document those as upgrades or product options. Do not describe them as the live L0 plane. See [security limits](security-limits.md).
 
