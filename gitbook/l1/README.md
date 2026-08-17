@@ -38,7 +38,7 @@ Network-layer privacy and censorship resistance are transport objectives. Wallet
 6. [Assets](assets.md)
 7. [Decentralized cross-chain Treasury](cross-chain-treasury.md)
 
-Developer how-tos for this layer: [Participate in mining](../developers/l1-mining.md) and [Bring an ERC-20 into CoNET](../developers/l1-erc20-bridge.md).
+Developer how-tos for this layer: [Run an L1 node](../developers/l1-node.md), [Participate in mining](../developers/l1-mining.md), and [Bring an ERC-20 into CoNET](../developers/l1-erc20-bridge.md).
 
 ## Source anchors
 

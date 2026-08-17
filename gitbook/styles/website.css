@@ -1,0 +1,35 @@
+/*
+ * HonKit default theme clips overflowing markdown:
+ *   .markdown-section { overflow: hidden }
+ *   table { display: table; overflow: auto }  -- overflow is ignored on display:table
+ *
+ * Long unbreakable hex (66-char tx / group IDs) then widens the table past the
+ * content column and the Meaning column is cut off. Keep tables inside the
+ * column and wrap hex / URLs instead of clipping.
+ */
+
+.markdown-section {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.markdown-section table {
+    table-layout: fixed;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+}
+
+.markdown-section table th,
+.markdown-section table td {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: top;
+}
+
+.markdown-section table code,
+.markdown-section table a {
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    white-space: normal;
+}

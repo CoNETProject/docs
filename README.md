@@ -5,7 +5,7 @@ Source for the public protocol book at **https://gitbook.conet.network**.
 The maintained content lives under `gitbook/` and follows one architecture:
 
 1. **L0 — Layer Minus:** wallet/OpenPGP identity, entry and mailbox routing, HTTP(S) transport, and UDP frame forwarding.
-2. **L1 — CoNET Blockchain:** the production EVM network (`chainId` 224422), validators, Guardians, RPC, core assets, and decentralized cross-chain Treasury.
+2. **L1 — CoNET Blockchain:** the production EVM network (`chainId` 224422), validators, Guardians, RPC, core assets, decentralized cross-chain Treasury, and published genesis / peer files for a permissionless geth + Prysm join.
 3. **L2 — CoNET-DLE:** the whitepaper-backed design for parallel application ledgers and settlement.
 
 Application pages explain how products compose those layers. Economic-design pages are explicitly labeled as design studies where implementation or deployment is incomplete.

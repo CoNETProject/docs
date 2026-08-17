@@ -17,7 +17,7 @@ CoNET L1 uses `chainId` **224422** (`0x36ca6`).
 
 `https://rpc.conet.network` is **deprecated**. It may be stale or on a divergent historical network even when it reports the same chain ID. Do not use it to decide whether a contract or transaction exists.
 
-For integration details, see [RPC and Explorer](l1/rpc-explorer.md). For Beacon `validator_index`, the VDR stake ledger, Guardian (L0) counts, and governance views, see [L1 decentralization](l1/decentralization.md). Do not treat `totalStakedValidatorCount()` as the Prysm active set.
+For integration details, see [RPC and Explorer](l1/rpc-explorer.md). To run your own geth + Prysm node, download genesis files from [Run an L1 node](developers/l1-node.md). For Beacon `validator_index`, the VDR stake ledger, Guardian (L0) counts, and governance views, see [L1 decentralization](l1/decentralization.md). Do not treat `totalStakedValidatorCount()` as the Prysm active set.
 
 ## DLE lab explorer
 
@@ -128,6 +128,7 @@ Paths below are relative to the named **public repository**.
 | How applications use Layer Minus | This book: [How to use Layer Minus](l0/using-l0.md) |
 | L0 client how-to | This book: [L0 development](developers/l0.md) · [SI developer guide](l0/si-developer-guide.md) |
 | Chat client how-to | This book: [Chat developer guide](l0/chat-developer-guide.md) |
+| L1 node how-to + genesis downloads | This book: [Run an L1 node](developers/l1-node.md) · [genesis.json](https://gitbook.conet.network/l1/network/genesis.json) · [genesis.ssz](https://gitbook.conet.network/l1/network/genesis.ssz) · [config.yml](https://gitbook.conet.network/l1/network/config.yml) |
 | DePIN mining how-to | This book: [Participate in mining](developers/l1-mining.md) |
 | ERC-20 Treasury ingress | This book: [Bring an ERC-20 into CoNET](developers/l1-erc20-bridge.md) |
 | L2 / DLE how-to | This book: [L2 development](developers/l2.md) · [DLE explorer](l2/explorer.md) · [routing registry](l2/routing-registry.md) |

@@ -41,6 +41,7 @@ Individual contract addresses can change through deployment or upgrade procedure
 ## Source anchors
 
 - [RPC and Explorer](rpc-explorer.md) — endpoint table and `eth_chainId` check
+- [Run an L1 node](../developers/l1-node.md) — genesis files, DHT hubs, and geth bootnodes
 - [Assets](assets.md) — active asset identifiers
 - [Resources](../resources.md) — service and repository index
 

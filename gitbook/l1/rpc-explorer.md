@@ -45,6 +45,8 @@ Use it for blocks, transactions, addresses, tokens, contract source verification
 
 [https://dle.conet.network/](https://dle.conet.network/) is the **DLE lab explorer**, not this L1 Explorer. Its `eth_chainId` `0x44c45` is **CoNET-DLE Testnet**, not CoNET L1. The Home page shows that testnet chain id plus the bootstrap **Group ID** (L1 register tx hash). The Archives page may overlay participant wallets read from the L1 [Global Archive Routing Registry](../l2/routing-registry.md) on `224422`. See [DLE explorer](../l2/explorer.md).
 
+Peering a self-hosted geth / Prysm stack is a different interface. Genesis files, DHT hubs, and execution bootnodes are on [Run an L1 node](../developers/l1-node.md).
+
 ## Client guidance
 
 - Read contract views and balances directly from an active RPC where practical.
@@ -55,6 +57,7 @@ Use it for blocks, transactions, addresses, tokens, contract source verification
 ## Source anchors
 
 - [Chain identity](chain-identity.md) — canonical network definition
+- [Run an L1 node](../developers/l1-node.md) — P2P join, not JSON-RPC
 - [Resources](../resources.md) — non-RPC service directory
 
 ## Next

@@ -55,7 +55,9 @@ A validator stack is operational only when all of its dependent roles are health
 - the execution-layer P2P TCP/UDP ports and consensus-layer P2P TCP/UDP ports configured for that node are reachable through both host firewall and cloud ACLs; and
 - advertised external IPs and peer records match the node that is actually listening.
 
-Loopback-bound JSON-RPC, WebSocket, Engine API, consensus RPC, and monitoring ports are not substitutes for public P2P reachability and should not be exposed merely to make peering work. Exact ports, peer records, and startup commands are deployment-specific and must be taken from the current node configuration rather than copied from another node.
+Loopback-bound JSON-RPC, WebSocket, Engine API, consensus RPC, and monitoring ports are not substitutes for public P2P reachability and should not be exposed merely to make peering work.
+
+To join the live network, download the published `genesis.json`, `genesis.ssz`, and `config.yml`, then follow [Run an L1 node](../developers/l1-node.md). That page lists the current DHT hubs, geth bootnodes, and ports. Do not copy another operator’s systemd units or a stale engineering `genesis.json`.
 
 ## Operational boundary
 
@@ -72,6 +74,7 @@ Running validators are not, by themselves, a decentralization report. Stake unit
 
 - [Chain identity](chain-identity.md) — canonical network and endpoint policy
 - [L1 decentralization](decentralization.md) — Beacon index, VDR ledger, Guardian counts, clients, and governance
+- [Run an L1 node](../developers/l1-node.md) — genesis downloads, DHT / geth peers, join shape
 - [Guardian Nodes](guardian-staking.md) — DePIN role boundary
 - [CoNET-DLE overview](../l2/README.md) — distinct L2 committee terminology
 

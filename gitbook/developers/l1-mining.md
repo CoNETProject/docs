@@ -18,7 +18,7 @@ Public site: [https://gitbook.conet.network/developers/l1-mining.html](https://g
 
 A temporary gap between registered Guardians and live miners is expected after a restart or onboarding wave. It is not evidence that L1 consensus lost validators. See [L1 decentralization](../l1/decentralization.md).
 
-This page is the developer path for **DePIN mining gossip** (Guardian + LayerMinus). L1 validator operation is a separate consensus stack (Geth + Prysm). The **32 CNET** unit applies to each **VDR-counted** deposit record, not to a claim that L1 has only ~475 consensus validators. See [Validators](../l1/validators.md).
+This page is the developer path for **DePIN mining gossip** (Guardian + LayerMinus). L1 validator operation is a separate, **permissionless** consensus stack (geth + Prysm). Genesis downloads and peers: [Run an L1 node](l1-node.md). The **32 CNET** unit on the Beacon deposit contract (`0x4242…`) is not the same as a **VDR-counted** deposit record. See [Validators](../l1/validators.md).
 
 ## What DePIN mining is
 
@@ -46,7 +46,7 @@ Chat reuses `command: "mining"` for transport compatibility but **must** set `li
 | --- | --- |
 | Run a public DePIN node that others can use as entry / mailbox | Operate **CoNET-SI** on a host that is (or will be) in `GuardianNodesInfoV6` |
 | Collect and verify mining gossip | Run **CoNET-DL** / a LayerMinus worker, or write a collector against the SI command below |
-| Stake L1 consensus | Follow the validator deposit path — **not** this gossip listen |
+| Stake L1 consensus | [Run an L1 node](l1-node.md) — **not** this gossip listen |
 | Vote Treasury bridge operations | Be on the owner-managed `TreasuryBridgeV3.miners()` list — a different, small set |
 
 Guardian `addNode` / `removeNode` require `adminList`. The node list is publicly readable; **joining the registry is not permissionless**. A running SI that is not registered will not appear in `getAllNodes` discovery.
@@ -134,6 +134,7 @@ Page `getAllNodes` as in the [SI node sample](../l0/si-developer-guide.md#sample
 ## Related
 
 - [Guardian Nodes](../l1/guardian-staking.md) — registry vs runtime
+- [Run an L1 node](l1-node.md) — permissionless geth + Prysm + Beacon deposit
 - [Validators](../l1/validators.md) — Beacon consensus role versus the VDR 32 CNET ledger
 - [Node and client roles](../l0/node-roles.md) — SI vs LayerMinus
 - [SI developer guide](../l0/si-developer-guide.md) — `/post` and command catalog

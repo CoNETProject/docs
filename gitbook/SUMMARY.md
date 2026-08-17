@@ -37,6 +37,7 @@
     * [SI developer guide](l0/si-developer-guide.md)
     * [Chat developer guide](l0/chat-developer-guide.md)
     * [Peel, hop-sig, and listen timeouts](l0/peel-hop-listen.md)
+  * [L1 — Run a node](developers/l1-node.md)
   * [L1 — Participate in mining](developers/l1-mining.md)
   * [L1 — Bring an ERC-20 into CoNET](developers/l1-erc20-bridge.md)
   * [L2 development](developers/l2.md)

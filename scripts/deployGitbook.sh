@@ -13,7 +13,14 @@ NGINX_ENABLED="/etc/nginx/sites-enabled/${DOMAIN}.conf"
 NGINX_TEMPLATE="${ROOT}/scripts/gitbook.conet.network.conf"
 REMOTE_NGINX_TEMPLATE="/tmp/${DOMAIN}.deploy.conf"
 RENDERED_NGINX="$(mktemp)"
-trap 'rm -f "${RENDERED_NGINX}"' EXIT
+VERIFY_DIR=""
+cleanup() {
+	rm -f "${RENDERED_NGINX}"
+	if [[ -n "${VERIFY_DIR}" ]]; then
+		rm -rf "${VERIFY_DIR}"
+	fi
+}
+trap cleanup EXIT
 
 sed \
 	-e "s|__DOMAIN__|${DOMAIN}|g" \
@@ -31,6 +38,10 @@ npm ci
 rm -rf _book
 npm run build
 test -f _book/index.html
+# HonKit may omit non-markdown binaries; publish genesis artifacts explicitly.
+mkdir -p _book/l1/network
+cp -a l1/network/genesis.json l1/network/genesis.ssz l1/network/config.yml l1/network/SHA256SUMS _book/l1/network/
+test -s _book/l1/network/genesis.ssz
 rm -f _book/package.json _book/package-lock.json
 
 echo "==> Ensure remote web root"
@@ -115,8 +126,13 @@ SMOKE_PATHS=(
 	"/overview.html"
 	"/developers/"
 	"/developers/l0.html"
+	"/developers/l1-node.html"
 	"/developers/l1-mining.html"
 	"/developers/l1-erc20-bridge.html"
+	"/l1/network/genesis.json"
+	"/l1/network/genesis.ssz"
+	"/l1/network/config.yml"
+	"/l1/network/SHA256SUMS"
 	"/developers/l2.html"
 	"/l0/"
 	"/l0/permissionless-cloud.html"
@@ -165,4 +181,19 @@ for mapping in "${REDIRECTS[@]}"; do
 	fi
 	echo "${status} https://${DOMAIN}${source_path} -> ${redirect_url}"
 done
+
+echo "==> Verify published genesis checksums"
+VERIFY_DIR="$(mktemp -d)"
+(
+	cd "${VERIFY_DIR}"
+	curl -fsSL -O "https://${DOMAIN}/l1/network/genesis.json"
+	curl -fsSL -O "https://${DOMAIN}/l1/network/genesis.ssz"
+	curl -fsSL -O "https://${DOMAIN}/l1/network/config.yml"
+	curl -fsSL -O "https://${DOMAIN}/l1/network/SHA256SUMS"
+	if command -v sha256sum >/dev/null 2>&1; then
+		sha256sum -c SHA256SUMS
+	else
+		shasum -a 256 -c SHA256SUMS
+	fi
+)
 echo "Deployed: https://${DOMAIN}/"

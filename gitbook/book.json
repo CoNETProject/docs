@@ -10,6 +10,9 @@
     "highlight",
     "fontsettings"
   ],
+  "styles": {
+    "website": "styles/website.css"
+  },
   "pluginsConfig": {
     "fontsettings": {
       "theme": "white",

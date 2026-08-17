@@ -75,6 +75,7 @@ The comparison below is architectural, not a throughput or anonymity benchmark.
 | How are peers identified and messages forwarded? | [How to use L0](l0/using-l0.md), [wallet-addressed P2P](l0/wallet-address-p2p.md), [mailbox routing](l0/mailbox-routing.md) |
 | Why is L0 a permissionless cloud, and why trust no node? | [Permissionless cloud and zero-trust applications](l0/permissionless-cloud.md) |
 | How do I write an SI or Chat client? | [L0 development](developers/l0.md), [SI developer guide](l0/si-developer-guide.md), [Chat developer guide](l0/chat-developer-guide.md) |
+| How do I run a geth + Prysm node? | [Run an L1 node](developers/l1-node.md) |
 | How do I participate in DePIN mining? | [Participate in mining](developers/l1-mining.md) |
 | What does L0 actually protect? | [Security limits and threat grades](l0/security-limits.md) |
 | Which chain and endpoints are current? | [Network identity](l1/chain-identity.md), [RPC and Explorer](l1/rpc-explorer.md) |

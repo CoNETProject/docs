@@ -13,6 +13,7 @@ A change to the DePIN / L0 **protocol layer** must update **both** those archite
 | Track | What you build or operate | Start here |
 | --- | --- | --- |
 | **L0 development** | A client against CoNET-SI: `POST /post`, mailbox listen, Chat, UDP, or another application envelope | [L0 development](l0.md) |
+| **L1 node** | A permissionless geth + Prysm full node, and optionally a 32 CNET Beacon validator | [Run an L1 node](l1-node.md) |
 | **L1 mining** | A Guardian / LayerMinus participant, or a collector that verifies mining gossip | [Participate in mining](l1-mining.md) |
 | **L1 ERC-20 ingress** | Use, or request admission for, a foreign ERC-20 through the decentralized Treasury | [Bring an ERC-20 into CoNET](l1-erc20-bridge.md) |
 | **L2 development** | Implement or review against the CoNET-DLE specifications | [L2 development](l2.md) |
@@ -20,14 +21,15 @@ A change to the DePIN / L0 **protocol layer** must update **both** those archite
 ```text
 Developers
   ├─ L0  → SI /post + application compositions (Chat, UDP, SilentPass)
-  ├─ L1  → DePIN mining gossip  |  Treasury ERC-20 ingress
+  ├─ L1  → geth + Prysm node  |  DePIN mining gossip  |  Treasury ERC-20 ingress
   └─ L2  → DLE specs, vectors, lab explorer, L1 routing registry, and blocked production gates
 ```
 
 ## Choose the right layer
 
 - **Forward ciphertext by wallet / OpenPGP key ID** → L0. Layer Minus is a permissionless cloud: use it without a license; treat **every node as untrusted**; compose privacy routing and fragmentation. It does not implement Chat, VPN, mining totals, or payments. See [Permissionless cloud](../l0/permissionless-cloud.md).
-- **Join DePIN mining or L1 consensus** → L1 mining page. Guardian registration, the VDR stake ledger, runtime miners, Treasury miners, and L1 Beacon validators are **different sets**. `totalStakedValidatorCount()` (~475) is not the Prysm active set.
+- **Run geth + Prysm or stake 32 CNET on the Beacon deposit contract** → [Run an L1 node](l1-node.md). That path is permissionless. Genesis files and DHT / geth peers are published there.
+- **Join DePIN mining** → [Participate in mining](l1-mining.md). Guardian registration, the VDR stake ledger, runtime miners, Treasury miners, and L1 Beacon validators are **different sets**. `totalStakedValidatorCount()` (~475) is not the Prysm active set.
 - **Move an ERC-20 into the CoNET asset set** → Treasury V3. A token address does not create a route. DLE admission is a later, separate machine and is **not live**.
 - **Write a parallel ledger** → L2 specifications. There is no production DLE SDK or production tip API in this book. The lab explorer at [https://dle.conet.network/](https://dle.conet.network/) is Archive inspection (lab M6 **Clusters = 2**; the second Group ID is the G2 L1 register tx). The L1 routing registry is readable for both live groups; Archive Certificate is not a production object.
 
@@ -49,6 +51,7 @@ Do not use deprecated `https://rpc.conet.network`. Do not invent a new hostname 
 ## Next
 
 1. [L0 development →](l0.md)
-2. [Participate in mining →](l1-mining.md)
-3. [Bring an ERC-20 into CoNET →](l1-erc20-bridge.md)
-4. [L2 development →](l2.md)
+2. [Run an L1 node →](l1-node.md)
+3. [Participate in mining →](l1-mining.md)
+4. [Bring an ERC-20 into CoNET →](l1-erc20-bridge.md)
+5. [L2 development →](l2.md)
