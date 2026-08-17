@@ -67,7 +67,7 @@ A earns GB for forwarding, not for reading content
 1. R resolves B's route public key.
 2. R signs a mailbox listen command and encrypts it to **B's route OpenPGP key**.
 3. R opens an HTTP/SSE request to healthy entry C.
-4. C forwards the opaque command to B over HTTP on port 80.
+4. C forwards the opaque command to B over HTTP on port 80. If the client wrapped the listen command to C’s route key, C peels once and must hop-sign the **inner UTF-8 armor string** (OpenPGP.js 6 `Message.armor()` may be a stream / thenable — it is not safe to pass that object to `Buffer.byteLength(..., 'utf8')`). Hop-sign failure or C→B connect failure must return a fast **404**, not hang the client SSE.
 5. B decrypts the control command, verifies that R belongs to its route, and attaches the SSE response to the appropriate listen pool.
 6. B pushes stored and live business ciphertext through C; only R decrypts the business envelope.
 

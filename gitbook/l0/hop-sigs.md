@@ -131,6 +131,8 @@ Independent checks already on the node:
 | Another forward would make count **≥ 3** (cannot append) | `end` — never a fourth miner signature |
 | This node’s miner wallet **already appears** in `w[]` | refuse append (`end`) |
 | Header missing, unparsable, or fails recover | `end` |
+| Forward armor is not UTF-8 text (OpenPGP stream / thenable) | **404** — do not hang the client |
+| C→B TCP connect exceeds ~8s | **404** |
 | Hop count exhausted before a valid recipient | **discard** |
 
 There is **one** hop budget: **`maxHops = 3` miner signatures**. Do not maintain a second counter (`maxPeels` versus `maxForwardHops`). Peel and forward share the same header length.

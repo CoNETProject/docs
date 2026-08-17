@@ -138,7 +138,8 @@ After a **local** decrypt:
 
 - if the plaintext is still OpenPGP **for the same node**, SI treats it as an attack, emits socket `end`, and **does not peel again**;
 - if the plaintext is mailbox work JSON `{ data, NoPush? }` (not a signed `{ message, signMessage }`), SI unwraps the inner armor and delivers it locally; `NoPush: true` skips APNs;
-- if the inner key ID is another node, SI forwards the **inner** armor when hop-sig count can still grow (cap 3); SI→SI HTTP is still only `{ data }`;
+- if the inner key ID is another node, SI forwards the **inner UTF-8 armor string** when hop-sig count can still grow (cap 3); SI→SI HTTP is still only `{ data }`. Do **not** pass an OpenPGP.js 6 `Message.armor()` stream / thenable into hop-sig `n` / `h` (`Buffer.byteLength` requires a string). Prefer the peel plaintext armor when it already has `BEGIN PGP MESSAGE`;
+- hop-sign or C→B connect failure is a **404** (or socket `end`). Do not leave the client SSE open until its 12s connect timer;
 - more than 3 hop signatures, or a count that cannot take another hop, is an all-node flood: `end`, no forward;
 - if the destination SI emits `end`, the previous hop closes and frees that socket;
 - on a **signed command** path, the last hop may add verified prior-hop bytes to that wallet’s gossip **GB** meter. A mailbox store of user-PGP armor (no command decrypt) cannot charge the user.

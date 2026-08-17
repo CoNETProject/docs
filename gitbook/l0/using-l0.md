@@ -154,7 +154,7 @@ The same forwarding plane is reused. Only the inner object and key roles change.
 | **On-demand new wallet** | New EOA + new user PGP + new AddressPGP row | Application identity rotation after a leak or for a new role |
 | **Split routing / app wallets** | AddressPGP + listen on a **routing** EOA; sender / recipient only inside user-PGP | Mailbox and hop GB do not see the product wallet. Mapping stays in the client |
 | **Fragmented storage / compute / AI** | Same forwarding plane + hash-addressed ciphertext fragments + untrusted WASM / GPU jobs | Privacy-first surfaces. No node holds a reconstructable whole. See [permissionless cloud](permissionless-cloud.md) |
-| **Outer envelope / nested PGP hops** | Encrypt to a node that can decrypt once; if the inner key ID is not local and hop signatures stay under **3**, SI miner-signs and forwards the inner armor | Hides the inner recipient key ID from the first-hop path observer; last hop meters prior hops to the user; same-node inner PGP or a hop that never reaches a recipient is discarded. Encoding: [hop-sigs v1](hop-sigs.md) |
+| **Outer envelope / nested PGP hops** | Encrypt to a node that can decrypt once; if the inner key ID is not local and hop signatures stay under **3**, SI miner-signs and forwards the **inner UTF-8 armor string**. Hop-sign or next-hop connect failure is a fast 404 | Hides the inner recipient key ID from the first-hop path observer; last hop meters prior hops to the user; same-node inner PGP or a hop that never reaches a recipient is discarded. Encoding: [hop-sigs v1](hop-sigs.md) |
 
 A new product should start from this table: reuse the forwarding primitives, then invent only the inner protocol it actually needs.
 
