@@ -8,7 +8,7 @@ Developer how-to: [L2 development](../developers/l2.md). Explorer facts: [DLE ex
 
 ## Status in one sentence
 
-The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **154/154** after P24). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable**. **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. This is **not** 7/7 healthy and **not** a durable seven-host `officialStandbysReady`. `pilotStartedAt` remains **null**.
+The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **154/154** after P24). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable**. **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. **P25** lands Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc` (`explorer:test` 8/8). Green pills stay `seatingQualified === true` only. This is **not** 7/7 healthy and **not** a durable seven-host `officialStandbysReady`. `pilotStartedAt` remains **null**. Next: **parked / review only**.
 
 ## What is live
 
@@ -39,6 +39,7 @@ These gates replace laboratory HMAC envelopes with laboratory EIP-712 typed data
 | P21 | Lab BFT binds `hashIndexRoot`; tree `committedInAc` stays false | Production AC commitment |
 | P22 | `ArchiveStandbyReadiness`; extra `fd-08` does not count | Production OperatorDomain |
 | P24 | Isolated `node.ts` uses the same `officialStandbysReady` callback as `lab-cli` | Production OperatorDomain; `sync.start()` against dummy peer URLs |
+| P25 | Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc` | Changing seating green pills; painting overlays as production AC / 30-day |
 
 `lab-cli` and isolated `node.ts` may return `409` `ERR_NEWCHAIN_STANDBY_NOT_READY` until two official standbys are ready. Isolated `node.ts` does **not** start the seating tick and does **not** freeze inventory.
 
@@ -63,11 +64,15 @@ Do **not** treat unit tests alone as the live proof, and do **not** write “sev
 
 This is **not** a live seven-host redeploy and **not** 7/7 healthy.
 
-## Next laboratory gates (not landed)
+## P25 Explorer overlays (landed)
 
-| Gate | Goal | Forbidden |
-| --- | --- | --- |
-| **P25** | Explorer read-only overlays for `officialStandbysReady` / `hashIndexCommittedInAc`. Green pills stay `seatingQualified === true` only. | Changing seating logic; painting overlays as production AC or 30-day |
+Explorer Certificates + Home show **non-green** read-only chips for `officialStandbysReady` / `hashIndexCommittedInAc` (`explorer/src/lib/labOverlays.ts`). Green seating pills stay `seatingQualified === true` only (`archiveSeating.ts` unchanged). Missing overlay fields omit the chip. Tests: `npm run explorer:test` **8/8**. Runtime tests stay **154/154**.
+
+This is **not** production AC commitment, **not** seating, and **not** 30-day qualification.
+
+## Next laboratory gates
+
+No further serial Explorer overlay gate is open. Remaining work is **parked / review only**.
 
 ## Parked
 
