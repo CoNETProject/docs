@@ -14,7 +14,7 @@ A change to the DePIN / L0 **protocol layer** must update **both** those archite
 | --- | --- | --- |
 | **L0 development** | A client against CoNET-SI: `POST /post`, mailbox listen, Chat, UDP, or another application envelope | [L0 development](l0.md) |
 | **L1 node** | A permissionless geth + Prysm full node, and optionally a 32 CNET Beacon validator | [Run an L1 node](l1-node.md) |
-| **L1 overlay daemon** | Optional Linux TUN + iptables catch so geth / beacon can use Layer Minus as a **static overlay** path. Crate MVP accepted; P1 encrypt + mailbox wrap + POST in-crate; lab binary may run with `[l0]` off; listen write-back not shipped | [conet-l0d](conet-l0d.md) |
+| **L1 overlay daemon** | Optional Linux TUN + iptables catch so geth / beacon can use Layer Minus as a **static overlay** path. Crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back in-crate; lab binary may run with `[l0]` off; live mailbox SSE not opened | [conet-l0d](conet-l0d.md) |
 | **L1 mining** | A Guardian / LayerMinus participant, or a collector that verifies mining gossip | [Participate in mining](l1-mining.md) |
 | **L1 ERC-20 ingress** | Use, or request admission for, a foreign ERC-20 through the decentralized Treasury | [Bring an ERC-20 into CoNET](l1-erc20-bridge.md) |
 | **L2 development** | Implement or review against the CoNET-DLE specifications | [L2 development](l2.md) |

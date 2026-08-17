@@ -115,7 +115,7 @@ Public source and a finished product are different claims.
 | Archive second implementation | Listed as an open production blocker in the public Archive spec | Not complete; production archive signing is forbidden until the spec’s blockers close |
 | DEX client | No public exchange client repository identified | Design study |
 | BT / DCDN client | No CoNET BitTorrent or DCDN client repository identified | Under development; do not treat upstream WebTorrent as the CoNET product |
-| L1 overlay daemon | Crate MVP accepted + [Applications](applications/conet-l0d.md) / [Developers](developers/conet-l0d.md) pages | Under development; P1 encrypt + mailbox wrap + POST in-crate, default off; lab binary may run with `[l0]` off; listen write-back not shipped; no live SI `p2p_stream_*` |
+| L1 overlay daemon | Crate MVP accepted + [Applications](applications/conet-l0d.md) / [Developers](developers/conet-l0d.md) pages | Under development; P1 outbound + inbound decrypt/TUN write-back in-crate, default off; lab binary may run with `[l0]` off; live mailbox SSE not opened; no live SI `p2p_stream_*` |
 | SNS / creator client | No public feed or creator-studio client identified | Economic design studies only |
 | POS PWA | Public product endpoints; **no standalone public repository identified** | Live POS PWA |
 

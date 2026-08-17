@@ -1,11 +1,11 @@
 # L1 overlay daemon (conet-l0d)
 
-**Maturity: Under development.** Crate MVP is accepted (Linux command, TUN/iptables lifecycle, `web3://` locator, packet counters). P1 encrypt + mailbox wrap + `POST { data }` exist in-crate (`[l0]` default off). A lab host may run that binary with `[l0]` still off. Listen write-back and a live Layer Minus byte-stream on production SI are **not** a public end-to-end service yet. This label is not a security audit.
+**Maturity: Under development.** Crate MVP is accepted (Linux command, TUN/iptables lifecycle, `web3://` locator, packet counters). P1 outbound encrypt + mailbox wrap + `POST { data }` and inbound decrypt + TUN write-back exist in-crate (`[l0]` default off). A lab host may run that binary with `[l0]` still off. Live mailbox SSE and a Layer Minus byte-stream on production SI are **not** a public end-to-end service yet. This label is not a security audit.
 
 Public site: [https://gitbook.conet.network/applications/conet-l0d.html](https://gitbook.conet.network/applications/conet-l0d.html)
 
 Developer CLI and config: [Developers — conet-l0d](../developers/conet-l0d.md)  
-Design: crate whitepaper revision **2026-08-17** (milestone eval 21:36Z: crate MVP accepted; P1 outbound in-crate; lab binary `[l0]` off; listen not shipped) (pair in [CoNET-L0D/whitepaper](https://github.com/CoNET-project/CoNET-L0D/tree/main/whitepaper)).
+Design: crate whitepaper revision **2026-08-17** (milestone eval 21:50Z: crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back in-crate; live mailbox SSE not opened; lab binary `[l0]` off) (pair in [CoNET-L0D/whitepaper](https://github.com/CoNET-project/CoNET-L0D/tree/main/whitepaper)).
 
 If that whitepaper or the crate `RULES.md` changes, this page and the Developers page must change in the **same task**.
 
@@ -138,7 +138,7 @@ web3://YourExactTag.web3/p2p/beacon
 
 `@beamioTag` must match **exactly** (`CoNET` ≠ `CONET`). Do not take `search-users` `results[0]`. An AA without AddressPGP is not a destination.
 
-MVP `resolve` parses the URI against the config table. AddressPGP `searchKey` ABI helpers exist in-crate. P1 encrypt + mailbox wrap + `POST { data }` exist in-crate when `[l0]` is on and peer user+route PGP files plus an entry are set; they stay **off** by default. A lab host may install that binary without enabling `[l0]`. Listen write-back is **not** shipped.
+MVP `resolve` parses the URI against the config table. AddressPGP `searchKey` ABI helpers exist in-crate. P1 encrypt + mailbox wrap + `POST { data }` exist in-crate when `[l0]` is on and peer user+route PGP files plus an entry are set; inbound decrypt + TUN write-back exist when `routing_key_file` is an OpenPGP secret cert. They stay **off** by default. A lab host may install that binary without enabling `[l0]`. Live mailbox SSE is **not** opened.
 
 ## Safety
 
@@ -152,8 +152,8 @@ MVP `resolve` parses the URI against the config table. AddressPGP `searchKey` AB
 
 | Surface | Status |
 | --- | --- |
-| Crate [CoNET-L0D](https://github.com/CoNET-project/CoNET-L0D) | MVP accepted: TUN + iptables lifecycle; locator parse; example TOML; systemd unit. P1 encrypt + mailbox wrap + `POST { data }` exist in-crate (`[l0]` default off). A lab host may run that binary with `[l0]` still off. Listen write-back and production mailbox delivery are **not** shipped |
-| Two-host lab (`.45` / `.98`) | 2026-08-17 21:36Z: TUN up; `[l0]` off; public-IP geth + beacon peering; no validator; advertise stays public IP |
+| Crate [CoNET-L0D](https://github.com/CoNET-project/CoNET-L0D) | MVP accepted: TUN + iptables lifecycle; locator parse; example TOML; systemd unit. P1 outbound encrypt + mailbox wrap + `POST { data }` and inbound decrypt + TUN write-back exist in-crate (`[l0]` default off). A lab host may run that binary with `[l0]` still off. Live mailbox SSE and production mailbox delivery are **not** shipped |
+| Two-host lab (`.45` / `.98`) | 2026-08-17 21:50Z: TUN up; `[l0]` off; public-IP geth + beacon peering after `.98` geth recovery; no validator; advertise stays public IP |
 | Public operator / developer pages | This page and [Developers — conet-l0d](../developers/conet-l0d.md) |
 | Production SI `p2p_stream_*` / `listenKind: "l1p2p"` | **Not** a live command. Do not treat it as current SI. |
 | Measured L0 hop RTT for attestations | **Not** measured. Keep public P2P for slot-critical gossip. |
