@@ -12,7 +12,7 @@ How to use L0 is therefore **application-layer development**: pick wallets, pick
 
 A Layer Minus node does the following:
 
-1. Accept `POST` with `{ data: <OpenPGP armor> }` over HTTP (HTTPS optional). The client **must not** send `X-CoNET-Hop-Sigs`.
+1. Accept `POST` with **only** `{ data: <OpenPGP armor> }` over HTTP (HTTPS optional). The client **must not** send `X-CoNET-Hop-Sigs` or sibling JSON fields (`NoPush`, `beamioNoPush`, flags). Mailbox instructions belong inside armor encrypted to **B’s route PGP**.
 2. Read `getEncryptionKeyIDs()` from the OpenPGP **side channel**.
 3. If that key ID is **not a routable node / mailbox**, respond **404**.
 4. If that key ID **is not** this node's route PGP but **is** routable, miner-sign the **same armor** and forward it to its mailbox over HTTP `:80` (`X-CoNET-Hop-Sigs`, cap **3**). If the destination SI emits socket `end`, close and free this hop.
@@ -21,6 +21,7 @@ A Layer Minus node does the following:
    - if the inner key ID **is not** this node, check SI-to-SI hop signatures. More than **3** signatures, or a count that cannot take another hop, is an all-node flood: emit `end` and **discard**;
    - otherwise forward the **inner** armor and append this node's miner hop signature;
    - if this node is the mailbox, store the armor and, when a listen SSE is attached, encrypt the downlink with the user’s listen `Securitykey`;
+   - if the plaintext is mailbox-work JSON `{ data, NoPush? }` (not a signed `{ message, signMessage }`), unwrap the inner armor and deliver it locally; `NoPush: true` skips APNs / offline badge;
    - if the plaintext is signed JSON `{ message, signMessage }`, the last hop verifies hop signatures, meters those prior-hop bytes against the **user** wallet for **GB**, and runs the API command (listen, proxy, storage, WASM / container, and so on).
 
 Byte-level header rules: [X-CoNET-Hop-Sigs v1](hop-sigs.md). The header is miner signatures for **GB metering**. It is not a detailed forward JSON.
@@ -42,6 +43,7 @@ L0 forwarding plane
     └─ local decrypt once → same-node inner PGP → end (attack)
                           → inner key ≠ local and hop sigs < 3 → forward inner
                           → mailbox → store / SSE (SSE encrypted with listen Securitykey)
+                          → mailbox-work JSON { data, NoPush? } → unwrap inner armor; NoPush skips APNs
                           → else run signed JSON command; last hop meters prior hops to the user
 ```
 
@@ -95,9 +97,10 @@ This is the only cryptographic decision L0 requires the application to get right
 
 | Encrypt to | L0 behavior | Typical application use |
 | --- | --- | --- |
-| **Recipient user PGP** | Entry and mailbox **forward and store** the armor. They cannot read it. | Chat text, typed business JSON, UDP `udp_subscribe` (contains the AES key), sender-facing delivery receipts |
+| **Recipient user PGP** | Entry and mailbox **forward and store** the armor. They cannot read it. | Chat text, typed business JSON, UDP `udp_subscribe` (contains the AES key). Sender receipts use this as the **inner** armor, then wrap as mailbox work. |
 | **Entry or hop-node route PGP** (outer wrap) | That node **decrypts once**. If the inner key ID is not local and hop signatures are within the cap of **3**, it **forwards the inner armor**. Same-node inner PGP is an attack. | Hide the inner recipient key ID from the first-hop path observer; short hop chains only |
-| **Mailbox B route PGP** | B **decrypts** and runs a command. | Listen, `wallet_online_query`, `gossip_delivery_ack`, UDP listen / relay / uplink |
+| **Mailbox B route PGP** (signed command) | B **decrypts** and runs a command. | Listen, `wallet_online_query`, `gossip_delivery_ack`, UDP listen / relay / uplink |
+| **Mailbox B route PGP** (mailbox work) | B **decrypts** `{ data, NoPush? }`, stores the inner user-PGP armor, and may skip APNs. HTTP stays `{ data }` only. | Sender `beamio_chat_delivery_receipt_v1` with `NoPush: true`. Missing B’s key is a failure — no HTTP-field fallback. |
 | **Egress / node route PGP** | The selected SI decrypts and opens an origin connection. | SilentPass / `SaaS_Sock5` / `SaaS_Sock5_v2` |
 
 Wrong target breaks the model: business JSON encrypted to B lets the mailbox read it; a listen command encrypted to the user key never reaches B.
@@ -143,7 +146,7 @@ The same forwarding plane is reused. Only the inner object and key roles change.
 
 | Composition | L0 primitives | Application-owned layer |
 | --- | --- | --- |
-| **DePIN Chat** | User-PGP POST, `listenKind: "chat"`, `gossip_delivery_ack`, `wallet_online_query` | Envelope JSON, Messages UI, encrypted history / `ChatIndexRegistry` |
+| **DePIN Chat** | User-PGP POST, `listenKind: "chat"`, `gossip_delivery_ack`, `wallet_online_query`, mailbox-work wrap for sender receipts (`NoPush`) | Envelope JSON, Messages UI, encrypted history / `ChatIndexRegistry` |
 | **POS terminal permission** | Same Chat delivery path | Typed `beamio_pos_terminal_permission_v1`; Staff pending, not Messages |
 | **Mining gossip** | `command: "mining"` listen (infrastructure may dial the target SI) | Signed epoch frames, miner accounting |
 | **UDP frames** | User-PGP `udp_subscribe`; route-PGP listen / relay / uplink | AES-256-GCM session, adapters, codecs |

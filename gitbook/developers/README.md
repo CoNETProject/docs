@@ -6,6 +6,8 @@ Public site: [https://gitbook.conet.network/developers/](https://gitbook.conet.n
 
 Use this top-level track when the task is **to build or operate against CoNET**, rather than to read the protocol architecture. Architecture chapters stay under [L0](../l0/README.md), [L1](../l1/README.md), and [L2](../l2/README.md). This section sits after those chapters and before [Applications](../applications/README.md).
 
+A change to the DePIN / L0 **protocol layer** must update **both** those architecture pages and this developer track in the same task. Do not document a new HTTP field, encryption target, or mailbox instruction on only one side.
+
 ## Tracks
 
 | Track | What you build or operate | Start here |
@@ -27,7 +29,7 @@ Developers
 - **Forward ciphertext by wallet / OpenPGP key ID** → L0. Layer Minus is a permissionless cloud: use it without a license; treat **every node as untrusted**; compose privacy routing and fragmentation. It does not implement Chat, VPN, mining totals, or payments. See [Permissionless cloud](../l0/permissionless-cloud.md).
 - **Join DePIN mining or L1 consensus** → L1 mining page. Guardian registration, runtime miners, Treasury miners, and L1 validators are **four different sets**.
 - **Move an ERC-20 into the CoNET asset set** → Treasury V3. A token address does not create a route. DLE admission is a later, separate machine and is **not live**.
-- **Write a parallel ledger** → L2 specifications. There is no production DLE SDK or production tip API in this book. The lab explorer at [https://dle.conet.network/](https://dle.conet.network/) is Archive inspection (lab M6 **Clusters = 2**; the second Group ID is a laboratory hash, not an L1 register tx). The L1 routing registry is readable for the first group; Archive Certificate is not a production object.
+- **Write a parallel ledger** → L2 specifications. There is no production DLE SDK or production tip API in this book. The lab explorer at [https://dle.conet.network/](https://dle.conet.network/) is Archive inspection (lab M6 **Clusters = 2**; the second Group ID is the G2 L1 register tx). The L1 routing registry is readable for both live groups; Archive Certificate is not a production object.
 
 ## Constants you will reuse
 

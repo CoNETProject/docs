@@ -59,7 +59,9 @@ For the privacy-preserving path, **A is not B and C is not B**. Client `/post` m
 | Concern | Protocol rule |
 | --- | --- |
 | Network identity | Wallet address plus registered OpenPGP material, not a public IP |
+| HTTP `/post` body | **Only** `{ "data": "<OpenPGP armor>" }`. No sibling fields (`NoPush`, `beamioNoPush`, flags). |
 | Business encryption | Encrypt to the recipient's **user PGP**. TLS is not required for that confidentiality. |
+| Mailbox work | Delivery instructions such as `NoPush` live in JSON encrypted to **B’s route PGP**, wrapping inner user-PGP armor. Only B sees them. |
 | Routing metadata | Nodes read the OpenPGP **encryption key ID**. Non-local → forward. Local decrypt + inner PGP for another key → forward the inner armor. |
 | Forwarding incentive | Relayed ciphertext is metered; the forwarding node is compensated in **GB** |
 | Mailbox control | Encrypt listen, presence, acknowledgement, and UDP relay commands to **B's route PGP** |

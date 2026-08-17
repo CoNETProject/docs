@@ -48,10 +48,13 @@ POST { data: PGP }          // no hop header on the client
             ├─ still OpenPGP and hop signatures already 3 → end / discard
             ├─ still OpenPGP and inner key ≠ this node   → miner-sign + forward inner armor
             ├─ still OpenPGP and this node is the mailbox → store / SSE to the listener
+            ├─ mailbox-work JSON { data, NoPush? }       → unwrap inner armor; NoPush skips APNs
             └─ plaintext JSON { message, signMessage }   → checkSign + run the API command
 ```
 
 API commands after a local decrypt include listen, presence, ACK, UDP relay, SilentPass / SOCKS proxy, and other route-key work (egress, storage, or a WASM / container request). Those objects are **inside** the PGP layer A or B can open. Intermediate hops still see only armor and the compact hop header.
+
+Mailbox work `{ data, NoPush? }` is a third peel result: B unwraps the inner user-PGP armor and may skip APNs. It is **not** a signed `{ message, signMessage }` command and **must not** appear as an HTTP sibling field. See [mailbox routing](mailbox-routing.md#mailbox-work-envelope-b-decrypts-a-delivery-instruction).
 
 ## Canonical hop record (do not extend)
 

@@ -2,7 +2,7 @@
 
 ## What it is
 
-Layer Minus carries **already-encrypted OpenPGP armor** inside ordinary HTTP `POST /post` request/response shapes. Confidentiality of the business payload comes from OpenPGP, not from TLS. Therefore **HTTPS is optional** for delivery: a client may post the same ciphertext over **plain HTTP**.
+Layer Minus carries **already-encrypted OpenPGP armor** inside ordinary HTTP `POST /post` request/response shapes. The JSON body is **only** `{ "data": "<OpenPGP armor>" }`. Do not add sibling fields. Confidentiality of the business payload comes from OpenPGP, not from TLS. Therefore **HTTPS is optional** for delivery: a client may post the same ciphertext over **plain HTTP**.
 
 The intended split is:
 

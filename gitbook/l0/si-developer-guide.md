@@ -31,12 +31,13 @@ Content-Type: application/json
 {"data":"<OpenPGP armored message>"}
 ```
 
-Optional field on the JSON object (not inside the armor):
+The HTTP JSON **must** be only `{ "data": "<OpenPGP armor>" }`. Do **not** add sibling fields (`NoPush`, `beamioNoPush`, flags, metadata). Extra plaintext fields raise inspection risk.
 
 | Field | Meaning |
 | --- | --- |
 | `data` | Required. Full OpenPGP armor (`-----BEGIN PGP MESSAGE-----` …) |
-| `beamioNoPush` | Optional `true`. Skip APNs / offline push for this delivery |
+
+If mailbox **B** must do extra work (for example skip APNs), put that instruction **inside** armor encrypted to **B’s route PGP**. See [mailbox work envelope](#3-mailbox-work-envelope-mailbox-b-decrypts). Entry A only sees `{ data }`.
 
 Client → entry may use **HTTP or HTTPS**. HTTPS is common in browsers because mixed content forbids `http://` from an `https://` page. **HTTP is sufficient** for confidentiality: the body is already OpenPGP ciphertext. **SI → SI** forwarding is **HTTP on port 80** only. Do not treat an entry TLS certificate problem as “the DePIN mesh is down.”
 
@@ -53,7 +54,7 @@ A **404** with a body such as `body has not PGP message` means SI rejected inval
 
 HTTP **200** on send, or an SSE handshake on listen, is **transport progress**. It is not proof that an application decrypted, verified, or rendered the payload.
 
-## Two payload families
+## Three payload families
 
 Do not mix encryption targets.
 
@@ -61,7 +62,7 @@ Do not mix encryption targets.
 
 Encrypt to the **recipient’s user PGP**. SI only sees the OpenPGP key ID and routes to that key’s mailbox.
 
-Typical use: Chat text, typed application JSON, `udp_subscribe` (contains the AES key), sender delivery receipts.
+Typical use: Chat text, typed application JSON, `udp_subscribe` (contains the AES key). Sender delivery receipts use this inner armor, then wrap it as [mailbox work](#3-mailbox-work-envelope-mailbox-b-decrypts) with `NoPush: true`.
 
 ```text
 application object
@@ -88,6 +89,31 @@ command object  (includes walletAddress)
   → POST { data } to entry C ≠ B
 ```
 
+### 3. Mailbox work envelope (mailbox B decrypts)
+
+Use this when mailbox **B** must act on a delivery (today: skip APNs / offline push). Encrypt a JSON work packet to **B’s route PGP**. HTTP to the **entry** is still only `{ data }`.
+
+```json
+{ "data": "<inner OpenPGP armor>", "NoPush": true }
+```
+
+| Field | Meaning |
+| --- | --- |
+| `data` | Inner OpenPGP armor, usually encrypted to the recipient **user PGP** |
+| `NoPush` | Optional `true`. B stores the inner armor (`saveLocal`) and may SSE-forward it, but **must not** queue APNs / native badge |
+
+```text
+inner user-PGP armor
+  → JSON { data: innerArmor, NoPush: true }
+  → OpenPGP encrypt to mailbox B route public key   → <mailBoxNodeOpenPGP armor>
+  → optional wrap of that armor to this entry route key
+  → POST { data: <mailBoxNodeOpenPGP armor> } to entry A ≠ B
+```
+
+Entry A peels (if wrapped) and forwards `{ data }` to B. Only B decrypts the work packet and sees `NoPush`. Do **not** put `NoPush` on the HTTP JSON. If the client lacks B’s route public key, fail — do not fall back to a sibling HTTP field.
+
+Ordinary Chat / POS permission messages **must not** set `NoPush`. `gossip_delivery_ack` is a signed SI command (family 2), not mailbox work.
+
 ## Live command catalog
 
 Source: CoNET-SI `localNodeCommandSocket`. Encrypt the command family to **route PGP** unless the table says otherwise.
@@ -111,7 +137,8 @@ When SI forwards to another SI it may append `X-CoNET-Hop-Sigs` (base64 JSON, ma
 After a **local** decrypt:
 
 - if the plaintext is still OpenPGP **for the same node**, SI treats it as an attack, emits socket `end`, and **does not peel again**;
-- if the inner key ID is another node, SI forwards the **inner** armor when hop-sig count can still grow (cap 3);
+- if the plaintext is mailbox work JSON `{ data, NoPush? }` (not a signed `{ message, signMessage }`), SI unwraps the inner armor and delivers it locally; `NoPush: true` skips APNs;
+- if the inner key ID is another node, SI forwards the **inner** armor when hop-sig count can still grow (cap 3); SI→SI HTTP is still only `{ data }`;
 - more than 3 hop signatures, or a count that cannot take another hop, is an all-node flood: `end`, no forward;
 - if the destination SI emits `end`, the previous hop closes and frees that socket;
 - on a **signed command** path, the last hop may add verified prior-hop bytes to that wallet’s gossip **GB** meter. A mailbox store of user-PGP armor (no command decrypt) cannot charge the user.
@@ -282,20 +309,34 @@ export async function encryptRouteCommand(
   })
 }
 
+export async function wrapArmorToMailboxWork(
+  innerArmor: string,
+  mailboxRoutePublicKeyArmored: string,
+  work?: { NoPush?: boolean },
+): Promise<string> {
+  const payload: { data: string; NoPush?: boolean } = { data: innerArmor }
+  if (work?.NoPush) payload.NoPush = true
+  const pgpMsg = await createMessage({ text: JSON.stringify(payload) })
+  const encryptionKeys = await readKey({ armoredKey: mailboxRoutePublicKeyArmored })
+  return encrypt({
+    message: pgpMsg,
+    encryptionKeys,
+    config: { preferredCompressionAlgorithm: enums.compression.zlib },
+  })
+}
+
 export async function postArmor(
   domain: string,
   armored: string,
-  opts?: { https?: boolean; beamioNoPush?: boolean; acceptSse?: boolean; signal?: AbortSignal },
+  opts?: { https?: boolean; acceptSse?: boolean; signal?: AbortSignal },
 ): Promise<Response> {
-  const body: { data: string; beamioNoPush?: boolean } = { data: armored }
-  if (opts?.beamioNoPush) body.beamioNoPush = true
   return fetch(postUrl(domain, opts?.https !== false), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=UTF-8',
       ...(opts?.acceptSse ? { Accept: 'text/event-stream' } : {}),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ data: armored }),
     signal: opts?.signal,
     cache: 'no-store',
   })

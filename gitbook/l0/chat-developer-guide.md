@@ -15,7 +15,7 @@ Public packages: [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-
 | Register user PGP + mailbox | — | `POST https://beamio.app/api/regiestChatRoute`, then confirm with AddressPGP `searchKey` |
 | Send a message | Recipient **EOA user PGP** | `POST /post` to healthy entries **A ≠ B** |
 | Listen | Own mailbox **B route PGP** | SSE via entry **C ≠ B**, `command: "mining"` + `listenKind: "chat"` |
-| After inbound ingest | (1) **B route PGP** ACK · (2) **sender user PGP** receipt | ACK and receipt both via entries ≠ B |
+| After inbound ingest | (1) **B route PGP** ACK · (2) sender user PGP receipt, then mailbox-work wrap `NoPush` to sender mailbox B | ACK and receipt both via entries ≠ B; HTTP still `{ data }` only |
 | Presence (green dot) | Contact mailbox **B route PGP** | `wallet_online_query` via **C ≠ B** |
 | Optional recover history | — | Encrypted IPFS fragments + `ChatIndexRegistry` head pointer |
 
@@ -56,6 +56,9 @@ Live `sendMessage` signs the **inner application string** (`text`), then OpenPGP
 
 ⑤ POST
    { data: <armor> } → several https://{domain}.conet.network/post  (A ≠ B)
+   HTTP JSON is **only** `{ data }`. For a sender receipt, wrap ④ as mailbox work
+   `{ data: armor, NoPush: true }` encrypted to the **sender mailbox B** route PGP,
+   then POST that outer armor. See [SI mailbox work](si-developer-guide.md#3-mailbox-work-envelope-mailbox-b-decrypts).
 ```
 
 Inbound: decrypt with the recipient user PGP private key → parse ③ → `ethers.verifyMessage(text, signMessage)` must recover `from` → unwrap nested `text` for typed payloads.
@@ -206,7 +209,7 @@ After decrypt, if the Worker received armor, compute `armorHash = keccak256(utf8
 After a **business** message is ingested (verified, not a receipt, not POS-permission-only):
 
 1. **Mailbox ACK** — SI command `gossip_delivery_ack` encrypted to **B route PGP**. Removes offline store and cancels pending APNs. Sample: [SI developer guide](si-developer-guide.md#mailbox-delivery-ack).
-2. **Sender receipt** — ordinary Chat business envelope whose inner type is `beamio_chat_delivery_receipt_v1`, encrypted to the **original sender’s user PGP**. Set `beamioNoPush: true`.
+2. **Sender receipt** — ordinary Chat business envelope whose inner type is `beamio_chat_delivery_receipt_v1`, encrypted to the **original sender’s user PGP**, then wrapped as mailbox work `{ data: <user-PGP armor>, NoPush: true }` encrypted to the **sender’s mailbox B route PGP**. HTTP to the entry is still only `{ data }`. SDK: `sendMessage(..., { beamioNoPush: true })` (requires `to.routerArmoredPublicKey`).
 
 ```ts
 export const CHAT_DELIVERY_RECEIPT_V1 = 'beamio_chat_delivery_receipt_v1' as const

@@ -57,7 +57,7 @@ The client must not send or listen by directly dialing mailbox B. Entry health, 
 | Payload | Encryption target | Reason |
 | --- | --- | --- |
 | Ordinary chat or typed business message | Recipient **user PGP** | Only the recipient application should read business plaintext |
-| `beamio_chat_delivery_receipt_v1` | Original sender **user PGP** | The sender application reads and applies the delivery state |
+| `beamio_chat_delivery_receipt_v1` | Inner: original sender **user PGP**. Outer: sender mailbox **B route PGP** as mailbox work `{ data, NoPush: true }` | The sender application reads the receipt. HTTP stays `{ data }` only. `NoPush` skips APNs on the sender mailbox. |
 | Listen command | Mailbox B **route PGP** | B must read the control command and attach the SSE listener |
 | `wallet_online_query` | Contact mailbox B **route PGP** | B answers from its own live listen pool |
 | `gossip_delivery_ack` | Recipient mailbox B **route PGP** | B removes the matching offline item and cancels pending notification work |
@@ -69,7 +69,7 @@ Encrypting a business message to a route key would let the mailbox read it. Encr
 After the recipient has verified and ingested an ordinary message, the client emits two independent acknowledgements:
 
 1. **Mailbox ACK** — `gossip_delivery_ack`, encrypted to B’s route PGP. It identifies the stored ciphertext by hash and lets B remove the offline copy or stop an outstanding notification timer.
-2. **Sender receipt** — `beamio_chat_delivery_receipt_v1`, encrypted to the sender’s user PGP. It updates the sender’s existing message to **Delivered**.
+2. **Sender receipt** — `beamio_chat_delivery_receipt_v1`, encrypted to the sender’s user PGP, then wrapped as mailbox work `{ data, NoPush: true }` to the sender’s mailbox B. HTTP to the entry is still only `{ data }`. It updates the sender’s existing message to **Delivered** without a badge.
 
 Neither acknowledgement should become a visible chat bubble. **Delivered** means the recipient application ingested the message and emitted the receipt; it is not a human read receipt.
 

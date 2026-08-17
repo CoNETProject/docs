@@ -9,7 +9,7 @@ Layer Minus roles describe what a process does for one route. They are not perma
 | **User client** | Holds wallet and OpenPGP private keys; signs, encrypts, decrypts, and acknowledges | Sees its own application plaintext |
 | **Entry A** | Accepts HTTP (or optional HTTPS) `/post`, reads the OpenPGP key ID, forwards or peels a local outer layer, meters bytes for **GB** | Does not decrypt user-PGP business plaintext; may decrypt an outer layer addressed to A |
 | **Entry C** | Accepts a listen or mailbox-control request and forwards it to B | Does not decrypt B's route-key command |
-| **Mailbox B** | Decrypts mailbox control, verifies route ownership, stores business ciphertext, and manages delivery sessions | Does not decrypt user-PGP business content |
+| **Mailbox B** | Decrypts mailbox control and mailbox-work JSON (`NoPush`), verifies route ownership, stores business ciphertext, and manages delivery sessions | Does not decrypt user-PGP business content |
 | **UDP server client** | Receives `udp_subscribe`, obtains the symmetric key, and encrypts or decrypts application frames | Sees its UDP application plaintext |
 | **LayerMinus mining client** | Opens mining listens to SI nodes, verifies signed gossip, and reports accounting data when configured | Sees signed mining gossip, not mailbox business plaintext |
 

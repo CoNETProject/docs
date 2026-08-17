@@ -26,9 +26,32 @@ For the intended route, `A ≠ B` and `C ≠ B`. A and C may be different entrie
 2. S signs the application envelope with its **sender** EOA. That EOA does not have to be R, and R does not have to be the recipient's display wallet.
 3. S encrypts the complete envelope to **R's user OpenPGP key**.
 4. Optionally, S wraps that armor in one or more **outer OpenPGP layers** addressed to A or to a hop chain. The first `/post` then shows the **outer** key ID to a path observer.
-5. S posts the armored ciphertext to healthy entry A over **HTTP or HTTPS**. Because the body is already ciphertext, **HTTP is sufficient** and is the intended client path where TLS SNI or JA3/JA4 would be classified or blocked.
+5. S posts the armored ciphertext to healthy entry A over **HTTP or HTTPS**. The HTTP JSON is **only** `{ "data": "<OpenPGP armor>" }`. Do **not** add sibling fields (`NoPush`, `beamioNoPush`, flags). Extra plaintext fields raise inspection risk. Because the body is already ciphertext, **HTTP is sufficient** and is the intended client path where TLS SNI or JA3/JA4 would be classified or blocked.
 6. A reads `getEncryptionKeyIDs()`. If the key is not local, A forwards the **same armor** and signs the SI hop header. If the key **is** local, A decrypts **once**. When the plaintext is still OpenPGP and the inner side-channel key ID is not this node, A forwards the **inner** armor if hop signatures stay at or below **3**. Same-node inner PGP is an attack (`end`). A does **not** read user-PGP business plaintext.
-7. B stores the inbound armor before attempting live SSE delivery. B does not decrypt the business envelope. When B ends the socket, A frees that connection. SI hop signatures are the credential the last decrypting hop uses to meter prior-hop bytes against the **user** wallet for **GB**.
+7. B stores the inbound armor before attempting live SSE delivery. B does not decrypt the **user-PGP** business envelope. When B ends the socket, A frees that connection. SI hop signatures are the credential the last decrypting hop uses to meter prior-hop bytes against the **user** wallet for **GB**.
+
+### Mailbox work envelope (B decrypts a delivery instruction)
+
+If mailbox **B** must act on a delivery (today: skip APNs / offline push), the client wraps the inner user-PGP armor in a **mailbox work** packet encrypted to **B’s route PGP**. HTTP to the entry remains `{ "data": "<mailBoxNodeOpenPGP armor>" }`. Only B decrypts the work JSON and sees `NoPush`. Entry A sees only armor and the outer key ID.
+
+```text
+inner user-PGP armor
+  → JSON { data: innerArmor, NoPush: true }
+  → OpenPGP encrypt to mailbox B route PGP
+  → optional wrap to this entry
+  → POST { data } to A ≠ B
+```
+
+| Layer | Content | Encrypt to |
+| --- | --- | --- |
+| HTTP (entry / SI→SI) | **Only** `{ data: armor }` | — |
+| Optional entry wrap | Inner armor | That **entry** route PGP |
+| Mailbox work | `{ data: innerArmor, NoPush: true }` | **Mailbox B** route PGP |
+| Business | Chat / sender receipt | Recipient **user PGP** |
+
+Missing B’s route public key is a **failure**. Do not fall back to an HTTP sibling field. Ordinary Chat and POS permission messages **must not** set `NoPush`. `gossip_delivery_ack` is a signed route command, not mailbox work. Sender receipts `beamio_chat_delivery_receipt_v1` use this wrap so B stores and may SSE-forward without a badge.
+
+Wire samples: [SI developer guide — mailbox work](si-developer-guide.md#3-mailbox-work-envelope-mailbox-b-decrypts).
 
 The key ID is an **intentional OpenPGP side channel**. It exists so that a node can learn *where* to send the next hop without learning *what* the innermost ciphertext says. A peel node still learns the **next** key ID.
 
@@ -89,7 +112,7 @@ When routing and encryption rules are followed:
 
 - A and C cannot decrypt **business** content (user-PGP innermost armor);
 - A and C **can** read the OpenPGP key ID on the layer they handle. If the client used an outer envelope, the first-hop observer sees A's key, not R's. After a local decrypt, A still sees the next key ID — that is the routing primitive, not a leak of message text;
-- B can decrypt mailbox control but not user-PGP business content;
+- B can decrypt mailbox control and mailbox-work JSON (`NoPush`) but not user-PGP business content;
 - B sees an entry connection instead of a direct client connection;
 - client `/post` confidentiality does not require HTTPS; and
 - a forwarding node is paid in **GB** for relaying ciphertext, which aligns the incentive with delivery rather than inspection.
@@ -100,7 +123,7 @@ A/B/C are **roles**. Collusion of A+B, C+B, or one operator running all three re
 
 `checkSign` authenticates the signed command string. Mailbox `saveLocal` appends armor and does not consume a nonce. A valid old request can be replayed unless the **application** binds `messageId` / `nonce` / expiry and persists consumed state. See [security limits](security-limits.md).
 
-Direct-to-B requests violate the privacy model even if they function. Other protocol violations include encrypting business data to B's route key, targeting an AA without user PGP material, choosing a non-exact tag result, and placing a UDP symmetric key in a route-key command.
+Direct-to-B requests violate the privacy model even if they function. Other protocol violations include encrypting business data to B's route key, targeting an AA without user PGP material, choosing a non-exact tag result, placing a UDP symmetric key in a route-key command, and putting mailbox instructions (`NoPush` / `beamioNoPush`) on the HTTP JSON instead of inside B-decryptable mailbox work.
 
 ## Implementation anchors
 

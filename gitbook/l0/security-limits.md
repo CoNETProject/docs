@@ -51,9 +51,10 @@ SI routing is not limited to “one key ID, never decrypt.” After a **local** 
 2. If that inner key ID **is** this node's route PGP, treat it as an attack: emit socket `end` and stop. Do not peel again on the same node.
 3. If the inner key ID is **not** this node, read SI-to-SI `X-CoNET-Hop-Sigs`. More than **3** hop signatures (or a count that cannot take another hop) is an all-node flood: emit `end` and **do not** forward. The packet is **discarded**.
 4. Otherwise **forward the inner armor** and append this node's miner hop signature. When the destination SI ends the socket, the previous hop closes and frees that connection.
-5. If the plaintext is signed JSON `{ message, signMessage }`, the last hop verifies hop signatures, meters those prior-hop bytes against the **user** wallet for **GB**, and runs the API command (listen, proxy, storage, WASM / container, and so on).
+5. If the plaintext is mailbox-work JSON `{ data, NoPush? }` (not a signed command), unwrap the inner armor and deliver it locally; `NoPush: true` skips APNs.
+6. If the plaintext is signed JSON `{ message, signMessage }`, the last hop verifies hop signatures, meters those prior-hop bytes against the **user** wallet for **GB**, and runs the API command (listen, proxy, storage, WASM / container, and so on).
 
-The client `POST /post` body is **only** OpenPGP armor and **must not** carry `X-CoNET-Hop-Sigs`. If the outer key ID is not a routable node / mailbox, A responds **404**. A then miner-signs and forwards to B; B sees the header because A created it.
+The client `POST /post` JSON is **only** `{ "data": "<OpenPGP armor>" }`. It **must not** carry `X-CoNET-Hop-Sigs` or sibling fields (`NoPush`, `beamioNoPush`, flags). Mailbox instructions belong inside B-decryptable work armor. If the outer key ID is not a routable node / mailbox, A responds **404**. A then miner-signs and forwards to B; B sees the header because A created it.
 
 ### Loop protection
 
