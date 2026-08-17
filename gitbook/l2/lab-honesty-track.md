@@ -8,7 +8,7 @@ Developer how-to: [L2 development](../developers/l2.md). Explorer facts: [DLE ex
 
 ## Status in one sentence
 
-The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **153/153**). A keep-data deploy of that honesty track to the official seven G1 hosts is **not claimed**. `pilotStartedAt` remains **null**.
+The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **153/153**). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable**. This is **not** 7/7 healthy and **not** a durable seven-host `officialStandbysReady`. `pilotStartedAt` remains **null**.
 
 ## What is live
 
@@ -41,18 +41,26 @@ These gates replace laboratory HMAC envelopes with laboratory EIP-712 typed data
 
 `node.ts` is **not** wired to the new-chain official-standby gate. `lab-cli` may return `409` `ERR_NEWCHAIN_STANDBY_NOT_READY` until two official standbys are ready.
 
-## Largest honesty gap
+## P23 live keep-deploy (landed, honest 6/7)
 
-The repository honesty track is **ahead of** this public book’s previous 2026-08-16 HMAC narrative, and it is **ahead of** any claimed seven-host keep-deploy of P12–P22.
+`npm run lab:deploy-g1-keep` (keep-data; merge G1+G2 `planeDirectory`; do **not** restart G2) put the P12–P22 binary on the official G1 roster.
 
-Do **not** treat `153/153` unit tests as evidence that the seven live G1 hosts already serve EIP-712 seating, challenge, BFT, on-demand, or standby envelopes.
+| Host | Deploy | Overlay |
+| --- | --- | --- |
+| fd-01 … fd-05, fd-07 | `LIVE_OK` | `seatingEip712` / `challengeEip712` / `bftEip712` / `ondemandEip712` / `standbyReadyEip712` under `health.syncQualification` |
+| fd-06 official standby | `STARTED` after hung-lab-cli SIGKILL; **no** `LIVE_OK`. Keep-data retry still missed liveness | `/liveness` and `/health` timeout (event-loop starve). **Not** a stable official standby host |
+
+fd-01 `POST /newchain/request` walked **409** `ERR_NEWCHAIN_STANDBY_NOT_READY` (`officialStandbyReadyCount=0` at `2026-08-17T23:13:41.428Z`) → **200** accept (`requestId` `0xe8229f1635d681d5b48430b5cd4a09e2c7787d4e4338a60c512ce9ab9d81b472`, `count=2` at `2026-08-17T23:18:22.095Z`).
+
+`officialStandbysReady` is **not** a durable seven-host true. After the accept window, some LIVE_OK hosts dropped back to `count=0` when inventory roots drifted. Extra `fd-08` stays unofficial. G2 BFT/ondemand stay off. `node.ts` is **not** wired. Evidence: CoNET-DLE `pilot/evidence/conet-dle-p23-live-2026-08/`.
+
+Do **not** treat `153/153` unit tests alone as the live proof, and do **not** write “seven hosts already cut over and stay healthy.”
 
 ## Next laboratory gates (not landed)
 
 | Gate | Goal | Forbidden |
 | --- | --- | --- |
-| **P23** | Keep-data deploy of the landed P12–P22 engines to the official G1 seven hosts. Scrape `/health` overlays (`seatingEip712`, `challengeEip712`, `bftEip712`, `ondemandEip712`, `officialStandbysReady`). Collect new-chain `409` then accept evidence. Extra `fd-08` stays unofficial. G2 stays BFT/ondemand off. | Claiming the repo test run is live-host evidence; wipe; `pilotStartedAt`; promoting `fd-08`; forcing G2 voting |
-| **P24** | After P23 evidence, wire `node.ts` new-chain accept to the same `officialStandbysReady` callback as `lab-cli`. | Wiring before P23; production OperatorDomain; changing `archiveSeating.ts` |
+| **P24** | Wire `node.ts` new-chain accept to the same `officialStandbysReady` callback as `lab-cli`. | Production OperatorDomain; changing `archiveSeating.ts`; claiming 7/7 healthy |
 | **P25** | Explorer read-only overlays for `officialStandbysReady` / `hashIndexCommittedInAc`. Green pills stay `seatingQualified === true` only. | Changing seating logic; painting overlays as production AC or 30-day |
 
 ## Parked

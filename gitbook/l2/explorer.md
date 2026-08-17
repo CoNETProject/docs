@@ -21,7 +21,7 @@ The explorer is a read-only inspection surface for the isolated 30-day DLE Archi
 | Same-origin backends | `GET /health`, `POST /rpc`, `GET /api/v2/dle` |
 | Lab agent | `dle-30d-lab` (first group). Second group is `dle-m6-g2` and is not the public nginx upstream. |
 | Lab runtime | Node.js Archive process, `command: archive` |
-| Observed 2026-08-16 | `/health` `ok: true`; **`liveGroupCount`: 2**; Home metric **Clusters** = 2 (not Tip height). Hosts emit the G2 L1 register tx as `hop1.ownGroupId` / `liveGroupIds`. Second Group ID **does** open Blockscout `/tx/`. Laboratory keccak remains an alias only. 2026-08-17 review: repository P12–P22 EIP-712 is engine + tests; a seven-host keep-deploy is **not claimed**. Green pills stay `seatingQualified === true` only. |
+| Observed 2026-08-16 | `/health` `ok: true`; **`liveGroupCount`: 2**; Home metric **Clusters** = 2 (not Tip height). Hosts emit the G2 L1 register tx as `hop1.ownGroupId` / `liveGroupIds`. Second Group ID **does** open Blockscout `/tx/`. Laboratory keccak remains an alias only. 2026-08-17 review: repository P12–P22 EIP-712 is engine + tests; **P23** keep-deploy evidence is **6/7 `LIVE_OK`** plus fd-01 409→accept; fd-06 HTTP is unstable. Do **not** claim 7/7 healthy. Green pills stay `seatingQualified === true` only. |
 
 This hostname is an authorized CoNET path. Do **not** invent additional `dle.*` hostnames, and do **not** write explorer hostnames into Solidity constants. Production routing truth is the deployed L1 [Global Archive Routing Registry](routing-registry.md), not this URL.
 
@@ -155,7 +155,7 @@ The public UI being live does **not** close these whitepaper / spec gates:
 | 7×7 `/health` mesh | Heartbeat quorum only; seating green pill only when `seatingQualified === true` |
 | Participant wallets on `/archives` | Seven distinct EOAs; L1 overlay from `archivesOf(1)`. Extra `fd-08` is unofficial |
 | Global Archive Routing Registry | Deployed and verified — [routing registry](routing-registry.md) |
-| Laboratory honesty track P12–P22 | Repository engine + `153/153` tests. Live seven-host keep-deploy **not claimed** — [Lab honesty track](lab-honesty-track.md) |
+| Laboratory honesty track P12–P23 | Engine + `153/153` tests. P23 keep-deploy **6/7 `LIVE_OK`** + fd-01 409→accept; fd-06 HTTP unstable — [Lab honesty track](lab-honesty-track.md) |
 | 30-day qualification | Not qualified (`100` rotations / `30` re-homes / `100` takeovers still at `0`; `pilotStartedAt` is null) |
 | Production Archive Certificate / OperatorDomain | Not claimed. First-group lab AC may exist; it is not a frozen L1 wrapper |
 | `OperatorDomainRegistryV1` / `AssetBurnMintGateway` | Not deployed as production DLE machines |
