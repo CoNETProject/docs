@@ -60,6 +60,7 @@ The historical `doceng.conet.network` export is archived in the documentation re
 | SilentPass beta | https://vpn-beta.conet.network/ | Access-controlled beta entry point |
 | Miner-matched order-book exchange | No public client endpoint yet | Under development / design study |
 | BT over DePIN DCDN | No public client endpoint yet | Under development |
+| L1 overlay daemon (conet-l0d) | No public product endpoint; Linux command in the engineering crate | Under development |
 
 Product status and protocol dependencies are documented under [Applications](applications/README.md).
 
@@ -91,6 +92,7 @@ These organizations host the independently cloneable CoNET / Beamio sources cite
 | Beamio application SDK/API | https://github.com/settleonbase/x402sdk | https://www.npmjs.com/package/@settle402/sdk |
 | CoNET Chat SDK | https://github.com/CoNET-project/chat-sdk | https://www.npmjs.com/package/@conet.project/chat-sdk |
 | GitBook source | https://github.com/CoNETProject/docs | This book: `gitbook/` |
+| L1 overlay daemon | https://github.com/CoNET-project/CoNET-L0D | Independent crate (engineering checkout may also keep a working copy) |
 
 Client-specific SilentPass repositories:
 
@@ -113,6 +115,7 @@ Public source and a finished product are different claims.
 | Archive second implementation | Listed as an open production blocker in the public Archive spec | Not complete; production archive signing is forbidden until the spec’s blockers close |
 | DEX client | No public exchange client repository identified | Design study |
 | BT / DCDN client | No CoNET BitTorrent or DCDN client repository identified | Under development; do not treat upstream WebTorrent as the CoNET product |
+| L1 overlay daemon | Crate MVP accepted + [Applications](applications/conet-l0d.md) / [Developers](developers/conet-l0d.md) pages | Under development; P1 encrypt + mailbox wrap + POST in-crate, default off; lab binary may run with `[l0]` off; listen write-back not shipped; no live SI `p2p_stream_*` |
 | SNS / creator client | No public feed or creator-studio client identified | Economic design studies only |
 | POS PWA | Public product endpoints; **no standalone public repository identified** | Live POS PWA |
 
@@ -129,6 +132,7 @@ Paths below are relative to the named **public repository**.
 | L0 client how-to | This book: [L0 development](developers/l0.md) · [SI developer guide](l0/si-developer-guide.md) |
 | Chat client how-to | This book: [Chat developer guide](l0/chat-developer-guide.md) |
 | L1 node how-to + genesis downloads | This book: [Run an L1 node](developers/l1-node.md) · [genesis.json](https://gitbook.conet.network/l1/network/genesis.json) · [genesis.ssz](https://gitbook.conet.network/l1/network/genesis.ssz) · [config.yml](https://gitbook.conet.network/l1/network/config.yml) |
+| L1 overlay operator / developer how-to | This book: [Applications — conet-l0d](applications/conet-l0d.md) · [Developers — conet-l0d](developers/conet-l0d.md) |
 | DePIN mining how-to | This book: [Participate in mining](developers/l1-mining.md) |
 | ERC-20 Treasury ingress | This book: [Bring an ERC-20 into CoNET](developers/l1-erc20-bridge.md) |
 | L2 / DLE how-to | This book: [L2 development](developers/l2.md) · [DLE explorer](l2/explorer.md) · [routing registry](l2/routing-registry.md) |

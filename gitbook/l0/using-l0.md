@@ -55,12 +55,13 @@ L0 names a peer as **wallet + OpenPGP material**. IP addresses remain TCP/IP loc
 | --- | --- |
 | Chat bubbles, unread counts, history, POS Staff queues | Application + optional L1 registries |
 | VPN / SOCKS capture, path rotation, admission UX | SilentPass and related clients |
+| TUN / iptables / geth–beacon overlay catch | `conet-l0d` — [Applications](../applications/conet-l0d.md) · [Developers](../developers/conet-l0d.md) |
 | Mining epoch accounting and miner totals | LayerMinus / CoNET-DL |
 | AES session keys, UDP adapters, game or media codecs | The UDP or media application |
 | Payments, cards, Treasury, AA policy | L1 contracts and application APIs |
 | Size padding or timing jitter | **Not implemented** in current SI |
 
-Do not treat [DePIN Chat](../applications/depin-chat.md) or [SilentPass](../applications/silentpass-vpn.md) as “the L0 protocol.” They are two combinations of the same forwarding network.
+Do not treat [DePIN Chat](../applications/depin-chat.md), [SilentPass](../applications/silentpass-vpn.md), or [conet-l0d](../applications/conet-l0d.md) as “the L0 protocol.” They are combinations of the same forwarding network. SilentPass is **egress** to a public `host:port`. `conet-l0d` is an **L1 overlay catch** (Under development). Do not use one as the other.
 
 ## Application developer loop
 
@@ -168,6 +169,7 @@ These are valid **application designs** on top of a forwarding network. They are
 | Privacy poll receive mode | Weaker Chat online / arrival-time fingerprint than SSE | Not implemented |
 | Double Ratchet / MLS after AddressPGP handshake | Forward secrecy and post-compromise security for Chat | Not implemented |
 | Operator-domain entry/mailbox exclusion | A/B/C as independent operators, not only roles | Not implemented on L0 |
+| L1 overlay TCP byte-stream (`conet-l0d`) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP on existing `/post` | Crate MVP accepted; P1 encrypt + mailbox wrap + POST in-crate, default off; lab binary may run with `[l0]` off; listen write-back not shipped. No live SI `p2p_stream_*` / `listenKind: "l1p2p"`. Keep public P2P for the 6s slot |
 
 Document those as upgrades or product options. Do not describe them as the live L0 plane. See [security limits](security-limits.md).
 
@@ -193,3 +195,4 @@ Document those as upgrades or product options. Do not describe them as the live 
 8. [UDP frame forwarding](udp-forward.md) — one composition that adds a symmetric key.
 9. [Security limits](security-limits.md) — live threat grades versus proposed upgrades.
 10. [Applications](../applications/README.md) — products that combine L0 with L1 and UI.
+11. [L1 overlay daemon](../applications/conet-l0d.md) · [Developers — conet-l0d](../developers/conet-l0d.md) — optional geth/beacon overlay (Under development).

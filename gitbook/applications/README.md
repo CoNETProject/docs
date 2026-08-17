@@ -26,6 +26,7 @@ These labels map to the book-wide evidence model: **Public application → Produ
 | **Institutional multisig AA** | Team-controlled Smart Wallet | V2 on-chain tasks, threshold votes, reservations, and policy locks become proposal, approval, and history screens | **Integrated capability** | [Institutional multisig AA](institutional-multisig-aa.md) | [SilentPassUI](https://github.com/CoNET-project/SilentPassUI) · [x402sdk](https://github.com/settleonbase/x402sdk) |
 | **Miner-matched order-book exchange** | Proposed non-custodial ERC-20 market | Signed limit orders, replicated miner books, deterministic matching, and atomic settlement target CEX-like interaction without matcher custody | **Under development** | [Miner-matched order-book exchange](miner-orderbook-dex.md) | Design study; no public client, fungible order-book DLE specification, or audited settlement contract identified |
 | **DePIN DCDN / BT distribution** | Planned bulk-content distribution | Wallet-addressed discovery, content hashes, and proposed seeding incentives are intended to form a piece-distribution application | **Under development** | [DePIN DCDN / BT](bt-dcdn.md) | Client not published · L0 [`mvp-si`](https://www.npmjs.com/package/@conet.project/mvp-si) / [`mvp-dl`](https://www.npmjs.com/package/@conet.project/mvp-dl) |
+| **L1 overlay daemon (conet-l0d)** | Linux operator command for geth / beacon overlay P2P | TUN + owned iptables catch overlay `100.64.0.0/10`; `web3://` locators; crate MVP accepted; P1 encrypt + mailbox wrap + POST in-crate; lab binary may run with `[l0]` off; listen write-back not shipped. Not SilentPass egress | **Under development** | [L1 overlay daemon](conet-l0d.md) | [CoNET-project/CoNET-L0D](https://github.com/CoNET-project/CoNET-L0D); no live SI `p2p_stream_*`; do not advertise overlay vIP until a bidirectional frame is proven |
 
 ## Product role
 
@@ -61,6 +62,7 @@ The pages in this section distinguish observed implementation surfaces from broa
 
 - The miner-matched exchange still needs a versioned fungible order protocol, fair sequencing, matcher registry and challenge rules, audited settlement, public clients, live liquidity, and measured performance.
 - DePIN DCDN / BT has no published end-to-end client and remains a design and implementation roadmap.
+- `conet-l0d` crate MVP is accepted. P1 encrypt + mailbox wrap + POST exist in-crate and stay off. A lab host may run that binary with `[l0]` still off. Listen write-back, live overlay TCP on production SI, and measured slot RTT are not available. Keep public P2P for attestations. Do not advertise overlay vIPs until a bidirectional frame is proven. Do not use SilentPass as L1 peering.
 - Public applications still require continued hardening, interoperability testing, operational monitoring, and independent security review.
 - Protocol-level capability does not automatically provide polished onboarding, recovery, abuse handling, accessibility, or support; each application must implement those concerns explicitly.
 
@@ -84,6 +86,7 @@ The pages in this section distinguish observed implementation surfaces from broa
 - [Institutional multisig AA](institutional-multisig-aa.md)
 - [Miner-matched order-book exchange](miner-orderbook-dex.md)
 - [DePIN DCDN / BT](bt-dcdn.md)
+- [L1 overlay daemon (conet-l0d)](conet-l0d.md) · [Developers — conet-l0d](../developers/conet-l0d.md)
 - [Use cases](../use-cases/README.md) — [NFT / Web of Trust](../use-cases/nft-web-of-trust.md), [Decentralized SNS](../use-cases/decentralized-sns.md), [creator economy / YouTube](../use-cases/decentralized-youtube.md)
 - [Decentralized cross-chain Treasury](../l1/cross-chain-treasury.md)
 - [Cross-chain assets in DLE](../l2/cross-chain-assets.md)

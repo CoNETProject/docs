@@ -197,6 +197,15 @@ Do not default to `--peer` against a single historic seed. Prefer several `--boo
 
 `https://rpc.conet.network` is deprecated and must not be used to judge sync.
 
+## Optional: overlay P2P (`conet-l0d`)
+
+The public bootnodes and inbound **8400 / 4200 / 4300** above remain the **production default**. A Linux daemon can add a **static overlay** path (`100.64.0.0/10`) for NAT or hosts without a stable public IP. It does not replace public P2P for the 6-second slot.
+
+- Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.md)
+- CLI, config, owned TUN / iptables: [Developers — conet-l0d](conet-l0d.md)
+
+Advertise only: geth `--nat extip:<overlay-vIP>` and beacon `--p2p-host-ip=<overlay-vIP>`. Do **not** switch those flags to the overlay vIP until a bidirectional overlay frame is proven on the peer TUN. Keep Engine and HTTP on `127.0.0.1`. Do not bind `--http.addr`, `--authrpc.addr`, `--p2p-local-ip`, or `--rpc-host` to the overlay. Do not point SilentPass / `SaaS_Sock5` at these P2P ports.
+
 ## Stake a validator (optional)
 
 After the node is synced:
@@ -222,6 +231,8 @@ This page does not publish deposit private keys, operator wallets, or a hosted l
 - [RPC and Explorer](../l1/rpc-explorer.md) — application JSON-RPC (not P2P)
 - [Participate in mining](l1-mining.md) — permissioned DePIN gossip
 - [L1 decentralization](../l1/decentralization.md) — three counts that are not interchangeable
+- [conet-l0d](conet-l0d.md) — optional overlay catch (Under development)
+- [Applications — L1 overlay daemon](../applications/conet-l0d.md)
 
 ## Next
 
