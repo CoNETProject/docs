@@ -8,7 +8,7 @@ Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.
 L1 ports and public bootnodes: [Run an L1 node](l1-node.md)  
 Forwarding plane: [L0 development](l0.md) · [How to use Layer Minus](../l0/using-l0.md)
 
-Whitepaper / `RULES.md` revision **2026-08-18** (authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP proven; after the batching binary the limiter is Prysm initial-sync at ~3.2 blocks/s; EL still `0x0`; lab overlay UDP + live discv5 via L0 accepted; DHT drop recovery = flush ghost conntrack first; authorized `.45` `restart-beacon` after dial backoff; `ss` public `:4200` is DNAT dest, not a leak; not a production discv5 product; operator watch `scripts/watch-l0-follow.sh`). A change to those files must update **this page and the Applications page** in the same task. A **new SI command** must also update L0 protocol pages (`using-l0`, mailbox routing, SI developer guide) — do not document a live command on only one side.
+Whitepaper / `RULES.md` revision **2026-08-18** (optional per-port `[[l0.channels]]` listen SSE; authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP proven; after the batching binary the limiter is Prysm initial-sync at ~3.2 blocks/s; EL still `0x0`; lab overlay UDP + live discv5 via L0 accepted; DHT drop recovery = flush ghost conntrack first; authorized `.45` `restart-beacon` after dial backoff; `ss` public `:4200` is DNAT dest, not a leak; not a production discv5 product; operator watch `scripts/watch-l0-follow.sh`). A change to those files must update **this page and the Applications page** in the same task. A **new SI command** must also update L0 protocol pages (`using-l0`, mailbox routing, SI developer guide) — do not document a live command on only one side.
 
 ## What you build
 
@@ -49,7 +49,7 @@ The daemon **owns** TUN and iptables. Do not ship a second operator `iptables` s
 | `systemd/conet-l0d.service` | `ExecStart=start` / `ExecStop=stop`; `CAP_NET_ADMIN`; no raw iptables |
 | `whitepaper/` | Design pair (EN + zh-CN), revision **2026-08-18** |
 | `docs/MVP.md` | Accepted crate MVP |
-| `docs/P1.md` | Overlay `/post` encrypt + mailbox wrap + POST; inbound decrypt + TUN write-back; EIP-191 listen worker; SI gossip JSON ingest; `[l0]` default off; authorized lab may enable `[l0]`; 2026-08-18: `.45` advertises overlay vIP; overlay geth + beacon TCP; CL initial-sync in progress |
+| `docs/P1.md` | Overlay `/post` encrypt + mailbox wrap + POST; inbound decrypt + TUN write-back; EIP-191 listen worker; optional `[[l0.channels]]` per overlay port; SI gossip JSON ingest; `[l0]` default off; authorized lab may enable `[l0]`; 2026-08-18: `.45` advertises overlay vIP; overlay geth + beacon TCP; CL initial-sync in progress |
 | `docs/P2.md` | Lab overlay UDP / DHT-port comms (echo + `:4300` + public-ENR steer + live discv5 via L0). `L0_DHT` allowlist = overlay then hub `/32` (one CIDR per `--p2p-allowlist`, last wins). Steer DNATs hub ports onto overlay. With a bootstrap ENR, drop overlay `--peer`. If `connected` drops, `overlay-dht-steer.sh apply` first (flush ghost conntrack; no EL/CL restart). Authorized `.45` `restart-beacon` only after dial backoff; do not re-apply steer immediately after start. After DNAT, `.45` `ss` may show hub public `:4200` (original dest, not a leak). First-minute `suitable=0` is expected. Not a closed P2 / production product |
 | `RULES.md` | Engineering constraints + GitBook lockstep |
 
@@ -76,6 +76,7 @@ tcp_ports = [8400]
 locator = "web3://HubTag.web3/p2p/beacon"
 vip = "100.64.0.1"
 tcp_ports = [4200]
+# udp_ports = [4300]
 
 # Optional P1 client. Default off. Do not POST plaintext as data.
 # Encrypt to peer user PGP, wrap { data, NoPush: true } to B route PGP,
@@ -84,6 +85,10 @@ tcp_ports = [4200]
 # is in-crate when enabled plus listen_entries, mailbox_route_pgp_file
 # (this host's B route PUBLIC key), routing_eoa, routing_key_file, and
 # routing_eth_key_file (hex secp256k1; must match routing_eoa; not OpenPGP).
+# Optional [[l0.channels]]: one routing EOA + SSE per overlay port
+# (8400 / 4200 / 4300). Encrypt to the peer user PGP for that port.
+# Classify return-path TCP by source port. :4300 is overlay IPv4, not
+# udp_relay. listenKind stays "chat". Empty channels keep one EOA.
 # Listen is EIP-191 + SI { message, signMessage } base64. Listen ingest
 # matches SI gossip JSON { "data": "<armor>" } (Chat handleInbound). Tests
 # use wiremock only. Do not put Securitykey in a B-decryptable listen command.
@@ -97,6 +102,14 @@ tcp_ports = [4200]
 # routing_key_file = "/etc/conet-l0d/routing.key"
 # routing_eth_key_file = "/etc/conet-l0d/routing.eth"
 # mailbox_route_pgp_file = "/etc/conet-l0d/self-mailbox-route.asc"
+#
+# [[l0.channels]]
+# ports = [8400]
+# routing_eoa = "0x<geth-routing-eoa>"
+# routing_key_file = "/etc/conet-l0d/geth.key"
+# routing_eth_key_file = "/etc/conet-l0d/geth.eth"
+# mailbox_route_pgp_file = "/etc/conet-l0d/geth-mailbox-route.asc"
+# listen_entries = ["https://<existing-guardian>.conet.network"]
 #
 # Per-peer public key files (lab override; do not log contents):
 # user_pgp_file = "/etc/conet-l0d/peer-user.asc"
@@ -184,7 +197,7 @@ Content-Type: application/json
 
 `listenKind: "l1p2p"` is a **design reservation**, not a current SI pool label. Chat / mining / udp pools stay isolated. If you add a real command, update [using-l0](../l0/using-l0.md), [mailbox routing](../l0/mailbox-routing.md), and the [SI developer guide](../l0/si-developer-guide.md) in the same task.
 
-Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and the peer has **user PGP** plus **route PGP** files and at least one entry, P1 encrypts the overlay envelope to the peer user PGP, wraps `{ data, NoPush: true }` to mailbox B route PGP, and POSTs only `{ "data": outerArmor }` to a healthy entry A ≠ B. Inbound: decrypt user-PGP armor → overlay envelope → raw IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Listen HTTP+SSE worker POSTs EIP-191-signed `mining` + `listenKind: "chat"` (no `Securitykey`; SI `{ message, signMessage }` base64) to entry C ≠ B when `listen_entries`, `mailbox_route_pgp_file`, `routing_eoa`, `routing_key_file`, and `routing_eth_key_file` are set. Listen ingest matches SI `forWardPGPMessageToClient` raw JSON `{ "data": "<armor>" }` (Chat `handleInbound`), not only SSE `data: BEGIN PGP` lines. In-crate listen matches SI `checkSign`. `[l0]` defaults **off**. An authorized lab may enable `[l0]` and POST that existing listen to entry C — not a new SI command. **2026-08-17 23:12Z L0-only:** outbound HTTP 200, no inbound TUN write (old SSE-only parser). **23:30Z** (restart only `conet-l0d`): inbound IPv4 on both TUNs and overlay geth TCP (`.45` `100.64.0.5` ↔ `.98` `100.64.0.6:8400`). **2026-08-18:** authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP ESTAB; dest-aggregated IPv4 + POST concurrency 32 / queue 2048 (upgrade both lab binaries together). After that binary, overlay queue-full is 0; remaining follow-the-chain limiter is Prysm initial-sync (~3.2 blocks/s, ~15 h). EL still `0x0`. Operator watch: `scripts/watch-l0-follow.sh`. The follow-the-chain gate stays open. Lab overlay UDP / DHT-port comms plus live discv5 via L0 are accepted (`docs/P2.md`; allowlist = overlay + hub `/32`; packets still DNAT onto L0). After DNAT, `.45` `ss` may show hub public `:4200` (original dest, not a leak). If `connected` drops, re-apply `overlay-dht-steer.sh` first (flush ghost conntrack; do not restart EL/CL). Authorized `.45` `restart-beacon` is only for dial backoff (**~17:28Z** restored `connected=1` and `Processing blocks`; do not re-apply steer immediately after start). That is not a production discv5 product and is not `FOLLOW_OK`. HTTP 200 ≠ delivery. Do not claim production mailbox delivery. Do not treat `p2p_stream_*` as current SI.
+Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and the peer has **user PGP** plus **route PGP** files and at least one entry, P1 encrypts the overlay envelope to the peer user PGP, wraps `{ data, NoPush: true }` to mailbox B route PGP, and POSTs only `{ "data": outerArmor }` to a healthy entry A ≠ B. Inbound: decrypt user-PGP armor → overlay envelope → raw IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Listen HTTP+SSE worker POSTs EIP-191-signed `mining` + `listenKind: "chat"` (no `Securitykey`; SI `{ message, signMessage }` base64) to entry C ≠ B when `listen_entries`, `mailbox_route_pgp_file`, `routing_eoa`, `routing_key_file`, and `routing_eth_key_file` are set. Optional `[[l0.channels]]` is one EOA + SSE per overlay port (8400 / 4200 / 4300); outbound encrypts to the peer user PGP for that port. Empty channels keep one EOA. `:4300` is overlay IPv4, not `udp_relay`. Listen ingest matches SI `forWardPGPMessageToClient` raw JSON `{ "data": "<armor>" }` (Chat `handleInbound`), not only SSE `data: BEGIN PGP` lines. In-crate listen matches SI `checkSign`. `[l0]` defaults **off**. An authorized lab may enable `[l0]` and POST that existing listen to entry C — not a new SI command. **2026-08-17 23:12Z L0-only:** outbound HTTP 200, no inbound TUN write (old SSE-only parser). **23:30Z** (restart only `conet-l0d`): inbound IPv4 on both TUNs and overlay geth TCP (`.45` `100.64.0.5` ↔ `.98` `100.64.0.6:8400`). **2026-08-18:** authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP ESTAB; dest-aggregated IPv4 + POST concurrency 32 / queue 2048 (upgrade both lab binaries together). After that binary, overlay queue-full is 0; remaining follow-the-chain limiter is Prysm initial-sync (~3.2 blocks/s, ~15 h). EL still `0x0`. Operator watch: `scripts/watch-l0-follow.sh`. The follow-the-chain gate stays open. Lab overlay UDP / DHT-port comms plus live discv5 via L0 are accepted (`docs/P2.md`; allowlist = overlay + hub `/32`; packets still DNAT onto L0). After DNAT, `.45` `ss` may show hub public `:4200` (original dest, not a leak). If `connected` drops, re-apply `overlay-dht-steer.sh` first (flush ghost conntrack; do not restart EL/CL). Authorized `.45` `restart-beacon` is only for dial backoff (**~17:28Z** restored `connected=1` and `Processing blocks`; do not re-apply steer immediately after start). That is not a production discv5 product and is not `FOLLOW_OK`. HTTP 200 ≠ delivery. Do not claim production mailbox delivery. Do not treat `p2p_stream_*` as current SI.
 
 ## Failure semantics
 
