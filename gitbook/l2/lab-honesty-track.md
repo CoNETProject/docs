@@ -8,7 +8,7 @@ Developer how-to: [L2 development](../developers/l2.md). Explorer facts: [DLE ex
 
 ## Status in one sentence
 
-The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **154/154** after P24). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable**. **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. **P25** lands Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc` (`explorer:test` 8/8). Green pills stay `seatingQualified === true` only. This is **not** 7/7 healthy and **not** a durable seven-host `officialStandbysReady`. `pilotStartedAt` remains **null**. Next: **parked / review only**.
+The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **154/154** after P24). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable**. **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. **P25** lands Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc` (`explorer:test` 8/8). The public SPA on [dle.conet.network](https://dle.conet.network/) now serves `index-DaEv6psZ.js` (published 2026-08-18T00:02:39Z; replaced stale `index-DfEo8U8r.js`). Live `/health` at publish still `officialStandbysReady=false` (`count=1`), `hashIndexCommittedInAc=false` — chips are warn/neutral, **not** green ready. Green pills stay `seatingQualified === true` only. This is **not** 7/7 healthy and **not** a durable seven-host `officialStandbysReady`. `pilotStartedAt` remains **null**. Next: **parked / review only**.
 
 ## What is live
 
@@ -70,9 +70,11 @@ Explorer Certificates + Home show **non-green** read-only chips for `officialSta
 
 This is **not** production AC commitment, **not** seating, and **not** 30-day qualification.
 
+**Public SPA publish (same gate, not P26):** parent-repo `scripts/deployDleExplorer.sh` rsynced the P25 bundle to `70.35.205.77:/var/www/dle.conet.network/` and reloaded the explorer nginx vhost only. It did **not** restart EL/CL/validator and did **not** change archive seating.
+
 ## Next laboratory gates
 
-No further serial Explorer overlay gate is open. Remaining work is **parked / review only**.
+No further serial Explorer overlay gate is open. Remaining work is **parked / review only**. Do **not** invent P26.
 
 ## Parked
 

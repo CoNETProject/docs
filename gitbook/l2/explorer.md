@@ -155,7 +155,7 @@ The public UI being live does **not** close these whitepaper / spec gates:
 | 7×7 `/health` mesh | Heartbeat quorum only; seating green pill only when `seatingQualified === true` |
 | Participant wallets on `/archives` | Seven distinct EOAs; L1 overlay from `archivesOf(1)`. Extra `fd-08` is unofficial |
 | Global Archive Routing Registry | Deployed and verified — [routing registry](routing-registry.md) |
-| Laboratory honesty track P12–P25 | Engine + `154/154` tests. P23 keep-deploy **6/7 `LIVE_OK`** + fd-01 409→accept; fd-06 HTTP unstable. P24 isolated `node.ts` standby gate. **P25 landed:** Certificates + Home **non-green** overlays; green pills stay `seatingQualified === true` only (`explorer:test` 8/8) — [Lab honesty track](lab-honesty-track.md) |
+| Laboratory honesty track P12–P25 | Engine + `154/154` tests. P23 keep-deploy **6/7 `LIVE_OK`** + fd-01 409→accept; fd-06 HTTP unstable. P24 isolated `node.ts` standby gate. **P25 landed:** Certificates + Home **non-green** overlays; public SPA `index-DaEv6psZ.js` on [dle.conet.network](https://dle.conet.network/) (2026-08-18T00:02:39Z); live `/health` at publish still `officialStandbysReady=false` (`count=1`); green pills stay `seatingQualified === true` only (`explorer:test` 8/8) — [Lab honesty track](lab-honesty-track.md) |
 | 30-day qualification | Not qualified (`100` rotations / `30` re-homes / `100` takeovers still at `0`; `pilotStartedAt` is null) |
 | Production Archive Certificate / OperatorDomain | Not claimed. First-group lab AC may exist; it is not a frozen L1 wrapper |
 | `OperatorDomainRegistryV1` / `AssetBurnMintGateway` | Not deployed as production DLE machines |
