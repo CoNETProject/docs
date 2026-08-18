@@ -1,14 +1,14 @@
 # Lab honesty track
 
-**Evidence level: laboratory review.** This page records the 2026-08-17 CoNET-DLE MVP review. It is **not** a production SDK, **not** a production signing specification, and **not** 30-day qualification.
+**Evidence level: laboratory review.** This page records the 2026-08-17 CoNET-DLE MVP review, the 2026-08-18 clock + Explorer clock overlay, and the **2026-08-18T23:41Z runtime scrape** (~13.8h into the clock). It is **not** a production SDK, **not** a production signing specification, and **not** 30-day qualification.
 
 Public site: [https://gitbook.conet.network/l2/lab-honesty-track.html](https://gitbook.conet.network/l2/lab-honesty-track.html)
 
-Developer how-to: [L2 development](../developers/l2.md). Explorer facts: [DLE explorer](explorer.md). Controlling design: whitepaper revision **2026-08-17**.
+Developer how-to: [L2 development](../developers/l2.md). Explorer facts: [DLE explorer](explorer.md). Controlling design: whitepaper revision **2026-08-18**.
 
 ## Status in one sentence
 
-The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **154/154** after P24). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable**. **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. **P25** lands Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc` (`explorer:test` 8/8). The public SPA on [dle.conet.network](https://dle.conet.network/) now serves `index-U1o9ul_I.js` (published 2026-08-18T00:18:49Z; replaced stale `index-DaEv6psZ.js`). Live `/health` at publish still `officialStandbysReady=false` (`count=1`), `hashIndexCommittedInAc=false` — chips are warn/neutral, **not** green ready. Green pills stay `seatingQualified === true` only. This is **not** 7/7 healthy and **not** a durable seven-host `officialStandbysReady`. `pilotStartedAt` remains **null**. Next: **parked / review only**.
+The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **159/159**). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable** (later remapped). **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. **P25** lands Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc`. The public SPA on [dle.conet.network](https://dle.conet.network/) now serves `index-C8IdTq4H.js` (published 2026-08-18T10:15:00Z; `explorer:test` **10/10**; replaced pre-clock `index-U1o9ul_I.js`). **Clock started 2026-08-18T09:53:58.092Z** (`pilotRunning=true`, `pilotQualified=false`, `clockIsNotQualification=true`). Home + Certificates show a **non-green** clock chip. Green pills stay `seatingQualified === true` only. **Runtime scrape 2026-08-18T23:41Z (~13.8h / ~1.92% of 30d):** 8/8 HTTP OK + clock-aligned + seating `QUALIFIED`; `pilotQualified` still false; `lastQuorumOk` **6/8** (fd-02 false peer=5; fd-07 false **peer=0**); this scrape omitted `leafCount` / `officialStandbysReady` / AC roots on all eight hosts — **missing fields ≠ zero / empty inventory**. This is **not** 30-day qualification. Next: **continue 30-day wait / review**. Do **not** invent P26.
 
 ## What is live
 
@@ -40,6 +40,7 @@ These gates replace laboratory HMAC envelopes with laboratory EIP-712 typed data
 | P22 | `ArchiveStandbyReadiness`; extra `fd-08` does not count | Production OperatorDomain |
 | P24 | Isolated `node.ts` uses the same `officialStandbysReady` callback as `lab-cli` | Production OperatorDomain; `sync.start()` against dummy peer URLs |
 | P25 | Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc` | Changing seating green pills; painting overlays as production AC / 30-day |
+| Clock overlay (not P26) | Home + Certificates **non-green** `pilotClockPill`; public SPA `index-C8IdTq4H.js` | Claiming 30-day qualification; inventing P26 |
 
 `lab-cli` and isolated `node.ts` may return `409` `ERR_NEWCHAIN_STANDBY_NOT_READY` until two official standbys are ready. Isolated `node.ts` does **not** start the seating tick and does **not** freeze inventory.
 
@@ -60,23 +61,53 @@ Do **not** treat unit tests alone as the live proof, and do **not** write “sev
 
 ## P24 isolated `node.ts` gate (landed)
 
-`startArchiveNode` now passes the same `officialStandbysReady` callback into `createNewChainEngine` as `lab-cli` `syncHolder`. Extra `fd-08` still does not count. Isolated `node.ts` does **not** `sync.start()` and does **not** apply inventory freeze. Test: CoNET-DLE `runtime/test/node-standby-gate.test.ts`. Full `npm run runtime:test` **154/154**.
+`startArchiveNode` now passes the same `officialStandbysReady` callback into `createNewChainEngine` as `lab-cli` `syncHolder`. Extra `fd-08` still does not count. Isolated `node.ts` does **not** `sync.start()` and does **not** apply inventory freeze. Test: CoNET-DLE `runtime/test/node-standby-gate.test.ts`. Full `npm run runtime:test` was **154/154** at P24; current engine/tests are **159/159**.
 
 This is **not** a live seven-host redeploy and **not** 7/7 healthy.
 
 ## P25 Explorer overlays (landed)
 
-Explorer Certificates + Home show **non-green** read-only chips for `officialStandbysReady` / `hashIndexCommittedInAc` (`explorer/src/lib/labOverlays.ts`). Green seating pills stay `seatingQualified === true` only (`archiveSeating.ts` unchanged). Missing overlay fields omit the chip. Tests: `npm run explorer:test` **8/8**. Runtime tests stay **154/154**.
+Explorer Certificates + Home show **non-green** read-only chips for `officialStandbysReady` / `hashIndexCommittedInAc` (`explorer/src/lib/labOverlays.ts`). Green seating pills stay `seatingQualified === true` only (`archiveSeating.ts` unchanged). Missing overlay fields omit the chip.
 
 This is **not** production AC commitment, **not** seating, and **not** 30-day qualification.
 
-**Public SPA publish (same gate, not P26):** parent-repo `scripts/deployDleExplorer.sh` rsynced the P25 bundle to `70.35.205.77:/var/www/dle.conet.network/` and reloaded the explorer nginx vhost only. It did **not** restart EL/CL/validator and did **not** change archive seating.
-
 **P25 seating-copy honesty (same gate, not P26):** Home Seating gauge and archive detail must say **lab EIP-712 seated**, never **lab HMAC**. Green pills stay `seatingQualified === true` only. This is leftover P12 display honesty, **not** a new serial gate.
+
+The first P25 public SPA was `index-U1o9ul_I.js` (2026-08-18T00:18:49Z). That bundle is **historical**. The current public SPA is the later clock-overlay publish below.
+
+## Clock + Explorer clock overlay (2026-08-18, not P26)
+
+Operator authorized `lab:start-pilot-clock`. Live `pilotStartedAt=2026-08-18T09:53:58.092Z` (`warmupStartedAt=2026-08-14T17:10:16.786Z`). `/health` shows `pilotRunning=true`, `pilotQualified=false`, `clockIsNotQualification=true`. Counters stay `0`.
+
+Explorer Home + Certificates show a **non-green** `pilotClockPill` (`30-day clock running (not qualified)` when running; `30-day clock not started` when explicit null). Missing clock fields omit the chip. `pilotQualified: true` is ignored. The clock chip is never green.
+
+Tests: `npm run explorer:test` **10/10**. Runtime tests: `npm run runtime:test` **159/159**. Pilot tests: **19/19**.
+
+**Public SPA publish (not P26):** parent-repo `scripts/deployDleExplorer.sh` rsynced the clock-overlay bundle to `70.35.205.77:/var/www/dle.conet.network/` and reloaded the explorer nginx vhost only. [dle.conet.network](https://dle.conet.network/) now serves `index-C8IdTq4H.js` (2026-08-18T10:15:00Z). It did **not** restart EL/CL/validator and did **not** change archive seating.
+
+Starting the clock and painting the clock are **not** 30-day qualification. Do **not** invent P26.
+
+## Runtime scrape (~13.8h into clock, 2026-08-18T23:41Z)
+
+Direct `GET :27101/health` on official 7 + extra `fd-08` (not a new serial gate; not P26):
+
+| Check | Result |
+| --- | --- |
+| HTTP OK / `pilotRunning` / clock aligned | **8/8** |
+| `pilotQualified` | **0/8** true |
+| Seating `QUALIFIED` / `seatingQualified` | **8/8** |
+| `lastQuorumOk` | **6/8** — fd-02 false (`lastPeerOk=5`); fd-07 false (`lastPeerOk=0`) |
+| `leafCount` / `officialStandbysReady` / `lastACRef` / `hashIndexRoot` | **omitted** on all eight this scrape — do **not** treat omit as `0` / false / empty inventory (clock-start evidence had leaf **9750** on most seats) |
+| `bftProcessStarted` | **false** on all eight |
+| Public SPA | still `index-C8IdTq4H.js` |
+
+Evidence JSON: CoNET-DLE `pilot/evidence/conet-dle-p23-live-2026-08/runtime-review-2026-08-18T2341Z.json`. Canvas archive: BeamioContract `src/canvas/dle-mvp-runtime-review-2026-08-18.md`.
+
+fd-07 `peer=0` is a **reachability watch**, not seating eviction and **not** authorization to auto-promote standby. Public nginx upstream only rotates active keepers; a single public `/health` hit must not be read as the whole fleet.
 
 ## Next laboratory gates
 
-No further serial Explorer overlay gate is open. Remaining work is **parked / review only**. Do **not** invent P26.
+No further serial Explorer overlay gate is open. Remaining work is **30-day wait / review** (wall clock toward about `2026-09-17T09:53:58.092Z`). Do **not** invent P26. Do **not** claim qualification.
 
 ## Parked
 
