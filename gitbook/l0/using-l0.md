@@ -127,8 +127,9 @@ Encrypt a listen command to **B's route PGP** and open HTTP/SSE through a health
 | Chat / Merchant OS / Alliance mailbox | `mining` | **`chat`** |
 | LayerMinus mining gossip | `mining` | omit (SI defaults to mining) |
 | UDP client / server | `udp_listen` / `udp_server_listen`, or `mining` | `udp` / `udp_server` |
+| Exclusive L0 occupancy pipe | `l0_listen` or `mining` | **`l0`**. First `l0_connect` occupies; later inflows 409. See [Duplex overlay](duplex-forward.md) |
 
-Duplex overlay does **not** add a SI listen row. App-layer host listen **is** Chat (`mining` + `listenKind: "chat"`).
+Application `duplex_*` JSON is **not** an SI command. Offer still uses Chat (`mining` + `listenKind: "chat"`). Accept / reject / frames ride the occupied L0 pipe.
 
 Entry acceptance or an SSE handshake is transport progress. The application still decrypts, verifies, and decides what the payload means.
 
@@ -172,7 +173,7 @@ These are valid **application designs** on top of a forwarding network. They are
 | Privacy poll receive mode | Weaker Chat online / arrival-time fingerprint than SSE | Not implemented |
 | Double Ratchet / MLS after AddressPGP handshake | Forward secrecy and post-compromise security for Chat | Not implemented |
 | Operator-domain entry/mailbox exclusion | A/B/C as independent operators, not only roles | Not implemented on L0 |
-| L1 overlay TCP byte-stream (`conet-l0d`) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP | **Application duplex** on Chat gossip ([duplex-forward](duplex-forward.md)). Crate uses AES frames when the peer app sends `duplex_accept`; **P1 gossip** remains the fallback. `[l0]` default off; authorized lab may enable it. 2026-08-18 lab: overlay geth + beacon TCP; follow-the-chain Prysm-bound; lab discv5 via L0 accepted (not a production product). HTTP 200 ≠ delivery. Keep public P2P for the 6s slot. Do **not** treat SI `duplex_*` / `p2p_stream_*` / `listenKind: "l1p2p"` as current SI |
+| L1 overlay TCP byte-stream (`conet-l0d`) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP | SI **`l0_listen` / `l0_connect`** occupancy pipe + application duplex ([duplex-forward](duplex-forward.md)). Offer on Chat gossip; accept / reject / frames as AES blobs on the occupied pipe. **P1 gossip** if the peer never accepts. `[l0]` default off; authorized lab may enable it. Do **not** treat SI `duplex_*` / `p2p_stream_*` / `listenKind: "l1p2p"` as current SI |
 
 Document those as upgrades or product options. Do not describe them as the live L0 plane. See [security limits](security-limits.md).
 

@@ -74,7 +74,7 @@ Current Chat clients may still post a single user-PGP layer (A forwards without 
 
 ## Chat SSE is a primary L0 traffic fingerprint
 
-DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C** (`command: "mining"`, `listenKind: "chat"`). Mining collectors and UDP listens also keep SSE sessions. Duplex overlay **reuses** Chat SSE; it does not add an SI duplex pool.
+DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C** (`command: "mining"`, `listenKind: "chat"`). Mining collectors, UDP listens, and exclusive **L0 occupancy** (`l0_listen`) also keep SSE sessions. After `l0_connect` occupies an L0 SSE, SI pipes opaque lines and 409s later inflows. Application duplex still puts `duplex_offer` on Chat gossip so it cannot occupy that pipe. Spec: [Duplex overlay](duplex-forward.md).
 
 An ISP or entry C can observe:
 

@@ -73,7 +73,8 @@ For the privacy-preserving path, **A is not B and C is not B**. Client `/post` m
 | Nested peel / hop-sign | After a local decrypt, hop-sign the **inner UTF-8 armor string**. Hop-sign or next-hop connect failure is a **fast 404**, not a hung SSE. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) |
 | Delivery evidence | Entry acceptance or an SSE handshake is transport progress, **not** proof that the application processed the message |
 | UDP key exchange | Encrypt `udp_subscribe` to the UDP server's **user PGP**; never expose its symmetric key to mailbox B |
-| Duplex key exchange | Application JSON: encrypt `duplex_offer` to the peer **user PGP**. Never put the overlay AES key on Chat listen. SI does **not** implement `duplex_*`. Missing `duplex_accept` keeps P1 gossip |
+| Exclusive L0 listen | `l0_listen` or `mining` + `listenKind: "l0"`. First `l0_connect` occupies the SSE; SI pipes remaining TCP and 409s later inflows |
+| Duplex key exchange | Application JSON: encrypt `duplex_offer` to the peer **user PGP**. Accept / reject / frames are AES on the occupied L0 pipe. Never put overlay AES on `l0_listen` / `l0_connect`. SI does **not** implement `duplex_*`. Missing `duplex_accept` keeps P1 gossip |
 
 The A/B/C rule governs application mailbox delivery and control traffic. A LayerMinus mining collector intentionally dials each target SI directly to receive that node's signed gossip. This infrastructure exception is not an approved shortcut for Chat, presence, delivery ACKs, or UDP sessions.
 

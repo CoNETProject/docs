@@ -1,6 +1,6 @@
 # conet-l0d (L1 overlay daemon)
 
-**Evidence level: Under development.** The CLI, config, TUN/iptables lifecycle, and locator grammar are implemented in-crate. Overlay TCP over live Layer Minus prefers **application duplex** on Chat gossip. P1 gossip (user-PGP envelope + mailbox wrap) remains the fallback if the peer app never sends `duplex_accept`. There is **no** production SI command named `duplex_*` or `p2p_stream_*` in this revision.
+**Evidence level: Under development.** The CLI, config, TUN/iptables lifecycle, and locator grammar are implemented in-crate. Overlay TCP over live Layer Minus prefers SI **`l0_listen` / `l0_connect`** occupancy plus application duplex. P1 gossip remains the fallback if the peer app never sends `duplex_accept` or the occupied pipe is missing. There is **no** production SI command named `duplex_*` or `p2p_stream_*` in this revision. `l0_listen` / `l0_connect` **are** current SI.
 
 Public site: [https://gitbook.conet.network/developers/conet-l0d.html](https://gitbook.conet.network/developers/conet-l0d.html)
 
@@ -195,9 +195,9 @@ Content-Type: application/json
 - Do not reuse SilentPass / `SaaS_Sock5*` (egress `host:port`).
 - Do not send UDP `udp_relay` frames and call them OS UDP.
 
-Live overlay duplex is an **application** composition ([Duplex overlay](../l0/duplex-forward.md)). Chat / mining / udp pools stay isolated. SI does **not** implement `duplex_*`. Do **not** send `command: "mining"` with `listenKind: "duplex"`. `listenKind: "l1p2p"` / `p2p_stream_*` are **not** current SI.
+Live overlay duplex is SI **`l0_listen` / `l0_connect`** plus **application** JSON ([Duplex overlay](../l0/duplex-forward.md)). Chat / mining / udp / L0 exclusive pools stay isolated. SI does **not** implement `duplex_*`. Do **not** send `command: "mining"` with `listenKind: "duplex"`. `listenKind: "l1p2p"` / `p2p_stream_*` are **not** current SI.
 
-Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and keys + entries exist, the crate prefers duplex: `duplex_offer` (AES key + session `listenWallet`) to the peer **long-lived** user PGP; `duplex_accept` / `duplex_reject` land on the initiator session listen SSE; AES `duplex_frame` of `L0D1` IPv4 once the overlay key and `peer_attached` are set. `duplex_reject` or missing `duplex_accept` keeps **P1 gossip**. Crate MVP session listen is the registered per-port channel Chat SSE. Inbound: decrypt user-PGP armor or AES duplex frames → overlay IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Optional `[[l0.channels]]` is one EOA + SSE per overlay port (8400 / 4200 / 4300). Empty channels keep one EOA. `:4300` is overlay IPv4, not `udp_relay`. `[l0]` defaults **off**. An authorized lab may enable `[l0]`. HTTP 200 ≠ delivery. Do not claim production mailbox delivery. Do not treat SI `duplex_*` or `p2p_stream_*` as current SI.
+Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and keys + entries exist, the crate prefers duplex: `duplex_offer` (AES key + session `listenWallet`) to the peer **long-lived** user PGP; exclusive `l0_listen`; `l0_connect` occupies; AES `duplex_accept` / `duplex_reject` / `duplex_frame` on the occupied pipe (`payload` = standard base64 of `L0D1||IPv4`). `duplex_reject` or missing `duplex_accept` or missing pipe keeps **P1 gossip**. Crate MVP session listen is the registered per-port channel EOA. Inbound: decrypt user-PGP armor or AES duplex frames → overlay IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Optional `[[l0.channels]]` is one EOA + SSE per overlay port (8400 / 4200 / 4300). Empty channels keep one EOA. `:4300` is overlay IPv4, not `udp_relay`. `[l0]` defaults **off**. An authorized lab may enable `[l0]`. HTTP 200 ≠ delivery. Do not claim production mailbox delivery. Do not treat SI `duplex_*` or `p2p_stream_*` as current SI.
 
 ## Failure semantics
 

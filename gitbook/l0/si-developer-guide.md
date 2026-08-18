@@ -126,6 +126,8 @@ Source: CoNET-SI `localNodeCommandSocket`. Encrypt the command family to **route
 | `wallet_online_query` | Contact’s mailbox **B** route PGP | Entry **C ≠ B** | Presence. Fields: `walletAddress` (signer), `targetWallet`, `timestamp` (±600s). Success: `{ ok: true, wallet, online, listenAgeMs, nodeWallet }`. Do **not** use chain `routeOnline` |
 | `udp_subscribe` | UDP server **user** PGP | Entry **A ≠ B** | Contains `Securitykey`. SI rejects encryption to B (`encrypt_to_udp_server_user_pgp`) |
 | `udp_listen` / `udp_server_listen` / `udp_relay` / `udp_uplink` / `udp_unlisten` | **B** route PGP | Entry ≠ B | No `Securitykey`. See [UDP frame forwarding](udp-forward.md) |
+| `l0_listen` or `mining` + `listenKind: "l0"` | Own mailbox **B** route PGP | Long SSE via **C ≠ B** | Exclusive occupancy pipe. **No** overlay `Securitykey`. Handshake `{ ok, kind:"l0", wallet, nodeWallet }`. Idle L0 may receive user-PGP gossip without occupying. Separate from Chat / mining / UDP. Same EOA may also hold Chat SSE |
+| `l0_connect` | **Target** mailbox **B** route PGP | Entry ≠ B; keep TCP | First occupy of idle `targetWallet` L0 SSE: write `{ type:"l0_occupied" }`, pipe remaining TCP as SSE `data:` lines, SI stops parsing. Occupied → **409** `{ error:"occupied" }`. No overlay `Securitykey`. Occupancy is by `targetWallet` after decrypt, not by B route key ID |
 | `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` | Egress node route PGP | Product-specific | Paid proxy; not a Chat path |
 
 Old clients that omit `listenKind` on `mining` are treated as mining. A Chat client **must** send `listenKind: "chat"` so SI does not apply mining-only pool policy to the mailbox SSE.

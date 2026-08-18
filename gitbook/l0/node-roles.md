@@ -11,7 +11,7 @@ Layer Minus roles describe what a process does for one route. They are not perma
 | **Entry C** | Accepts a listen or mailbox-control request and forwards it to B | Does not decrypt B's route-key command |
 | **Mailbox B** | Decrypts mailbox control and mailbox-work JSON (`NoPush`), verifies route ownership, stores business ciphertext, and manages delivery sessions | Does not decrypt user-PGP business content |
 | **UDP server client** | Receives `udp_subscribe`, obtains the symmetric key, and encrypts or decrypts application frames | Sees its UDP application plaintext |
-| **Duplex overlay client** | Posts `duplex_offer` / `duplex_accept` (user PGP); reuses **existing Chat listen** as the host SSE; AES-seals `duplex_frame` inside user-PGP + mailbox wrap | Sees overlay IPv4 / application bytes; mailbox B must not hold the overlay AES key. SI does not parse duplex |
+| **Duplex overlay client** | Posts `duplex_offer` (user PGP Chat gossip); `l0_listen` / `l0_connect` occupancy pipe; AES-seals accept / reject / `duplex_frame` on the occupied TCP | Sees overlay IPv4 / application bytes; mailbox B must not hold the overlay AES key. SI does not parse `duplex_*` |
 | **LayerMinus mining client** | Opens mining listens to SI nodes, verifies signed gossip, and reports accounting data when configured | Sees signed mining gossip, not mailbox business plaintext |
 
 The privacy boundary depends on role separation. If a user connects directly to mailbox B, B becomes both entry and mailbox for that session and sees the user's source IP.
