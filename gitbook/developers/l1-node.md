@@ -199,7 +199,7 @@ Do not default to `--peer` against a single historic seed. Prefer several `--boo
 
 ## Optional: overlay P2P (`conet-l0d`)
 
-The public bootnodes and inbound **8400 / 4200 / 4300** above remain the **production default**. A Linux daemon can add a **static overlay** path (`100.64.0.0/10`) for NAT or hosts without a stable public IP. It does not replace public P2P for the 6-second slot. P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen worker + SI gossip JSON ingest exist in-crate; `[l0]` defaults off; an authorized lab may enable `[l0]`. The 2026-08-18 lab advertises overlay vIP on authorized L0_ONLY `.45`, completed overlay geth + beacon TCP, and is running CL initial-sync; EL still `0x0`.
+The public bootnodes and inbound **8400 / 4200 / 4300** above remain the **production default**. A Linux daemon can add a **static overlay** path (`100.64.0.0/10`) for NAT or hosts without a stable public IP. It does not replace public P2P for the 6-second slot. P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen worker + SI gossip JSON ingest exist in-crate; `[l0]` defaults off; an authorized lab may enable `[l0]`. The 2026-08-18 lab advertises overlay vIP on authorized L0_ONLY `.45`, completed overlay geth + beacon TCP, and is running CL initial-sync; EL still `0x0`. Lab overlay UDP / DHT-port comms accepted; lab discv5 via L0 accepted (`L0_DHT` allowlist = overlay + hub `/32`; packets still DNAT onto L0; after DNAT, `.45` `ss` may show hub public `:4200` — original dest, not a leak; not `FOLLOW_OK`; not a production product).
 
 - Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.md)
 - CLI, config, owned TUN / iptables: [Developers — conet-l0d](conet-l0d.md)
