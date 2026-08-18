@@ -74,7 +74,7 @@ Current Chat clients may still post a single user-PGP layer (A forwards without 
 
 ## Chat SSE is a primary L0 traffic fingerprint
 
-DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C** (`command: "mining"`, `listenKind: "chat"`). Mining collectors and UDP listens also keep SSE sessions.
+DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C** (`command: "mining"`, `listenKind: "chat"`). Mining collectors and UDP listens also keep SSE sessions. Duplex overlay **reuses** Chat SSE; it does not add an SI duplex pool.
 
 An ISP or entry C can observe:
 
@@ -174,6 +174,7 @@ Partial anti-replay exists only on some **route-key commands**:
 | Generic `/post` business armor | OpenPGP integrity + client-defined inner fields | Mailbox `saveLocal` **appends**; identical armor can be stored again |
 | `wallet_online_query` / `gossip_delivery_ack` | EIP-191 + `timestamp` within ±600 s | No durable nonce set |
 | UDP listen / relay / uplink | EIP-191 + `timestamp` within ±600 s; payload size cap | No replay window beyond the skew |
+| Duplex listen / relay / unlisten | EIP-191 + `timestamp` within ±600 s; payload cap 24000 b64 | No replay window beyond the skew |
 | Chat `sendId` | Application field; clients may drop duplicates | Not an SI mailbox invariant |
 
 A correct EOA signature therefore does **not** automatically reject a previously valid message. Replaying the same valid armor to entry 1, 2, and 3 can duplicate mailbox store, push, APNs, or application handling unless the **application** consumes an id.
@@ -318,3 +319,4 @@ Grades describe the **current SI + intended A/B/C client path**, not a future ra
 - [Zero-trust mailbox routing](mailbox-routing.md) — A/B/C roles.
 - [Wallet-addressed peer identity](wallet-address-p2p.md) — key roles and reuse risk.
 - [UDP frame forwarding](udp-forward.md) — AES split and remaining metadata.
+- [Duplex overlay](duplex-forward.md) — overlay AES never on a B-decryptable listen; missing `duplex_accept` keeps P1 gossip

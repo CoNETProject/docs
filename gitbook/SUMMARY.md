@@ -13,6 +13,7 @@
   * [Peel, hop-sig, and listen timeouts](l0/peel-hop-listen.md)
   * [HTTP transport and Fetch-and-Close](l0/http-mimicry.md)
   * [UDP frame forwarding](l0/udp-forward.md)
+  * [Duplex overlay (application composition)](l0/duplex-forward.md)
   * [Security limits and threat grades](l0/security-limits.md)
   * [Node and client roles](l0/node-roles.md)
 * [L1 — CoNET Blockchain](l1/README.md)

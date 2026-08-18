@@ -73,6 +73,7 @@ For the privacy-preserving path, **A is not B and C is not B**. Client `/post` m
 | Nested peel / hop-sign | After a local decrypt, hop-sign the **inner UTF-8 armor string**. Hop-sign or next-hop connect failure is a **fast 404**, not a hung SSE. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) |
 | Delivery evidence | Entry acceptance or an SSE handshake is transport progress, **not** proof that the application processed the message |
 | UDP key exchange | Encrypt `udp_subscribe` to the UDP server's **user PGP**; never expose its symmetric key to mailbox B |
+| Duplex key exchange | Application JSON: encrypt `duplex_offer` to the peer **user PGP**. Never put the overlay AES key on Chat listen. SI does **not** implement `duplex_*`. Missing `duplex_accept` keeps P1 gossip |
 
 The A/B/C rule governs application mailbox delivery and control traffic. A LayerMinus mining collector intentionally dials each target SI directly to receive that node's signed gossip. This infrastructure exception is not an approved shortcut for Chat, presence, delivery ACKs, or UDP sessions.
 
@@ -80,7 +81,7 @@ The A/B/C rule governs application mailbox delivery and control traffic. A Layer
 
 IP addresses remain necessary for packet delivery, but they are poor long-term application identities: they expose network location, change across networks, and are easy to filter. Layer Minus keeps those transient locators in the underlay while applications resolve and authenticate wallets.
 
-This design is a shared forwarding plane. Applications combine it into Chat, typed Beamio control messages, mining gossip, presence queries, delivery acknowledgements, encrypted UDP-shaped frames, and SilentPass egress. Product-specific proxy traffic may also use short **Fetch-and-Close** sessions. L0 does not implement those products; it forwards the envelopes they create.
+This design is a shared forwarding plane. Applications combine it into Chat, typed Beamio control messages, mining gossip, presence queries, delivery acknowledgements, encrypted UDP-shaped frames, duplex overlay pipes, and SilentPass egress. Product-specific proxy traffic may also use short **Fetch-and-Close** sessions. L0 does not implement those products; it forwards the envelopes they create.
 
 ## Guarantees and limits
 
@@ -92,7 +93,7 @@ When clients follow the A/B/C route and cryptographic keys remain secure:
 
 Layer Minus does **not** promise anonymity against a global observer, hide the client IP from the selected entry, make traffic-analysis metadata disappear, or guarantee delivery after an entry returns HTTP 200. It also does not make every HTTP-shaped flow indistinguishable from ordinary browsing. Fetch-and-Close is a short-session mode, not a mix network. Chat SSE is a traffic fingerprint. Long-term user OpenPGP is not forward-secret. A/B/C names roles, not independent operators. See [security limits and threat grades](security-limits.md).
 
-The mailbox, Chat listen, offline ciphertext store, acknowledgements, presence query, mining listen classification, and UDP relay are implemented in CoNET-SI. Application coverage and user-facing reliability still depend on the client, healthy entry selection, key management, and acknowledgement behavior.
+The mailbox, Chat listen, offline ciphertext store, acknowledgements, presence query, mining listen classification, and UDP relay are implemented in CoNET-SI. Duplex overlay is an **application** composition on Chat gossip — SI does not parse `duplex_*`. Application coverage and user-facing reliability still depend on the client, healthy entry selection, key management, and acknowledgement behavior.
 
 ## Implementation anchors
 
@@ -115,7 +116,8 @@ The mailbox, Chat listen, offline ciphertext store, acknowledgements, presence q
 8. [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) — wrap-to-C listen field lesson.
 9. [HTTP transport and Fetch-and-Close](http-mimicry.md) — wire shape and short-session mode.
 10. [UDP frame forwarding](udp-forward.md) — one composition: symmetric payload relay without giving the key to B.
-11. [Security limits and threat grades](security-limits.md) — what the live plane does and does not protect.
-12. [Node and client roles](node-roles.md) — runtime responsibilities and boundaries.
+11. [Duplex overlay](duplex-forward.md) — application AES on Chat gossip; SI does not implement duplex commands.
+12. [Security limits and threat grades](security-limits.md) — what the live plane does and does not protect.
+13. [Node and client roles](node-roles.md) — runtime responsibilities and boundaries.
 
 User-facing products are documented under [Applications](../applications/README.md), including [SilentPass](../applications/silentpass-vpn.md), [Beamio](../applications/beamio.md), and [DePIN Chat](../applications/depin-chat.md).

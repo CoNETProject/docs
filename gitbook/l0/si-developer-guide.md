@@ -62,7 +62,7 @@ Do not mix encryption targets.
 
 Encrypt to the **recipient’s user PGP**. SI only sees the OpenPGP key ID and routes to that key’s mailbox.
 
-Typical use: Chat text, typed application JSON, `udp_subscribe` (contains the AES key). Sender delivery receipts use this inner armor, then wrap it as [mailbox work](#3-mailbox-work-envelope-mailbox-b-decrypts) with `NoPush: true`.
+Typical use: Chat text, typed application JSON, `udp_subscribe`, and application `duplex_offer` (each of the last two contains an AES key; SI forwards `duplex_offer` as Chat gossip and does **not** parse it). Sender delivery receipts use this inner armor, then wrap it as [mailbox work](#3-mailbox-work-envelope-mailbox-b-decrypts) with `NoPush: true`.
 
 ```text
 application object
@@ -518,8 +518,9 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 - [ ] Chat listen includes `listenKind: "chat"` and uses **C ≠ B**
 - [ ] `connect_timeout` starts after `fetch`; `listening` requires `res.ok` + body
 - [ ] SI hop-sign uses a UTF-8 armor string (peel plaintext / `pgpArmorToUtf8String`); hop-sign or C→B failure is a fast 404
-- [ ] Send / ACK / presence / UDP do not default-dial mailbox B
+- [ ] Send / ACK / presence / UDP / application duplex gossip do not default-dial mailbox B
 - [ ] EIP-191 `signMessage` covers the exact `message` string SI will verify
+- [ ] Overlay AES / UDP `Securitykey` never appears on a B-decryptable listen or relay
 - [ ] Failures do not log private keys, full PGP private armor, or `Securitykey`
 - [ ] HTTP 200 / SSE Connected is not treated as application delivery
 - [ ] Presence uses `wallet_online_query`, not `searchKey.routeOnline`
@@ -535,6 +536,7 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 - [Wallet-addressed peer identity](wallet-address-p2p.md)
 - [HTTP transport](http-mimicry.md)
 - [UDP frame forwarding](udp-forward.md)
+- [Duplex overlay](duplex-forward.md) — application JSON on Chat gossip; **not** an SI command row
 - [Security limits](security-limits.md)
 - [DePIN Chat product page](../applications/depin-chat.md)
 - [Resources](../resources.md)

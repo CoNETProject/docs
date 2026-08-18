@@ -98,7 +98,7 @@ This is the only cryptographic decision L0 requires the application to get right
 
 | Encrypt to | L0 behavior | Typical application use |
 | --- | --- | --- |
-| **Recipient user PGP** | Entry and mailbox **forward and store** the armor. They cannot read it. | Chat text, typed business JSON, UDP `udp_subscribe` (contains the AES key). Sender receipts use this as the **inner** armor, then wrap as mailbox work. |
+| **Recipient user PGP** | Entry and mailbox **forward and store** the armor. They cannot read it. | Chat text, typed business JSON, UDP `udp_subscribe` and duplex `duplex_offer` (each contains an AES key). Sender receipts use this as the **inner** armor, then wrap as mailbox work. |
 | **Entry or hop-node route PGP** (outer wrap) | That node **decrypts once**. If the inner key ID is not local and hop signatures are within the cap of **3**, it **forwards the inner armor**. Same-node inner PGP is an attack. | Hide the inner recipient key ID from the first-hop path observer; short hop chains only |
 | **Mailbox B route PGP** (signed command) | B **decrypts** and runs a command. | Listen, `wallet_online_query`, `gossip_delivery_ack`, UDP listen / relay / uplink |
 | **Mailbox B route PGP** (mailbox work) | B **decrypts** `{ data, NoPush? }`, stores the inner user-PGP armor, and may skip APNs. HTTP stays `{ data }` only. | Sender `beamio_chat_delivery_receipt_v1` with `NoPush: true`. Missing B’s key is a failure — no HTTP-field fallback. |
@@ -128,6 +128,8 @@ Encrypt a listen command to **B's route PGP** and open HTTP/SSE through a health
 | LayerMinus mining gossip | `mining` | omit (SI defaults to mining) |
 | UDP client / server | `udp_listen` / `udp_server_listen`, or `mining` | `udp` / `udp_server` |
 
+Duplex overlay does **not** add a SI listen row. App-layer host listen **is** Chat (`mining` + `listenKind: "chat"`).
+
 Entry acceptance or an SSE handshake is transport progress. The application still decrypts, verifies, and decides what the payload means.
 
 ### 6. Put the product protocol inside the envelope
@@ -151,6 +153,7 @@ The same forwarding plane is reused. Only the inner object and key roles change.
 | **POS terminal permission** | Same Chat delivery path | Typed `beamio_pos_terminal_permission_v1`; Staff pending, not Messages |
 | **Mining gossip** | `command: "mining"` listen (infrastructure may dial the target SI) | Signed epoch frames, miner accounting |
 | **UDP frames** | User-PGP `udp_subscribe`; route-PGP listen / relay / uplink | AES-256-GCM session, adapters, codecs |
+| **Duplex overlay** | Offer to long-lived user PGP; accept / reject / AES `duplex_frame` to the **session listen** user PGP; two owned Chat SSEs. No SI `duplex_*`. `duplex_reject` or missing accept keeps P1 gossip | AES-256-GCM of `L0D1` IPv4. Spec: [Duplex overlay](duplex-forward.md) |
 | **SilentPass access** | Route-PGP `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` through an entry | Device tunnel or local proxy, admission, path rotation |
 | **On-demand new wallet** | New EOA + new user PGP + new AddressPGP row | Application identity rotation after a leak or for a new role |
 | **Split routing / app wallets** | AddressPGP + listen on a **routing** EOA; sender / recipient only inside user-PGP | Mailbox and hop GB do not see the product wallet. Mapping stays in the client |
@@ -169,7 +172,7 @@ These are valid **application designs** on top of a forwarding network. They are
 | Privacy poll receive mode | Weaker Chat online / arrival-time fingerprint than SSE | Not implemented |
 | Double Ratchet / MLS after AddressPGP handshake | Forward secrecy and post-compromise security for Chat | Not implemented |
 | Operator-domain entry/mailbox exclusion | A/B/C as independent operators, not only roles | Not implemented on L0 |
-| L1 overlay TCP byte-stream (`conet-l0d`) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP on existing `/post` | Crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen worker + SI gossip JSON ingest in-crate, default off; authorized lab may enable `[l0]`; 2026-08-18: `.45` advertises overlay vIP; overlay geth + beacon TCP; CL initial-sync in progress; lab overlay UDP / DHT-port comms accepted; lab discv5 via L0 accepted (`L0_DHT` allowlist = overlay + hub `/32`; packets still DNAT onto L0; after DNAT, `.45` `ss` may show hub public `:4200` — original dest, not a leak; not `FOLLOW_OK`; not a production product). HTTP 200 ≠ delivery. No live SI `p2p_stream_*` / `listenKind: "l1p2p"`. Keep public P2P for the 6s slot |
+| L1 overlay TCP byte-stream (`conet-l0d`) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP | **Application duplex** on Chat gossip ([duplex-forward](duplex-forward.md)). Crate uses AES frames when the peer app sends `duplex_accept`; **P1 gossip** remains the fallback. `[l0]` default off; authorized lab may enable it. 2026-08-18 lab: overlay geth + beacon TCP; follow-the-chain Prysm-bound; lab discv5 via L0 accepted (not a production product). HTTP 200 ≠ delivery. Keep public P2P for the 6s slot. Do **not** treat SI `duplex_*` / `p2p_stream_*` / `listenKind: "l1p2p"` as current SI |
 
 Document those as upgrades or product options. Do not describe them as the live L0 plane. See [security limits](security-limits.md).
 
@@ -193,6 +196,7 @@ Document those as upgrades or product options. Do not describe them as the live 
 6. [X-CoNET-Hop-Sigs v1](hop-sigs.md) — compact miner hop header (not a path JSON).
 7. [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) — wrap-to-C listen field lesson.
 8. [UDP frame forwarding](udp-forward.md) — one composition that adds a symmetric key.
-9. [Security limits](security-limits.md) — live threat grades versus proposed upgrades.
-10. [Applications](../applications/README.md) — products that combine L0 with L1 and UI.
-11. [L1 overlay daemon](../applications/conet-l0d.md) · [Developers — conet-l0d](../developers/conet-l0d.md) — optional geth/beacon overlay (Under development).
+9. [Duplex overlay](duplex-forward.md) — application AES on Chat gossip; SI does not implement duplex commands.
+10. [Security limits](security-limits.md) — live threat grades versus proposed upgrades.
+11. [Applications](../applications/README.md) — products that combine L0 with L1 and UI.
+12. [L1 overlay daemon](../applications/conet-l0d.md) · [Developers — conet-l0d](../developers/conet-l0d.md) — optional geth/beacon overlay (Under development).

@@ -11,6 +11,7 @@ Layer Minus roles describe what a process does for one route. They are not perma
 | **Entry C** | Accepts a listen or mailbox-control request and forwards it to B | Does not decrypt B's route-key command |
 | **Mailbox B** | Decrypts mailbox control and mailbox-work JSON (`NoPush`), verifies route ownership, stores business ciphertext, and manages delivery sessions | Does not decrypt user-PGP business content |
 | **UDP server client** | Receives `udp_subscribe`, obtains the symmetric key, and encrypts or decrypts application frames | Sees its UDP application plaintext |
+| **Duplex overlay client** | Posts `duplex_offer` / `duplex_accept` (user PGP); reuses **existing Chat listen** as the host SSE; AES-seals `duplex_frame` inside user-PGP + mailbox wrap | Sees overlay IPv4 / application bytes; mailbox B must not hold the overlay AES key. SI does not parse duplex |
 | **LayerMinus mining client** | Opens mining listens to SI nodes, verifies signed gossip, and reports accounting data when configured | Sees signed mining gossip, not mailbox business plaintext |
 
 The privacy boundary depends on role separation. If a user connects directly to mailbox B, B becomes both entry and mailbox for that session and sees the user's source IP.
@@ -33,7 +34,7 @@ Its Layer Minus duties include:
 - emit signed mining/liveness frames to connected LayerMinus clients; and
 - for supported paid proxy commands, open an origin TCP connection as an exit.
 
-SI relays AES-GCM UDP payloads but must not receive the UDP session key in a route-key command.
+SI relays AES-GCM UDP payloads and forwards user-PGP duplex gossip as ordinary Chat mail. It must not receive overlay / UDP session keys in a route-key command, and it must **not** implement `duplex_*`.
 
 ## CoNET-DL and mining listeners
 
@@ -86,5 +87,6 @@ Availability depends on current entry health, route correctness, writable sessio
 - [Security limits](security-limits.md) states that roles are not independent operators.
 - [Zero-trust mailbox routing](mailbox-routing.md) specifies entry and mailbox behavior.
 - [UDP frame forwarding](udp-forward.md) specifies the separate UDP session plane.
+- [Duplex overlay](duplex-forward.md) specifies the application AES composition on Chat gossip.
 - [L1 Guardian nodes and staking](../l1/guardian-staking.md) covers registration and economics outside L0.
 - [SilentPass](../applications/silentpass-vpn.md) covers the product-level proxy path.

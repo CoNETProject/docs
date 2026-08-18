@@ -143,6 +143,7 @@ SMOKE_PATHS=(
 	"/l0/si-developer-guide.html"
 	"/l0/chat-developer-guide.html"
 	"/l0/mailbox-routing.html"
+	"/l0/duplex-forward.html"
 	"/l1/rpc-explorer.html"
 	"/l1/cross-chain-treasury.html"
 	"/l2/"

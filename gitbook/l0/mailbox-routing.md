@@ -89,6 +89,8 @@ The SI runtime labels long-lived sessions so that unrelated lifecycle policies d
 | UDP client | `udp_listen`, or `mining` | `udp` | Separate UDP client pool |
 | UDP server | `udp_server_listen`, or `mining` | `udp_server` | Separate UDP server pool |
 
+Chat / mining / UDP are the **only** SI listen namespaces. Overlay duplex is **not** an SI pool: the host SSE is the existing Chat listen. Spec: [Duplex overlay (application composition)](duplex-forward.md).
+
 A completed HTTP request body does not make a receive-only SSE socket stale. SI checks whether the socket remains writable; chat-only timeout or zombie policy must not evict a mining session.
 
 Epoch / listing SSE frames (`{ status, epoch, ipaddress, … }` or `nodeWallets`) prove the listen pipe is alive. They are **not** business delivery. B must **not** treat a healthy writable chat listen as expired solely because `connectedAt` is older than a few seconds. Live SSE is skipped only when the socket is stale or unwritable; the armor is still stored (`saveLocal`). PGP key IDs used to attach a listen and to look up that listen must be compared case-insensitively (uppercase hex).
@@ -143,4 +145,5 @@ Direct-to-B requests violate the privacy model even if they function. Other prot
 - [Wallet-addressed peer identity](wallet-address-p2p.md) explains the keys used above.
 - [HTTP transport and Fetch-and-Close](http-mimicry.md) explains the wire carrier and short-session option.
 - [UDP frame forwarding](udp-forward.md) applies the same A/B/C model to encrypted application frames.
+- [Duplex overlay](duplex-forward.md) is an **application** composition on Chat gossip + Chat listen; SI has no duplex pool.
 - [DePIN Chat](../applications/depin-chat.md) describes the user-facing messaging product.
