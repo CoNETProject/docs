@@ -199,12 +199,12 @@ Do not default to `--peer` against a single historic seed. Prefer several `--boo
 
 ## Optional: overlay P2P (`conet-l0d`)
 
-The public bootnodes and inbound **8400 / 4200 / 4300** above remain the **production default**. A Linux daemon can add a **static overlay** path (`100.64.0.0/10`) for NAT or hosts without a stable public IP. It does not replace public P2P for the 6-second slot. P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen HTTP+SSE worker exist in-crate (mock-tested); production SI listen is not opened; `[l0]` defaults off.
+The public bootnodes and inbound **8400 / 4200 / 4300** above remain the **production default**. A Linux daemon can add a **static overlay** path (`100.64.0.0/10`) for NAT or hosts without a stable public IP. It does not replace public P2P for the 6-second slot. P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen worker + SI gossip JSON ingest exist in-crate; `[l0]` defaults off; an authorized lab may enable `[l0]`. The 2026-08-18 lab advertises overlay vIP on authorized L0_ONLY `.45`, completed overlay geth + beacon TCP, and is running CL initial-sync; EL still `0x0`.
 
 - Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.md)
 - CLI, config, owned TUN / iptables: [Developers — conet-l0d](conet-l0d.md)
 
-Advertise only: geth `--nat extip:<overlay-vIP>` and beacon `--p2p-host-ip=<overlay-vIP>`. Do **not** switch those flags to the overlay vIP until a bidirectional overlay frame is proven on the peer TUN. Keep Engine and HTTP on `127.0.0.1`. Do not bind `--http.addr`, `--authrpc.addr`, `--p2p-local-ip`, or `--rpc-host` to the overlay. Do not point SilentPass / `SaaS_Sock5` at these P2P ports.
+Advertise only: geth `--nat extip:<overlay-vIP>` and beacon `--p2p-host-ip=<overlay-vIP>`. Authorized L0_ONLY `.45` uses overlay vIP `100.64.0.5` plus `--p2p-static-id`. `.98` and production proposers keep the public IP. Keep Engine and HTTP on `127.0.0.1`. Do not bind `--http.addr`, `--authrpc.addr`, `--p2p-local-ip`, or `--rpc-host` to the overlay. Do not point SilentPass / `SaaS_Sock5` at these P2P ports.
 
 ## Stake a validator (optional)
 

@@ -8,7 +8,7 @@ Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.
 L1 ports and public bootnodes: [Run an L1 node](l1-node.md)  
 Forwarding plane: [L0 development](l0.md) · [How to use Layer Minus](../l0/using-l0.md)
 
-Whitepaper / `RULES.md` revision **2026-08-17** (milestone eval 23:30Z: crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen wrap in-crate, mock-tested; production SI listen not opened; lab binary `[l0]` off). A change to those files must update **this page and the Applications page** in the same task. A **new SI command** must also update L0 protocol pages (`using-l0`, mailbox routing, SI developer guide) — do not document a live command on only one side.
+Whitepaper / `RULES.md` revision **2026-08-18** (authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP proven; CL initial-sync in progress; EL still `0x0`). A change to those files must update **this page and the Applications page** in the same task. A **new SI command** must also update L0 protocol pages (`using-l0`, mailbox routing, SI developer guide) — do not document a live command on only one side.
 
 ## What you build
 
@@ -47,9 +47,9 @@ The daemon **owns** TUN and iptables. Do not ship a second operator `iptables` s
 | --- | --- |
 | `config/conet-l0d.example.toml` | Example overlay table |
 | `systemd/conet-l0d.service` | `ExecStart=start` / `ExecStop=stop`; `CAP_NET_ADMIN`; no raw iptables |
-| `whitepaper/` | Design pair (EN + zh-CN), revision **2026-08-17** |
+| `whitepaper/` | Design pair (EN + zh-CN), revision **2026-08-18** |
 | `docs/MVP.md` | Accepted crate MVP |
-| `docs/P1.md` | Overlay `/post` encrypt + mailbox wrap + POST; inbound decrypt + TUN write-back; EIP-191 listen HTTP+SSE worker in-crate (mock-tested); `[l0]` default off; production SI listen not opened |
+| `docs/P1.md` | Overlay `/post` encrypt + mailbox wrap + POST; inbound decrypt + TUN write-back; EIP-191 listen worker; SI gossip JSON ingest; `[l0]` default off; authorized lab may enable `[l0]`; 2026-08-18: `.45` advertises overlay vIP; overlay geth + beacon TCP; CL initial-sync in progress |
 | `RULES.md` | Engineering constraints + GitBook lockstep |
 
 ## Config shape
@@ -83,8 +83,9 @@ tcp_ports = [4200]
 # is in-crate when enabled plus listen_entries, mailbox_route_pgp_file
 # (this host's B route PUBLIC key), routing_eoa, routing_key_file, and
 # routing_eth_key_file (hex secp256k1; must match routing_eoa; not OpenPGP).
-# Listen is EIP-191 + SI { message, signMessage } base64. Tests use
-# wiremock only. Do not put Securitykey in a B-decryptable listen command.
+# Listen is EIP-191 + SI { message, signMessage } base64. Listen ingest
+# matches SI gossip JSON { "data": "<armor>" } (Chat handleInbound). Tests
+# use wiremock only. Do not put Securitykey in a B-decryptable listen command.
 # [l0]
 # enabled = false
 # rpc = "https://rpc1.conet.network"
@@ -149,7 +150,7 @@ CapabilityBoundingSet=CAP_NET_ADMIN
 
 ## Client flags (advertise, do not bind overlay)
 
-geth `--nat=extip:<local_vip>` and beacon `--p2p-host-ip=<local_vip>` **advertise**. Do **not** switch those flags to the overlay vIP until a bidirectional overlay frame is proven on the peer TUN. Listen ports stay `0.0.0.0:8400` / `:4200`. Engine and HTTP stay `127.0.0.1`.
+geth `--nat=extip:<local_vip>` and beacon `--p2p-host-ip=<local_vip>` **advertise**. Authorized L0_ONLY `.45` uses overlay vIP `100.64.0.5` plus `--p2p-static-id`. `.98` and production proposers keep the public IP. Listen ports stay `0.0.0.0:8400` / `:4200`. Engine and HTTP stay `127.0.0.1`.
 
 Binding `--http.addr`, `--authrpc.addr`, `--p2p-local-ip`, or `--rpc-host` to the vIP is a **startup-failure** risk when the TUN is down. Advertise-only flags are not.
 
@@ -182,7 +183,7 @@ Content-Type: application/json
 
 `listenKind: "l1p2p"` is a **design reservation**, not a current SI pool label. Chat / mining / udp pools stay isolated. If you add a real command, update [using-l0](../l0/using-l0.md), [mailbox routing](../l0/mailbox-routing.md), and the [SI developer guide](../l0/si-developer-guide.md) in the same task.
 
-Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and the peer has **user PGP** plus **route PGP** files and at least one entry, P1 encrypts the overlay envelope to the peer user PGP, wraps `{ data, NoPush: true }` to mailbox B route PGP, and POSTs only `{ "data": outerArmor }` to a healthy entry A ≠ B. Inbound: decrypt user-PGP armor → overlay envelope → raw IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Listen HTTP+SSE worker POSTs EIP-191-signed `mining` + `listenKind: "chat"` (no `Securitykey`; SI `{ message, signMessage }` base64) to entry C ≠ B when `listen_entries`, `mailbox_route_pgp_file`, `routing_eoa`, `routing_key_file`, and `routing_eth_key_file` are set. In-crate listen matches SI `checkSign`. `[l0]` defaults **off**. A lab host may install that binary without enabling `[l0]`. Production SI listen is **not** opened. Do not claim production mailbox delivery. Do not treat `p2p_stream_*` as current SI.
+Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and the peer has **user PGP** plus **route PGP** files and at least one entry, P1 encrypts the overlay envelope to the peer user PGP, wraps `{ data, NoPush: true }` to mailbox B route PGP, and POSTs only `{ "data": outerArmor }` to a healthy entry A ≠ B. Inbound: decrypt user-PGP armor → overlay envelope → raw IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Listen HTTP+SSE worker POSTs EIP-191-signed `mining` + `listenKind: "chat"` (no `Securitykey`; SI `{ message, signMessage }` base64) to entry C ≠ B when `listen_entries`, `mailbox_route_pgp_file`, `routing_eoa`, `routing_key_file`, and `routing_eth_key_file` are set. Listen ingest matches SI `forWardPGPMessageToClient` raw JSON `{ "data": "<armor>" }` (Chat `handleInbound`), not only SSE `data: BEGIN PGP` lines. In-crate listen matches SI `checkSign`. `[l0]` defaults **off**. An authorized lab may enable `[l0]` and POST that existing listen to entry C — not a new SI command. **2026-08-17 23:12Z L0-only:** outbound HTTP 200, no inbound TUN write (old SSE-only parser). **23:30Z** (restart only `conet-l0d`): inbound IPv4 on both TUNs and overlay geth TCP (`.45` `100.64.0.5` ↔ `.98` `100.64.0.6:8400`). **2026-08-18:** authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP ESTAB; CL initial-sync in progress; EL still `0x0`. HTTP 200 ≠ delivery. Do not claim production mailbox delivery. Do not treat `p2p_stream_*` as current SI.
 
 ## Failure semantics
 
@@ -190,6 +191,7 @@ Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets
 | --- | --- |
 | Overlay vIP not on a physical NIC; only `--nat=extip` / `--p2p-host-ip` set | geth/beacon **start** |
 | Overlay bootnode unreachable | Clients stay up; overlay peer count may be 0 |
+| Entry A returns HTTP 200 for overlay `POST { data }` | **Not** by itself inbound delivery. Mailbox is store-and-forward. The 2026-08-18 lab wrote inbound IPv4 and completed overlay geth + beacon TCP; CL initial-sync is in progress; EL still `0x0` |
 | `start` without `CAP_NET_ADMIN` | `conet-l0d` exits; clients unchanged |
 | Dirty state after a crash | Next `start` or `teardown` removes `CONET_L0D` + TUN |
 | Bind Engine/HTTP to overlay IP while TUN is down | geth/beacon **may fail to start** — do not do this |

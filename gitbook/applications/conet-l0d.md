@@ -1,11 +1,11 @@
 # L1 overlay daemon (conet-l0d)
 
-**Maturity: Under development.** Crate MVP is accepted (Linux command, TUN/iptables lifecycle, `web3://` locator, packet counters). P1 outbound encrypt + mailbox wrap + `POST { data }`, inbound decrypt + TUN write-back, and an EIP-191 listen HTTP+SSE worker exist in-crate (`[l0]` default off). In-crate listen matches SI `checkSign`. A lab host may run that binary with `[l0]` still off. Production SI listen and a Layer Minus byte-stream on production SI are **not** a public end-to-end service yet. This label is not a security audit.
+**Maturity: Under development.** Crate MVP is accepted (Linux command, TUN/iptables lifecycle, `web3://` locator, packet counters). P1 outbound encrypt + mailbox wrap + `POST { data }`, inbound decrypt + TUN write-back, and an EIP-191 listen HTTP+SSE worker exist in-crate (`[l0]` default off). Listen ingest matches SI `forWardPGPMessageToClient` raw JSON `{ "data": "<armor>" }` (Chat `handleInbound`), not only SSE armor lines. In-crate listen matches SI `checkSign`. An authorized lab may enable `[l0]` and POST that existing listen to entry C. The 2026-08-17 23:12Z L0-only lab returned HTTP 200 on outbound `/post` but did not write inbound IPv4 (old SSE-only parser). **23:30Z** (restart only `conet-l0d`) wrote inbound IPv4 on both TUNs and completed overlay geth TCP (`.45` `100.64.0.5` ↔ `.98` `100.64.0.6:8400`). **2026-08-18:** authorized L0_ONLY `.45` advertises overlay vIP `100.64.0.5`; overlay geth + beacon TCP ESTAB; CL initial-sync in progress; EL still `0x0`. HTTP 200 ≠ delivery. This is **not** a public mailbox product. This label is not a security audit.
 
 Public site: [https://gitbook.conet.network/applications/conet-l0d.html](https://gitbook.conet.network/applications/conet-l0d.html)
 
 Developer CLI and config: [Developers — conet-l0d](../developers/conet-l0d.md)  
-Design: crate whitepaper revision **2026-08-17** (milestone eval 23:30Z: crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen wrap in-crate, mock-tested; production SI listen not opened; lab binary `[l0]` off) (pair in [CoNET-L0D/whitepaper](https://github.com/CoNET-project/CoNET-L0D/tree/main/whitepaper)).
+Design: crate whitepaper revision **2026-08-18** (authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP proven; CL initial-sync in progress; EL still `0x0`) (pair in [CoNET-L0D/whitepaper](https://github.com/CoNET-project/CoNET-L0D/tree/main/whitepaper)).
 
 If that whitepaper or the crate `RULES.md` changes, this page and the Developers page must change in the **same task**.
 
@@ -41,7 +41,7 @@ Do not point SilentPass or `SaaS_Sock5` at your geth P2P port and call that “w
 - A host behind NAT, or without a stable public IP, that still wants a **static overlay peer**.
 - A hub that publishes overlay locators as a **backup** path next to public bootnodes.
 
-Production proposers should keep **public P2P** for the 6-second slot. L0-only peering is unmeasured and must not be the default.
+Production proposers should keep **public P2P** for the 6-second slot. The 2026-08-18 authorized lab on `.45` advertises overlay vIP and is running CL initial-sync over overlay; EL is still `0x0`. L0-only peering must not be the default.
 
 ## How to use (operator)
 
@@ -90,7 +90,7 @@ On start the daemon tears down a leftover dirty state first, then creates TUN, a
 
 ### 4. Point geth / beacon at the overlay (advertise only)
 
-**Do not** switch `--nat=extip` or `--p2p-host-ip` to the overlay vIP until a bidirectional overlay frame is proven on the peer TUN. A local TUN that only counts IPv4 is not enough. Lab hosts keep the **public IP** until then.
+Authorized **L0_ONLY `.45`** switches `--nat=extip` and `--p2p-host-ip` to the overlay vIP (`100.64.0.5`) and uses `--p2p-static-id`. **`.98` and production proposers keep the public IP.** Overlay geth TCP alone was not enough; the 2026-08-18 lab also completed overlay beacon TCP.
 
 These flags **advertise** the vIP. They do not bind Engine or HTTP to it.
 
@@ -98,7 +98,7 @@ These flags **advertise** the vIP. They do not bind Engine or HTTP to it.
 geth --nat extip:100.64.0.5 --bootnodes "enode://<peer-key>@100.64.0.1:8400" \
   --http.addr 127.0.0.1 --authrpc.addr 127.0.0.1 --port 8400
 
-beacon-chain --p2p-host-ip=100.64.0.5 --p2p-tcp-port=4200 --p2p-udp-port=4300 \
+beacon-chain --p2p-host-ip=100.64.0.5 --p2p-static-id --p2p-tcp-port=4200 --p2p-udp-port=4300 \
   --rpc-host=127.0.0.1 --grpc-gateway-host=127.0.0.1
 ```
 
@@ -138,22 +138,22 @@ web3://YourExactTag.web3/p2p/beacon
 
 `@beamioTag` must match **exactly** (`CoNET` ≠ `CONET`). Do not take `search-users` `results[0]`. An AA without AddressPGP is not a destination.
 
-MVP `resolve` parses the URI against the config table. AddressPGP `searchKey` ABI helpers exist in-crate. P1 encrypt + mailbox wrap + `POST { data }` exist in-crate when `[l0]` is on and peer user+route PGP files plus an entry are set; inbound decrypt + TUN write-back exist when `routing_key_file` is an OpenPGP secret cert; an EIP-191 listen HTTP+SSE worker exists when enabled plus `listen_entries`, `mailbox_route_pgp_file` (this host's B route **public** key), `routing_eoa`, `routing_key_file`, and `routing_eth_key_file` (hex secp256k1; recovered address must match `routing_eoa`; not OpenPGP). In-crate listen matches SI `checkSign`. They stay **off** by default. A lab host may install that binary without enabling `[l0]`. Production SI listen is **not** opened.
+MVP `resolve` parses the URI against the config table. AddressPGP `searchKey` ABI helpers exist in-crate. P1 encrypt + mailbox wrap + `POST { data }` exist in-crate when `[l0]` is on and peer user+route PGP files plus an entry are set; inbound decrypt + TUN write-back exist when `routing_key_file` is an OpenPGP secret cert; an EIP-191 listen HTTP+SSE worker exists when enabled plus `listen_entries`, `mailbox_route_pgp_file` (this host's B route **public** key), `routing_eoa`, `routing_key_file`, and `routing_eth_key_file` (hex secp256k1; recovered address must match `routing_eoa`; not OpenPGP). Listen ingest matches SI `forWardPGPMessageToClient` raw JSON `{ "data": "<armor>" }` (Chat `handleInbound`). In-crate listen matches SI `checkSign`. `[l0]` stays **off** by default. An authorized lab may enable `[l0]` and POST existing `mining` + `listenKind: "chat"` to entry C — not a new SI command. HTTP 200 on entry A is **not** by itself inbound TUN write-back. The 2026-08-18 lab wrote inbound IPv4, completed overlay geth + beacon TCP, and is running CL initial-sync over overlay. EL is still `0x0`. Authorized L0_ONLY `.45` advertises the overlay vIP; production proposers keep public P2P.
 
 ## Safety
 
 - First iptables rule: `RETURN` `127.0.0.0/8` (Engine JWT, beacon gRPC, local RPC).
 - Never capture a configured validator uid.
 - Never REDIRECT `0.0.0.0/0:8400` or the whole public P2P space.
-- Do not restart anyone’s geth, beacon, or validator from this product.
+- The crate must not restart anyone’s geth, beacon, or validator. An authorized **operator** script may restart **only** the named lab host (`.45` L0_ONLY). Never wipe. Never mutate the daemon-owned `CONET_L0D` chain; public-P2P isolate uses `CONET_L0D_P2P_ISOLATE` / `_OUT`. Do not restart `.98` unless that host is authorized in the same message.
 - Do not invent a new documentation or API hostname.
 
 ## What exists today
 
 | Surface | Status |
 | --- | --- |
-| Crate [CoNET-L0D](https://github.com/CoNET-project/CoNET-L0D) | MVP accepted: TUN + iptables lifecycle; locator parse; example TOML; systemd unit. P1 outbound encrypt + mailbox wrap + `POST { data }`, inbound decrypt + TUN write-back, and an EIP-191 listen HTTP+SSE worker exist in-crate (`[l0]` default off; listen is mock-tested and matches SI `checkSign`). A lab host may run that binary with `[l0]` still off. Production SI listen and production mailbox delivery are **not** shipped |
-| Two-host lab (`.45` / `.98`) | 2026-08-17 21:50Z public-IP peering after `.98` geth recovery; this revision keeps TUN up and `[l0]` off; no validator; advertise stays public IP |
+| Crate [CoNET-L0D](https://github.com/CoNET-project/CoNET-L0D) | MVP accepted: TUN + iptables lifecycle; locator parse; example TOML; systemd unit. P1 outbound encrypt + mailbox wrap + `POST { data }`, inbound decrypt + TUN write-back, and an EIP-191 listen HTTP+SSE worker exist in-crate (`[l0]` default off; listen is mock-tested and matches SI `checkSign`). Listen ingest matches SI gossip JSON `{ "data": "<armor>" }`. An authorized lab may enable `[l0]`. Production mailbox delivery is **not** shipped |
+| Two-host lab (`.45` / `.98`) | **2026-08-18:** authorized L0_ONLY `.45` advertises overlay vIP `100.64.0.5`; overlay geth + beacon TCP ESTAB; CL initial-sync in progress (`head` left `766496`); EL still `0x0`. `.98` stays on public advertise and stays synced. Restore `.45` public P2P with `stop-isolate` then a normal restart (no wipe) |
 | Public operator / developer pages | This page and [Developers — conet-l0d](../developers/conet-l0d.md) |
 | Production SI `p2p_stream_*` / `listenKind: "l1p2p"` | **Not** a live command. Do not treat it as current SI. |
 | Measured L0 hop RTT for attestations | **Not** measured. Keep public P2P for slot-critical gossip. |
