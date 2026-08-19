@@ -1,17 +1,35 @@
-# L1 overlay daemon (conet-l0d)
+# conet-l0d — L1 overlay daemon & Web3 Enterprise Gateway
 
-**Maturity: Under development.** Crate MVP is accepted (Linux command, TUN/iptables lifecycle, `web3://` locator, packet counters). Overlay `/post` prefers SI **`l0_listen` / `l0_connect`** occupancy plus **application duplex** (`duplex_offer` on Chat gossip; accept / reject / AES `duplex_frame` on the occupied pipe); **P1 gossip** remains the fallback if the peer app never sends `duplex_accept` or the pipe is missing. P1 outbound encrypt + mailbox wrap + `POST { data }`, inbound decrypt + TUN write-back, and listen HTTP+SSE workers exist in-crate (`[l0]` default off). Listen ingest matches SI `forWardPGPMessageToClient` raw JSON `{ "data": "<armor>" }` (Chat `handleInbound`) plus duplex JSON frames. In-crate listen matches SI `checkSign`. An authorized lab may enable `[l0]`. Optional `[[l0.channels]]` is one routing EOA + listen SSE per overlay port (8400 / 4200 / 4300); outbound encrypts to the peer user PGP for that port (classify by well-known src or dest port). Empty channels keep one EOA. `:4300` is overlay IPv4, not SI `udp_relay`. The 2026-08-17 23:12Z L0-only lab returned HTTP 200 on outbound `/post` but did not write inbound IPv4 (old SSE-only parser). **23:30Z** (restart only `conet-l0d`) wrote inbound IPv4 on both TUNs and completed overlay geth TCP (`.45` `100.64.0.5` ↔ `.98` `100.64.0.6:8400`). **2026-08-18:** authorized L0_ONLY `.45` advertises overlay vIP `100.64.0.5`; overlay geth + beacon TCP ESTAB; dest-aggregated IPv4 + POST concurrency 32 / queue 2048 (upgrade both lab binaries together). After that binary, overlay queue-full is 0; remaining follow-the-chain limiter is Prysm initial-sync (~3.2 blocks/s, ~15 h). EL still `0x0`. Read-only watch: `scripts/watch-l0-follow.sh`. Follow-the-chain is **not** complete. Lab overlay UDP echo and `:4300` (direct + public-ENR steer) arrived on the peer TUN; lab discv5 via L0 is **accepted** (`L0_DHT` allowlist = overlay + hub `/32`; packets still DNAT onto L0; not `FOLLOW_OK`; not a production product). If beacon `connected` drops, re-apply `overlay-dht-steer.sh` first (flush ghost conntrack; do not restart EL/CL). Authorized `.45` `restart-beacon` is only for Prysm dial backoff (**~17:28Z** restored `connected=1` and `Processing blocks`; do not re-apply steer immediately after start). After DNAT, `.45` `ss` may show hub public `:4200` (original dest, not a leak); overlay proof is TUN VIP + isolate DROP=0. First-minute `suitable=0` is expected. HTTP 200 ≠ delivery. This is **not** a public mailbox product. This label is not a security audit.
+**Maturity: Under development.** Crate MVP is accepted for the **L1 overlay** path (Linux command, TUN/iptables lifecycle, `web3://` locator, packet counters, occupied duplex + P1 fallback). The **CoNET Web3 Enterprise Gateway** product role and the [Web3 Application Protocol](../l0/web3-application-protocol.md) draft extend that daemon toward hosting existing Web / API / AI services behind a wallet identity — that hosting path is **destination architecture**, not a shipped public hosting product. Overlay `/post` prefers SI **`l0_listen` / `l0_connect`** occupancy plus **application duplex** (`duplex_offer` on Chat gossip; accept / reject / AES `duplex_frame` on the occupied pipe); **P1 gossip** remains the fallback if the peer app never sends `duplex_accept` or the pipe is missing. P1 outbound encrypt + mailbox wrap + `POST { data }`, inbound decrypt + TUN write-back, and listen HTTP+SSE workers exist in-crate (`[l0]` default off). Listen ingest matches SI `forWardPGPMessageToClient` raw JSON `{ "data": "<armor>" }` (Chat `handleInbound`) plus duplex JSON frames. In-crate listen matches SI `checkSign`. An authorized lab may enable `[l0]`. Optional `[[l0.channels]]` is one routing EOA + listen SSE per overlay port (8400 / 4200 / 4300); outbound encrypts to the peer user PGP for that port (classify by well-known src or dest port). Empty channels keep one EOA. `:4300` is overlay IPv4, not SI `udp_relay`. The 2026-08-17 23:12Z L0-only lab returned HTTP 200 on outbound `/post` but did not write inbound IPv4 (old SSE-only parser). **23:30Z** (restart only `conet-l0d`) wrote inbound IPv4 on both TUNs and completed overlay geth TCP (`.45` `100.64.0.5` ↔ `.98` `100.64.0.6:8400`). **2026-08-18:** authorized L0_ONLY `.45` advertises overlay vIP `100.64.0.5`; overlay geth + beacon TCP ESTAB; dest-aggregated IPv4 + POST concurrency 32 / queue 2048 (upgrade both lab binaries together). After that binary, overlay queue-full is 0; remaining follow-the-chain limiter is Prysm initial-sync (~3.2 blocks/s, ~15 h). EL still `0x0`. Read-only watch: `scripts/watch-l0-follow.sh`. Follow-the-chain is **not** complete. Lab overlay UDP echo and `:4300` (direct + public-ENR steer) arrived on the peer TUN; lab discv5 via L0 is **accepted** (`L0_DHT` allowlist = overlay + hub `/32`; packets still DNAT onto L0; not `FOLLOW_OK`; not a production product). If beacon `connected` drops, re-apply `overlay-dht-steer.sh` first (flush ghost conntrack; do not restart EL/CL). Authorized `.45` `restart-beacon` is only for Prysm dial backoff (**~17:28Z** restored `connected=1` and `Processing blocks`; do not re-apply steer immediately after start). After DNAT, `.45` `ss` may show hub public `:4200` (original dest, not a leak); overlay proof is TUN VIP + isolate DROP=0. First-minute `suitable=0` is expected. HTTP 200 ≠ delivery. This is **not** a public mailbox product. This label is not a security audit.
 
 Public site: [https://gitbook.conet.network/applications/conet-l0d.html](https://gitbook.conet.network/applications/conet-l0d.html)
 
 Developer CLI and config: [Developers — conet-l0d](../developers/conet-l0d.md)  
+Application protocol draft: [CoNET Web3 Application Protocol](../l0/web3-application-protocol.md)  
 Design: crate whitepaper revision **2026-08-18** (application duplex on Chat gossip + P1 gossip when the peer app does not accept; optional per-port `[[l0.channels]]` listen SSE; overlay IPv4 batch + POST 32/512; Prysm-bound follow-the-chain; lab overlay UDP + live discv5 via L0 accepted; DHT drop recovery = flush ghost conntrack first; authorized `.45` `restart-beacon` after dial backoff; `ss` public `:4200` is DNAT dest, not a leak; not a production discv5 product) (pair in [CoNET-L0D/whitepaper](https://github.com/CoNET-project/CoNET-L0D/tree/main/whitepaper)).
 
 If that whitepaper or the crate `RULES.md` changes, this page and the Developers page must change in the **same task**.
 
-## Product role
+## Product roles (two compositions, one daemon)
 
-`conet-l0d` is a **Linux userspace daemon** for CoNET L1 node operators. It lets `geth` and Prysm `beacon-chain` use Layer Minus as an **overlay peer path** without patching those clients.
+`conet-l0d` is a **Linux userspace daemon**. The same binary (and the same Layer Minus substrate) supports two product roles. Do not collapse them.
+
+| Role | Product name | What it does | Maturity in this book |
+| --- | --- | --- | --- |
+| **A. L1 overlay daemon** | Consensus peer path | Catch overlay `100.64.0.0/10` so unmodified **geth / Prysm** peer over L0 without patching those clients | **Under development** / **lab-proven** |
+| **B. Enterprise host gateway** | **CoNET Web3 Enterprise Gateway** | Publish an existing Web / API / AI / intranet service as a **wallet-addressed** host: origin IP hidden, passwordless wallet auth, L0 privacy routing, protocol adapt | **Destination** — protocol draft on [Web3 Application Protocol](../l0/web3-application-protocol.md); not a public hosting product yet |
+
+**Suggested product one-liner (role B):** publish existing Web, API, AI, and intranet services as wallet-addressed, origin-IP-hidden, passwordless Web3 services.
+
+**Suggested protocol one-liner:** *A wallet-addressed, mutually authenticated and privacy-routed application protocol* — [draft](../l0/web3-application-protocol.md).
+
+It does **not** turn Layer Minus into a second IP network. L0 stays a [PGP / wallet-address forwarding plane](../l0/using-l0.md). Both roles are application combinations of that plane.
+
+### Role A — L1 overlay (what works in lab today)
+
+**Destination:** carry consensus gossip (geth **8400**, beacon **4200/4300**) on wallet-addressed L0 duplex so the long-lived peer identity is a routing EOA + OpenPGP route, not a stable public `IP:port`. See [Run an L1 node — Vision](../developers/l1-node.md#vision-wallet-addressed-consensus-transport).
+
+**Today:** public hub join remains documented; this path is **Under development** / **lab-proven**. Do not claim that every production proposer has abandoned public listen.
 
 You start one command. The daemon:
 
@@ -22,27 +40,63 @@ You start one command. The daemon:
 
 You do **not** run `iptables` by hand.
 
-It does **not** turn Layer Minus into a second IP network. L0 stays a [PGP / wallet-address forwarding plane](../l0/using-l0.md). This product is one application combination.
+### Role B — CoNET Web3 Enterprise Gateway (destination)
+
+Enterprise servers run `conet-l0d` as the **network boundary**. Existing HTTP, REST, GraphQL, WebSocket, or internal APIs need not understand wallets, PGP, or Guardians. The gateway:
+
+| Capability | Target behavior |
+| --- | --- |
+| Origin hiding | Host **initiates** L0 channels; no public inbound `IP:port` required on the origin |
+| Protocol adapt | Map Web3 Application Requests onto local Web / API / TCP |
+| Wallet auth | Verify wallet, delegated session keys, nonce, and policy |
+| End-to-end crypto | Do not trust entry nodes with business plaintext |
+| Stable service identity | Change IP / ISP / cloud / Guardian without changing the **service wallet** |
+| Multi-entry resilience | Several entries / mailboxes across ASN and operators |
+| Audit | Emit authenticated identity, request ID, policy result |
+
+Example local mapping (destination):
+
+```text
+web3://company.web3/       → 127.0.0.1:3000
+web3://company.web3/api/   → 10.0.1.20:8080
+web3://company.web3/files/ → 10.0.1.30:9000
+```
+
+**Backend trust boundary:** the origin must **not** trust client-supplied identity headers. The gateway must strip colliding fields and inject only verified values (for example `X-CoNET-User-Wallet`, session ID, request ID, domain). Backend listen should be loopback, Unix socket, or mTLS only.
+
+**Client side** is a browser extension (or equivalent): intercept `web3://`, resolve service identity from CoNET L1 (not origin IP), sign and encrypt requests, verify host-signed responses, isolate Web3 Origins. That client is **not** documented as a public production app in this book yet.
+
+Do **not** treat overlay Peer Locator completion as “Enterprise Gateway shipped.”
 
 ## What it is not
 
 | Other product | Difference |
 | --- | --- |
-| [SilentPass](silentpass-vpn.md) | Device/app **egress** to a public `host:port` (`SaaS_Sock5*`). Not L1 consensus P2P. |
-| [Run an L1 node](../developers/l1-node.md) public P2P | geth **8400** and beacon **4200/4300** on the Internet remain the production default. |
+| [SilentPass](silentpass-vpn.md) | Device/app **egress** to a public `host:port` (`SaaS_Sock5*`). Not L1 consensus P2P and not enterprise origin hosting. |
+| [Run an L1 node](../developers/l1-node.md) public join path | Documented permissionless hubs still expose geth **8400** and beacon **4200/4300** for Internet peers. Destination architecture: wallet-addressed L0 gossip ([vision](../developers/l1-node.md#vision-wallet-addressed-consensus-transport)). |
 | Validator client | `validator` only talks to **local** beacon. Do not capture its uid or read its keystore. |
 | Current [UDP forward](../l0/udp-forward.md) | AES frames over HTTP/SSE — not raw OS UDP, not discv4. |
-| [Duplex overlay](../l0/duplex-forward.md) | Application AES on two owned Chat SSEs. Offer on long-lived listen; accept / reject / frames on session listen. SI does **not** implement `duplex_*`. `duplex_reject` or missing accept keeps P1 gossip. |
+| [Duplex overlay](../l0/duplex-forward.md) | Application AES on two owned L0 occupy pipes. Offer on long-lived Chat listen; accept / reject / frames on occupied pipe. SI does **not** implement `duplex_*`. `duplex_reject` or missing accept keeps P1 gossip. After `l0_listen` reconnect, rebuild `l0_connect` (do not permanent P1). On occupied teardown SI emits **`l0_pipe_end`** (inbound TCP) and optional **`l0_listen_released`** (listen SSE); conet-l0d clears its pipe and retries occupy. |
+| Cloudflare Tunnel / Tor Onion / SIWE alone | Related patterns (tunnel, hidden service, wallet login) — CoNET combines **wallet identity + L1 domain target + L0 routing + host gateway**. Comparison belongs in product reviews, not as “already equivalent.” |
 
 Do not point SilentPass or `SaaS_Sock5` at your geth P2P port and call that “wallet-addressed L1 peering.”
 
 ## Who should run it
 
+**Role A (L1 overlay):**
+
 - An operator who already follows [Run an L1 node](../developers/l1-node.md).
 - A host behind NAT, or without a stable public IP, that still wants a **static overlay peer**.
-- A hub that publishes overlay locators as a **backup** path next to public bootnodes.
+- A hub that publishes overlay locators as a **backup or primary** path next to (or instead of) public bootnodes as the operator migrates.
+- Operators following the [L1-over-L0 vision](../developers/l1-node.md#vision-wallet-addressed-consensus-transport) who keep public listen only as substrate / fallback until cutover evidence is published.
 
-Production proposers should keep **public P2P** for the 6-second slot. The 2026-08-18 authorized lab on `.45` advertises overlay vIP and is running CL initial-sync over overlay; EL is still `0x0`. L0-only peering must not be the default.
+**Role B (Enterprise Gateway) — intended operators (destination):**
+
+- Enterprises that want to publish an internal dashboard / API / private AI endpoint without a stable public origin IP.
+- Teams that want **passwordless wallet** (and optional session-key) access with L0 mutual authentication.
+- B2B or pay-by-use hosts that later compose payment scopes from the Application Protocol draft.
+
+Permissionless join docs still list **public P2P** hubs. Production proposers should not drop public listen until slot-critical L0 metrics and multi-Guardian path diversity are published. The 2026-08-18 authorized lab on `.45` advertises overlay vIP and runs CL initial-sync over overlay; EL may still show `0x0` while catching up. L0-only peering is the **destination**, not an unmeasured default.
 
 ## How to use (operator)
 
@@ -128,6 +182,20 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now conet-l0d
 ```
 
+## Troubleshooting: beacon `connected=0` while overlay syncing
+
+**geth overlay ESTAB does not mean beacon is peered.** Check `:4200` on its own.
+
+| Symptom | Likely cause | What to do |
+| --- | --- | --- |
+| Prysm logs `dial backoff` to `/ip4/<hub-vip>/tcp/4200` | Failed dials then backoff; or TCP handshake never completes on overlay | Confirm hub `peer_id` matches `--peer`. Fix L0 occupy / DNAT first (below). Then authorized **`restart-beacon` on that host only** |
+| `ss`: overlay SYN-SENT to `:4200`, never ESTAB | `:4200` `l0_connect` **HTTP 409** (pipe occupied) or lossy P1-only path | Soft-restart CoNET-SI on mailbox **B**; bounce **`conet-l0d` hub then spoke**; flush tcp **4200** conntrack; re-apply DNAT/steer |
+| After SI fleet update, lab floods `409 Conflict` | B still holds exclusive `l0_listen` / `l0_connect` (ghost occupy after dead pipe) | Upgrade SI with `l0_pipe_end` teardown; `pkill` SI on B if needed; wait `active`; ordered l0d bounce — do not only bounce the spoke |
+| Beacon drop while geth stays ESTAB; ghost NAT | Stale hub `:4200` conntrack after steer | `overlay-dht-steer.sh apply` / DNAT apply **without** restarting geth/beacon |
+| Entry fake-armor instant “nginx” 404; real PGP hangs 8–15s | SI forward miss left the socket open (fixed in SI `b374d93+`) | Upgrade SI; do not treat the mimic 404 as a dead nginx |
+
+**Recommended order (light → heavy):** DNAT/steer + conntrack → clear B SI occupy → ordered `conet-l0d` bounce → authorized spoke `restart-beacon`. Do **not** wipe chaindata. Do **not** re-apply steer immediately after `restart-beacon`. Full developer checklist: [Run an L1 node — overlay recovery](../developers/l1-node.md#beacon-connected0-over-overlay-recovery).
+
 ## Locator (`web3://`)
 
 This URI is a **peer locator**, not an ERC-4804 content URL.
@@ -162,6 +230,7 @@ MVP `resolve` parses the URI against the config table. AddressPGP `searchKey` AB
 
 ## Related
 
+- [CoNET Web3 Application Protocol](../l0/web3-application-protocol.md) — URI / request / session draft for Enterprise Gateway
 - [Developers — conet-l0d](../developers/conet-l0d.md)
 - [Duplex overlay](../l0/duplex-forward.md)
 - [Run an L1 node](../developers/l1-node.md)

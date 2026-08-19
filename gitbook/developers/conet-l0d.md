@@ -1,10 +1,13 @@
-# conet-l0d (L1 overlay daemon)
+# conet-l0d (L1 overlay & Web3 Enterprise Gateway)
 
-**Evidence level: Under development.** The CLI, config, TUN/iptables lifecycle, and locator grammar are implemented in-crate. Overlay TCP over live Layer Minus prefers SI **`l0_listen` / `l0_connect`** occupancy plus application duplex. P1 gossip remains the fallback if the peer app never sends `duplex_accept` or the occupied pipe is missing. There is **no** production SI command named `duplex_*` or `p2p_stream_*` in this revision. `l0_listen` / `l0_connect` **are** current SI.
+**Evidence level: Under development.** The CLI, config, TUN/iptables lifecycle, and locator grammar are implemented in-crate for the **L1 overlay** path. Overlay TCP over live Layer Minus prefers SI **`l0_listen` / `l0_connect`** occupancy plus application duplex. P1 gossip remains the fallback if the peer app never sends `duplex_accept` or the occupied pipe is missing. There is **no** production SI command named `duplex_*` or `p2p_stream_*` in this revision. `l0_listen` / `l0_connect` **are** current SI.
+
+The **CoNET Web3 Enterprise Gateway** product role (host existing Web/API behind a wallet identity) and the [Web3 Application Protocol](../l0/web3-application-protocol.md) draft are **destination** documentation on the Applications page — not a claim that hosting v1 is shipped.
 
 Public site: [https://gitbook.conet.network/developers/conet-l0d.html](https://gitbook.conet.network/developers/conet-l0d.html)
 
-Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.md)  
+Operator how-to (both roles): [Applications — conet-l0d](../applications/conet-l0d.md)  
+Application protocol draft: [CoNET Web3 Application Protocol](../l0/web3-application-protocol.md)  
 L1 ports and public bootnodes: [Run an L1 node](l1-node.md)  
 Forwarding plane: [L0 development](l0.md) · [How to use Layer Minus](../l0/using-l0.md)
 
@@ -50,8 +53,10 @@ The daemon **owns** TUN and iptables. Do not ship a second operator `iptables` s
 | `whitepaper/` | Design pair (EN + zh-CN), revision **2026-08-18** |
 | `docs/MVP.md` | Accepted crate MVP |
 | `docs/P1.md` | Overlay `/post`: application duplex preferred, P1 gossip if the peer app never sends `duplex_accept`; inbound decrypt + TUN write-back; listen workers; optional `[[l0.channels]]`; `[l0]` default off; authorized lab may enable `[l0]`; 2026-08-18: `.45` advertises overlay vIP; overlay geth + beacon TCP; CL initial-sync in progress |
-| `docs/P2.md` | Lab overlay UDP / DHT-port comms (echo + `:4300` + public-ENR steer + live discv5 via L0). `L0_DHT` allowlist = overlay then hub `/32` (one CIDR per `--p2p-allowlist`, last wins). Steer DNATs hub ports onto overlay. With a bootstrap ENR, drop overlay `--peer`. If `connected` drops, `overlay-dht-steer.sh apply` first (flush ghost conntrack; no EL/CL restart). Authorized `.45` `restart-beacon` only after dial backoff; do not re-apply steer immediately after start. After DNAT, `.45` `ss` may show hub public `:4200` (original dest, not a leak). First-minute `suitable=0` is expected. Not a closed P2 / production product |
+| `docs/P2.md` | Lab overlay UDP / DHT-port comms (echo + `:4300` + public-ENR steer + live discv5 via L0). `L0_DHT` allowlist = overlay then hub `/32` (one CIDR per `--p2p-allowlist`, last wins). Steer DNATs hub ports onto overlay. With a bootstrap ENR, drop overlay `--peer`. If `connected` drops, `overlay-dht-steer.sh apply` first (flush ghost conntrack; no EL/CL restart). Authorized `.45` `restart-beacon` only after dial backoff; do not re-apply steer immediately after start. After DNAT, `.45` `ss` may show hub public `:4200` (original dest, not a leak). First-minute `suitable=0` is expected. **2026-08-19:** if `:4200` `l0_connect` returns HTTP **409** after SI churn, clear mailbox **B** occupy then bounce hub→spoke `conet-l0d` before `restart-beacon`. Not a closed P2 / production product |
 | `RULES.md` | Engineering constraints + GitBook lockstep |
+
+L1 join + overlay deploy checklist (English): [Run an L1 node](l1-node.md#optional-overlay-p2p-conet-l0d) (includes beacon `connected=0` recovery). Operator troubleshooting: [Applications — L1 overlay daemon](../applications/conet-l0d.md#troubleshooting-beacon-connected0-while-overlay-syncing).
 
 ## Config shape
 
@@ -197,7 +202,7 @@ Content-Type: application/json
 
 Live overlay duplex is SI **`l0_listen` / `l0_connect`** plus **application** JSON ([Duplex overlay](../l0/duplex-forward.md)). Chat / mining / udp / L0 exclusive pools stay isolated. SI does **not** implement `duplex_*`. Do **not** send `command: "mining"` with `listenKind: "duplex"`. `listenKind: "l1p2p"` / `p2p_stream_*` are **not** current SI.
 
-Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and keys + entries exist, the crate prefers duplex: `duplex_offer` (AES key + session `listenWallet`) to the peer **long-lived** user PGP; exclusive `l0_listen`; `l0_connect` occupies; AES `duplex_accept` / `duplex_reject` / `duplex_frame` on the occupied pipe (`payload` = standard base64 of `L0D1||IPv4`). `duplex_reject` or missing `duplex_accept` or missing pipe keeps **P1 gossip**. Crate MVP session listen is the registered per-port channel EOA. Inbound: decrypt user-PGP armor or AES duplex frames → overlay IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Optional `[[l0.channels]]` is one EOA + SSE per overlay port (8400 / 4200 / 4300). Empty channels keep one EOA. `:4300` is overlay IPv4, not `udp_relay`. `[l0]` defaults **off**. An authorized lab may enable `[l0]`. HTTP 200 ≠ delivery. Do not claim production mailbox delivery. Do not treat SI `duplex_*` or `p2p_stream_*` as current SI.
+Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and keys + entries exist, the crate prefers duplex: `duplex_offer` (AES key + session `listenWallet`) to the peer **long-lived** user PGP; exclusive `l0_listen`; `l0_connect` occupies; AES `duplex_accept` / `duplex_reject` / `duplex_frame` on the occupied pipe (`payload` = standard base64 of `L0D1||IPv4`). `duplex_reject` or missing `duplex_accept` or missing pipe keeps **P1 gossip**. After exclusive `l0_listen` reconnects, the crate **rebuilds** outbound `l0_connect` for already-attached sessions and **retries** occupy failures — it must not clear `pipe_tx` once and stay on P1 forever. When SI tears down an occupied listen it sends **`l0_pipe_end`** on the inbound TCP and optional **`l0_listen_released`** on SSE; the crate parses both, releases the local pipe, and retries occupy with a shorter backoff. Entry `socketForward` must not use 60s receive-idle destroy on long SSE / L0 pipes ([duplex-forward](../l0/duplex-forward.md), [peel-hop-listen](../l0/peel-hop-listen.md)). Crate MVP session listen is the registered per-port channel EOA. Inbound: decrypt user-PGP armor or AES duplex frames → overlay IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Optional `[[l0.channels]]` is one EOA + SSE per overlay port (8400 / 4200 / 4300). Empty channels keep one EOA. `:4300` is overlay IPv4, not `udp_relay`. `[l0]` defaults **off**. An authorized lab may enable `[l0]`. HTTP 200 ≠ delivery. Do not claim production mailbox delivery. Do not treat SI `duplex_*` or `p2p_stream_*` as current SI.
 
 ## Failure semantics
 

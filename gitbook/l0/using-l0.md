@@ -55,13 +55,13 @@ L0 names a peer as **wallet + OpenPGP material**. IP addresses remain TCP/IP loc
 | --- | --- |
 | Chat bubbles, unread counts, history, POS Staff queues | Application + optional L1 registries |
 | VPN / SOCKS capture, path rotation, admission UX | SilentPass and related clients |
-| TUN / iptables / geth–beacon overlay catch | `conet-l0d` — [Applications](../applications/conet-l0d.md) · [Developers](../developers/conet-l0d.md) |
+| TUN / iptables / geth–beacon overlay catch; destination enterprise host gateway | `conet-l0d` — [Applications](../applications/conet-l0d.md) · [Developers](../developers/conet-l0d.md) · [Web3 Application Protocol](web3-application-protocol.md) |
 | Mining epoch accounting and miner totals | LayerMinus / CoNET-DL |
 | AES session keys, UDP adapters, game or media codecs | The UDP or media application |
 | Payments, cards, Treasury, AA policy | L1 contracts and application APIs |
 | Size padding or timing jitter | **Not implemented** in current SI |
 
-Do not treat [DePIN Chat](../applications/depin-chat.md), [SilentPass](../applications/silentpass-vpn.md), or [conet-l0d](../applications/conet-l0d.md) as “the L0 protocol.” They are combinations of the same forwarding network. SilentPass is **egress** to a public `host:port`. `conet-l0d` is an **L1 overlay catch** (Under development). Do not use one as the other.
+Do not treat [DePIN Chat](../applications/depin-chat.md), [SilentPass](../applications/silentpass-vpn.md), or [conet-l0d](../applications/conet-l0d.md) as “the L0 protocol.” They are combinations of the same forwarding network. SilentPass is **egress** to a public `host:port`. `conet-l0d` is an **L1 overlay catch** today and the intended **Web3 Enterprise Gateway** host boundary (Under development) — [Web3 Application Protocol](web3-application-protocol.md). Do not use SilentPass egress as L1 overlay or as enterprise origin hosting.
 
 ## Application developer loop
 
@@ -129,7 +129,7 @@ Encrypt a listen command to **B's route PGP** and open HTTP/SSE through a health
 | UDP client / server | `udp_listen` / `udp_server_listen`, or `mining` | `udp` / `udp_server` |
 | Exclusive L0 occupancy pipe | `l0_listen` or `mining` | **`l0`**. First `l0_connect` occupies; later inflows 409. See [Duplex overlay](duplex-forward.md) |
 
-Application `duplex_*` JSON is **not** an SI command. Offer still uses Chat (`mining` + `listenKind: "chat"`). Accept / reject / frames ride the occupied L0 pipe.
+Application `duplex_*` JSON is **not** an SI command. Offer still uses Chat (`mining` + `listenKind: "chat"`). Accept / reject / frames ride the occupied L0 pipe. When SI tears down an occupied listen, it emits `l0_pipe_end` on the inbound TCP and optional `l0_listen_released` on the listen SSE ([duplex-forward](duplex-forward.md)); conet-l0d clears its pipe and retries occupy.
 
 Entry acceptance or an SSE handshake is transport progress. The application still decrypts, verifies, and decides what the payload means.
 
@@ -156,6 +156,8 @@ The same forwarding plane is reused. Only the inner object and key roles change.
 | **UDP frames** | User-PGP `udp_subscribe`; route-PGP listen / relay / uplink | AES-256-GCM session, adapters, codecs |
 | **Duplex overlay** | Offer to long-lived user PGP; accept / reject / AES `duplex_frame` to the **session listen** user PGP; two owned Chat SSEs. No SI `duplex_*`. `duplex_reject` or missing accept keeps P1 gossip | AES-256-GCM of `L0D1` IPv4. Spec: [Duplex overlay](duplex-forward.md) |
 | **SilentPass access** | Route-PGP `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` through an entry | Device tunnel or local proxy, admission, path rotation |
+| **L1 overlay (`conet-l0d` role A)** | Occupied `l0_listen` / `l0_connect` + application duplex ([duplex-forward](duplex-forward.md)); P1 if peer never accepts | TUN catch `100.64.0.0/10`; geth / beacon TCP (and lab UDP/discv5) without patching clients |
+| **Web3 Enterprise Gateway (`conet-l0d` role B)** | Same L0 forwarding plane; Application Protocol objects inside the envelope | Host-side adapt of local HTTP/API; wallet auth; origin IP hidden. Protocol draft: [Web3 Application Protocol](web3-application-protocol.md). **Destination** — not a public hosting product yet |
 | **On-demand new wallet** | New EOA + new user PGP + new AddressPGP row | Application identity rotation after a leak or for a new role |
 | **Split routing / app wallets** | AddressPGP + listen on a **routing** EOA; sender / recipient only inside user-PGP | Mailbox and hop GB do not see the product wallet. Mapping stays in the client |
 | **Fragmented storage / compute / AI** | Same forwarding plane + hash-addressed ciphertext fragments + untrusted WASM / GPU jobs | Privacy-first surfaces. No node holds a reconstructable whole. See [permissionless cloud](permissionless-cloud.md) |
@@ -173,7 +175,8 @@ These are valid **application designs** on top of a forwarding network. They are
 | Privacy poll receive mode | Weaker Chat online / arrival-time fingerprint than SSE | Not implemented |
 | Double Ratchet / MLS after AddressPGP handshake | Forward secrecy and post-compromise security for Chat | Not implemented |
 | Operator-domain entry/mailbox exclusion | A/B/C as independent operators, not only roles | Not implemented on L0 |
-| L1 overlay TCP byte-stream (`conet-l0d`) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP | SI **`l0_listen` / `l0_connect`** occupancy pipe + application duplex ([duplex-forward](duplex-forward.md)). Offer on Chat gossip; accept / reject / frames as AES blobs on the occupied pipe. **P1 gossip** if the peer never accepts. `[l0]` default off; authorized lab may enable it. Do **not** treat SI `duplex_*` / `p2p_stream_*` / `listenKind: "l1p2p"` as current SI |
+| L1 overlay TCP byte-stream (`conet-l0d` role A) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP | SI **`l0_listen` / `l0_connect`** occupancy pipe + application duplex ([duplex-forward](duplex-forward.md)). Offer on Chat gossip; accept / reject / frames as AES blobs on the occupied pipe. **P1 gossip** if the peer never accepts. `[l0]` default off; authorized lab may enable it. Do **not** treat SI `duplex_*` / `p2p_stream_*` / `listenKind: "l1p2p"` as current SI |
+| Web3 Enterprise Gateway / Application Protocol v1 | Wallet-addressed host publish + browser Origin | **Destination** — draft [Web3 Application Protocol](web3-application-protocol.md); host role on [Applications — conet-l0d](../applications/conet-l0d.md). Do not equate Peer Locator with a finished Application Protocol |
 
 Document those as upgrades or product options. Do not describe them as the live L0 plane. See [security limits](security-limits.md).
 
@@ -200,4 +203,4 @@ Document those as upgrades or product options. Do not describe them as the live 
 9. [Duplex overlay](duplex-forward.md) — application AES on Chat gossip; SI does not implement duplex commands.
 10. [Security limits](security-limits.md) — live threat grades versus proposed upgrades.
 11. [Applications](../applications/README.md) — products that combine L0 with L1 and UI.
-12. [L1 overlay daemon](../applications/conet-l0d.md) · [Developers — conet-l0d](../developers/conet-l0d.md) — optional geth/beacon overlay (Under development).
+12. [L1 overlay daemon / Web3 Enterprise Gateway](../applications/conet-l0d.md) · [Developers — conet-l0d](../developers/conet-l0d.md) · [Web3 Application Protocol](web3-application-protocol.md) — overlay catch (lab-proven) + enterprise host gateway destination.

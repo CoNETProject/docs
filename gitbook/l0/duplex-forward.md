@@ -106,10 +106,18 @@ Data (both directions) — two occupied L0 pipes:
   duplex_frame.payload = standard base64( L0D1 || IPv4 )
 
 conet-l0d sends AES duplex_frame only when it has the overlay key AND peer_attached AND an occupied pipe_tx AND not rejected.
-Missing pipe keeps P1 gossip.
+Missing pipe keeps P1 gossip until the pipe is rebuilt — not forever after a transient occupy failure.
 ```
 
 Initiator election for a given overlay port: `own_eoa < peer_eoa` (lowercase `0x` hex). Both ends compute the same `sessionId`.
+
+### Pipe durability (normative)
+
+| Layer | Rule |
+| --- | --- |
+| Entry `socketForward` | No **60s receive-idle** destroy on C→B long pipes (SSE / occupied L0). See [Peel, hop-sig, and listen timeouts](peel-hop-listen.md). |
+| conet-l0d | After exclusive `l0_listen` SSE reconnects successfully, **rebuild** outbound `l0_connect` for duplex sessions that already have `peer_attached`. Do **not** only clear `pipe_tx` and stay on P1. |
+| conet-l0d | If `l0_connect` / occupy fails (e.g. peer listen not idle yet), **retry** with a short delay while `peer_attached` remains true. |
 
 A one-time session EOA must be `regiestChatRoute` on mailbox B **before** its L0 listen is useful. Until the daemon registers ephemeral wallets itself, the crate reuses the registered channel EOA.
 
@@ -184,6 +192,42 @@ SI occupy notice (not application JSON; ignore on the client):
 ```json
 { "type": "l0_occupied", "wallet": "<listen EOA>", "connector": "<connector EOA>" }
 ```
+
+### Pipe teardown (`l0_pipe_end` / `l0_listen_released`)
+
+When SI drops an **occupied** L0 listen (inbound TCP close/error, listen SSE close, replaced listen, stale idle, etc.), it must **release the connector** explicitly. Silent socket destroy leaves mailbox B in ghost occupy and the connector retries into **HTTP 409** until both sides bounce.
+
+| Signal | Where | Purpose |
+| --- | --- | --- |
+| `l0_pipe_end` | One JSON line + `\n` on the **occupied inbound TCP** (same socket as `l0_connect` POST) | Tells the connector’s occupied-pipe reader that SI released this listen |
+| `l0_listen_released` | Optional SSE `data:` line on the **listen wallet’s L0 SSE** | Same release for sessions still reading the long listen stream |
+
+`l0_pipe_end` shape (normative):
+
+```json
+{
+  "type": "l0_pipe_end",
+  "wallet": "<listen EOA>",
+  "connector": "<connector EOA>",
+  "reason": "<inbound_close|inbound_error|pipe_write_closed|close|replaced|stale_idle|…>"
+}
+```
+
+`l0_listen_released` shape:
+
+```json
+{
+  "type": "l0_listen_released",
+  "wallet": "<listen EOA>",
+  "reason": "<same vocabulary as l0_pipe_end>"
+}
+```
+
+Order on teardown (SI): write `l0_pipe_end` on inbound (best-effort) → write `l0_listen_released` on SSE (if occupied) → remove pool entry → destroy sockets.
+
+**conet-l0d** parses both signals, clears `pipe_tx` for sessions targeting that `wallet`, bumps `pipe_gen`, and retries `l0_connect` with a **shorter backoff** after `l0_pipe_end` (see crate `pipe.rs` / `client.rs`). These objects are **not** OpenPGP armor and must not be POSTed as `{ "data" }` business gossip.
+
+Implementation: CoNET-SI `l0Exclusive.ts` (`emitL0PipeEnd`, `dropL0Listen`); conet-l0d `parse_l0_pipe_end` / `parse_l0_listen_released`.
 
 ## Frame format and runtime bounds
 
