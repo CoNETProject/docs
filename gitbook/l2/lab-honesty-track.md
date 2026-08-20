@@ -1,6 +1,6 @@
 # Lab honesty track
 
-**Evidence level: laboratory review.** This page records the 2026-08-17 CoNET-DLE MVP review, the 2026-08-18 clock + Explorer clock overlay, and the **2026-08-18T23:41Z runtime scrape** (~13.8h into the clock). It is **not** a production SDK, **not** a production signing specification, and **not** 30-day qualification.
+**Evidence level: laboratory review.** This page records the 2026-08-17 CoNET-DLE MVP review, the 2026-08-18 clock + Explorer clock overlay, and read-only runtime scrapes through **2026-08-20T07:43:59Z** (~45.8h into the clock). It is **not** a production SDK, **not** a production signing specification, and **not** 30-day qualification.
 
 Public site: [https://gitbook.conet.network/l2/lab-honesty-track.html](https://gitbook.conet.network/l2/lab-honesty-track.html)
 
@@ -8,7 +8,7 @@ Developer how-to: [L2 development](../developers/l2.md). Explorer facts: [DLE ex
 
 ## Status in one sentence
 
-The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **159/159**). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable** (later remapped). **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. **P25** lands Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc`. The public SPA on [dle.conet.network](https://dle.conet.network/) now serves `index-C8IdTq4H.js` (published 2026-08-18T10:15:00Z; `explorer:test` **10/10**; replaced pre-clock `index-U1o9ul_I.js`). **Clock started 2026-08-18T09:53:58.092Z** (`pilotRunning=true`, `pilotQualified=false`, `clockIsNotQualification=true`). Home + Certificates show a **non-green** clock chip. Green pills stay `seatingQualified === true` only. **Runtime scrape 2026-08-18T23:41Z (~13.8h / ~1.92% of 30d):** 8/8 HTTP OK + clock-aligned + seating `QUALIFIED`; `pilotQualified` still false; `lastQuorumOk` **6/8** (fd-02 false peer=5; fd-07 false **peer=0**); this scrape omitted `leafCount` / `officialStandbysReady` / AC roots on all eight hosts — **missing fields ≠ zero / empty inventory**. This is **not** 30-day qualification. Next: **continue 30-day wait / review**. Do **not** invent P26.
+The laboratory **control plane** (P0–P11, M6–M7, P5) is live. The laboratory **honesty track** (P12–P22) is landed in the repository engine and unit tests (`npm run runtime:test` **159/159**). **P23** keep-data deploy evidence is landed: **6/7 `LIVE_OK`**, fd-01 new-chain **409 → accept**, official standby **fd-06 HTTP unstable** (later remapped). **P24** wires isolated `node.ts` to the same `officialStandbysReady` callback as `lab-cli`. **P25** lands Explorer Certificates + Home **non-green** overlays for `officialStandbysReady` / `hashIndexCommittedInAc`. The public SPA on [dle.conet.network](https://dle.conet.network/) now serves `index-C8IdTq4H.js` (published 2026-08-18T10:15:00Z; `explorer:test` **10/10**; replaced pre-clock `index-U1o9ul_I.js`). **Clock started 2026-08-18T09:53:58.092Z** (`pilotRunning=true`, `pilotQualified=false`, `clockIsNotQualification=true`). Home + Certificates show a **non-green** clock chip. Green pills stay `seatingQualified === true` only. **Latest runtime scrape, 2026-08-20T07:43:59Z (~45.8h / ~6.37% of 30d):** official **7/7** HTTP OK + clock-aligned + seating `QUALIFIED`, while `pilotQualified` remains false; official `lastQuorumOk` is **6/7** because active fd-05 reported `peer=1`. Extra fd-08 is not an official seat and also reported quorum false. All replies omitted `leafCount` / `officialStandbysReady` / AC roots — **missing fields ≠ zero / empty inventory**. This is **not** 30-day qualification. Next: **continue 30-day wait / review**. Do **not** invent P26.
 
 ## What is live
 
@@ -104,6 +104,25 @@ Direct `GET :27101/health` on official 7 + extra `fd-08` (not a new serial gate;
 Evidence JSON: CoNET-DLE `pilot/evidence/conet-dle-p23-live-2026-08/runtime-review-2026-08-18T2341Z.json`. Canvas archive: BeamioContract `src/canvas/dle-mvp-runtime-review-2026-08-18.md`.
 
 fd-07 `peer=0` is a **reachability watch**, not seating eviction and **not** authorization to auto-promote standby. Public nginx upstream only rotates active keepers; a single public `/health` hit must not be read as the whole fleet.
+
+## Runtime scrape (~45.8h into clock, 2026-08-20T07:43:59Z)
+
+Direct `GET :27101/health` on official 7 plus observed extra `fd-08`:
+
+| Check | Result |
+| --- | --- |
+| Official HTTP OK / `pilotRunning` / clock aligned | **7/7** |
+| Official `pilotQualified` | **0/7** true |
+| Official seating `QUALIFIED` / `seatingQualified` | **7/7** |
+| Official `lastQuorumOk` | **6/7** — active fd-05 false (`lastPeerOk=1`) |
+| Observed extra fd-08 | quorum false (`lastPeerOk=5`); **not** counted in official 5+2 |
+| `leafCount` / `officialStandbysReady` / AC roots | **omitted** on every reply — do **not** treat omit as `0`, false, or empty inventory |
+| `bftProcessStarted` / `hashIndexCommittedInAc` | **false** on every reply |
+| Public health / SPA | upstream fd-03 reported quorum true (`peer=6`); SPA remains `index-C8IdTq4H.js` |
+
+The changed heartbeat witness is a reachability observation only. It does not evict fd-05, promote either standby, or authorize a restart, wipe, or a new P26 gate. Previous fd-02 / fd-07 false responses are not retroactively erased; the moving witness supports the rule that heartbeat is not seating.
+
+Evidence JSON: CoNET-DLE `pilot/evidence/conet-dle-p23-live-2026-08/runtime-review-2026-08-20T074359Z.json`. Canvas archive: BeamioContract `src/canvas/dle-mvp-runtime-review-2026-08-20.md`.
 
 ## Next laboratory gates
 
