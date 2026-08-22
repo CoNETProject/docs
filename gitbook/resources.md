@@ -54,8 +54,8 @@ The historical `doceng.conet.network` export is archived in the documentation re
 | --- | --- | --- |
 | Beamio Consumer | https://beamio.app/app/ | Product endpoint |
 | Beamio Merchant OS | https://biz.beamio.app | Product endpoint |
-| Beamio POS | https://pos.conet.network/ and https://beamio.app/pos/ | Product endpoints |
-| Beamio API host | https://beamio.app | Application API and metadata host |
+| Beamio POS | https://pos.conet.network/ · https://beamio.app/pos/ · https://pos.beamio.app/ | Product endpoints; Embedded OTA at `https://pos.beamio.app/update.json` |
+| Beamio API host | https://beamio.app | Application API, metadata, `walletDeposit`, and card-checkout `/api/eoaUsdcStripe/*` · webhook `/api/eoa-usdc-stripe-webhook` |
 | SilentPass | https://vpn9.conet.network/ | Product entry point |
 | SilentPass beta | https://vpn-beta.conet.network/ | Access-controlled beta entry point |
 | Miner-matched order-book exchange | No public client endpoint yet | Under development / design study |

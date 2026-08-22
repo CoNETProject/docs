@@ -1,8 +1,21 @@
 # Beamio
 
-**Maturity: Public application.** Consumer, merchant, and POS entry points are public. This label describes product availability, not completion of every workflow, independent contract audit, or guaranteed service availability.
+**Maturity: Public application.** Consumer, Merchant OS, and POS entry points are public. This page is the **Beamio product whitepaper**: what the suite is, which surfaces exist today, and how cash rails are placed. It is not a claim that every workflow is complete, independently audited, or covered by a published SLA.
+
+Revision: **2026-08-22**.
 
 Public site: [https://gitbook.conet.network/applications/beamio.html](https://gitbook.conet.network/applications/beamio.html)
+
+Chapters in this whitepaper:
+
+| Chapter | What it covers |
+| --- | --- |
+| [Consumer PWA](beamio/consumer.md) | Wallet, Discover, coupons, Chat, mining tools, and how users add USDC |
+| [Merchant OS](beamio/merchant-os.md) | Programs, staff, terminals, catalogs, coupons, and merchant treasury |
+| [POS terminal](beamio/pos.md) | In-store charge, top-up, membership, claim, and redeem |
+| [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails: Coinbase / Treasury CONET-USDC vs card checkout to Base USDC |
+
+Cursor rule: when a Beamio product capability is added or changed, update the matching chapter in the same task (`beamio-gitbook-whitepaper-sync.mdc`).
 
 ## Product role
 
@@ -12,11 +25,13 @@ Beamio is the application suite that turns CoNET wallet identity, account state,
 | --- | --- | --- |
 | **Consumer PWA** | Self-custody wallet, Smart Wallet access, Discover, coupons, messaging, and CoNET-facing account tools | [https://beamio.app/app/](https://beamio.app/app/) |
 | **Merchant OS** | Merchant program management, staff and terminal administration, settlements, coupons, and catalogs | [https://biz.beamio.app](https://biz.beamio.app) |
-| **POS PWA** | In-store charge, top-up, claim, and redeem operations performed by an authorized terminal wallet | [https://pos.conet.network/](https://pos.conet.network/) · [https://beamio.app/pos/](https://beamio.app/pos/) |
+| **POS PWA** | In-store charge, top-up, claim, and redeem operations performed by an authorized terminal wallet | [https://pos.conet.network/](https://pos.conet.network/) · [https://beamio.app/pos/](https://beamio.app/pos/) · [https://pos.beamio.app/](https://pos.beamio.app/) |
 
 Beamio is not a fourth protocol tier. It coordinates application state across CoNET L1, Layer Minus, local wallet storage, and gas-relay services.
 
 The active POS product is the **POS PWA loaded by native WebView shells**. Retired native iOS and Android POS business interfaces are not the current product implementation.
+
+A related **Alliance** client exists as another Beamio-family surface. It is not a fourth merchant or POS product.
 
 ## Protocol dependencies
 
@@ -61,6 +76,27 @@ consumer, merchant, and POS workflows
 
 No single layer supplies the complete product experience.
 
+## Product map (today)
+
+The following capabilities are live on the public surfaces. Detail and limits live in the chapter pages.
+
+| Domain | Consumer | Merchant OS | POS |
+| --- | --- | --- | --- |
+| Identity | `@BeamioTag`, EOA, optional Smart Wallet | Owner EOA, staff, pending terminal authorization | Terminal EOA as lower-level admin |
+| Programs | Hold membership / points, Discover brands | Create and publish program cards, membership, reward rules | Issue membership, top-up, charge |
+| Commerce | Claim coupons and catalogs, pay | Issue coupons and catalogs, review transactions | Charge, top-up, claim, redeem, burn |
+| Cash | Coinbase → CONET-USDC; card checkout → Base USDC to EOA | Treasury / USDC views; Fuel packs as B-Units | Uses program points and membership; does not replace consumer deposit rails |
+| Messaging | DePIN Chat | Chat plus POS permission inbox | Sends POS permission envelopes; not a general Messages product |
+
+Two USDC deposit rails must not be merged:
+
+| Rail | User-visible result | Chain | See |
+| --- | --- | --- | --- |
+| **Coinbase / `walletDeposit`** | CONET-USDC via Treasury LockMint | CoNET settlement after Base lock | [Cash and USDC](beamio/cash-and-usdc.md) |
+| **Card checkout (`eoaUsdcStripe`)** | Native USDC transferred to the owner **EOA** | **Base** | [Cash and USDC](beamio/cash-and-usdc.md) |
+
+Merchant Kit Stripe (CAD kits → B-Units / Ket) is a third Stripe product and is **not** a consumer USDC deposit rail.
+
 ## What exists today
 
 Public endpoints:
@@ -69,18 +105,19 @@ Public endpoints:
 | --- | --- |
 | Consumer app | https://beamio.app/app/ |
 | Merchant OS | https://biz.beamio.app |
-| POS | https://pos.conet.network/ · https://beamio.app/pos/ |
+| POS | https://pos.conet.network/ · https://beamio.app/pos/ · https://pos.beamio.app/ |
 | API host | https://beamio.app |
 | Explorer | https://mainnet.conet.network |
 | CoNET L1 RPC | https://rpc1.conet.network · https://publicrpc.conet.network |
+| Base RPC (treasury / USDC / institutional AA) | https://base-rpc.conet.network |
 
-Source availability differs by surface. Consumer, Merchant OS, and Alliance are public branches of the same SilentPassUI repository. POS PWA is a live product; a standalone public repository has not been identified.
+Source availability differs by surface.
 
 | Component | Public repository | npm |
 | --- | --- | --- |
 | **Consumer PWA** | [CoNET-project/SilentPassUI](https://github.com/CoNET-project/SilentPassUI/tree/cashtree) branch `cashtree` | — |
-| **Merchant OS** | [CoNET-project/SilentPassUI](https://github.com/CoNET-project/SilentPassUI/tree/cashtrees) branch `cashtrees` | — |
-| **POS PWA** | Live endpoints only; no standalone public repository identified | — |
+| **Merchant OS** | Live [biz.beamio.app](https://biz.beamio.app); listed public branch [SilentPassUI `cashtrees`](https://github.com/CoNET-project/SilentPassUI/tree/cashtrees) | — |
+| **POS PWA** | Live endpoints; no standalone public repository identified | — |
 | **Alliance client** | [CoNET-project/SilentPassUI](https://github.com/CoNET-project/SilentPassUI/tree/Alliance) branch `Alliance` | — |
 | **API / Cluster / Master / Paymaster relay** | [settleonbase/x402sdk](https://github.com/settleonbase/x402sdk) | [`@settle402/sdk`](https://www.npmjs.com/package/@settle402/sdk) |
 | **Marketing homepage** | [beamio-APP/homepage](https://github.com/beamio-APP/homepage) | — |
@@ -97,7 +134,7 @@ The public surfaces and source show that the suite and its major integration pat
 - Improve feature parity and accessibility across Consumer, Merchant OS, POS PWA, and native shells.
 - Publish measured availability and performance expectations for RPC, relay, mailbox, metadata, and index-backed views.
 - Continue simplifying boundaries between user-facing state, trusted chain reads, cached application data, and asynchronous settlement.
-- Expand product documentation for individual merchant and POS workflows without turning this protocol-placement page into an operator manual.
+- Card-checkout Base USDC still depends on operator configuration (Stripe webhook secret and settle-wallet inventory). A live create-session route is not by itself a guarantee that every paid session has already settled on Base.
 
 ## Trust and security boundary
 
@@ -110,11 +147,16 @@ The public surfaces and source show that the suite and its major integration pat
 | **Layer Minus messaging** | Business plaintext is encrypted to recipient keys, but entries and mailboxes still observe limited routing, timing, and volume metadata. |
 | **POS terminal authority** | A compromised authorized terminal can exercise the permissions granted to that terminal until access is revoked. |
 | **Multiple chains** | CoNET and Base have independent state. A same-address deployment does not synchronize balances, nonces, policies, or tasks. |
+| **Card checkout inventory** | Base USDC payout uses an operator settle wallet. Users receive USDC only after Stripe confirmation and a successful on-chain transfer. |
 
 Beamio is self-custody software with supporting relays and application services; it should not be described as trust-free, as a bank, or as a guarantee that every off-chain view is immediately current.
 
 ## Related
 
+- [Consumer PWA](beamio/consumer.md)
+- [Merchant OS](beamio/merchant-os.md)
+- [POS terminal](beamio/pos.md)
+- [Cash and USDC](beamio/cash-and-usdc.md)
 - [Applications](README.md)
 - [SilentPass VPN](silentpass-vpn.md) — privacy access on the same L0 substrate
 - [DePIN Chat](depin-chat.md) — wallet messaging and terminal authorization
@@ -122,4 +164,5 @@ Beamio is self-custody software with supporting relays and application services;
 - [Zero-trust mailbox routing](../l0/mailbox-routing.md)
 - [UDP forward](../l0/udp-forward.md)
 - [Assets on L1](../l1/assets.md)
+- [Decentralized cross-chain Treasury](../l1/cross-chain-treasury.md)
 - [Resources](../resources.md)

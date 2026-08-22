@@ -40,6 +40,7 @@ L0 does not remove IP from the Internet. It moves **application identity and rou
 - **Read L0 limits before claiming privacy:** [Security limits and threat grades](l0/security-limits.md).
 - **Follow a cross-chain asset:** read the [decentralized Treasury](l1/cross-chain-treasury.md), the separate [DLE admission boundary](l2/cross-chain-assets.md), and the proposed [miner-matched exchange](applications/miner-orderbook-dex.md).
 - **Explore emerging economic models:** read [NFT provenance](use-cases/nft-web-of-trust.md), [decentralized SNS](use-cases/decentralized-sns.md), then [long-form creator media](use-cases/decentralized-youtube.md).
+- **Beamio product inventory (Consumer, Merchant OS, POS, USDC rails):** [Beamio whitepaper](applications/beamio.md).
 
 ## Status and evidence
 

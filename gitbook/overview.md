@@ -86,4 +86,5 @@ The comparison below is architectural, not a throughput or anonymity benchmark.
 | What does the DLE explorer show? | [DLE explorer](l2/explorer.md) — [https://dle.conet.network/](https://dle.conet.network/); lab Archive inspection, not a tip chain |
 | Where are archive participant wallets recorded? | [Global Archive Routing Registry](l2/routing-registry.md) — CoNET L1 facade + `/archives` |
 | What is usable versus under development? | [Applications](applications/README.md) |
+| What does Beamio ship today (Consumer / Merchant / POS / USDC)? | [Beamio whitepaper](applications/beamio.md) · [Cash and USDC](applications/beamio/cash-and-usdc.md) |
 | Where are source and live-service references? | [Resources](resources.md) |
