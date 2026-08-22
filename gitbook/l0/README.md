@@ -18,7 +18,7 @@ Layer Minus is a **permissionless, decentralized cloud** and, on the wire, CoNET
 
 Its job is to move ciphertext from an entry to the mailbox (or egress) named by a recipient OpenPGP key, while keeping a peer's durable identity as a **wallet**, not as the IP used for one connection. **Any one node may be malicious.** Developers therefore compose **privacy routing + data fragmentation + client cryptography** so that no node is trusted with plaintext or a reconstructable whole. That is how privacy-first **communications, storage, compute, and decentralized AI** are built. Thesis: [Permissionless cloud and zero-trust applications](permissionless-cloud.md).
 
-How to use L0 is **application-layer development**. Chat, SilentPass, mining gossip, UDP frames, and Beamio control messages are **combinations** of the same forwarding primitives. They are not extra L0 protocols. Start with [How to use Layer Minus](using-l0.md), then the [L0 development](../developers/l0.md) track.
+How to use L0 is **application-layer development**. Chat, SilentPass, mining gossip, UDP frames, Beamio control messages, L1 overlay pipes, and the draft [Web3 Application Protocol](web3-application-protocol.md) (enterprise host access) are **combinations** of the same forwarding primitives. They are not extra L0 wire protocols. Start with [How to use Layer Minus](using-l0.md), then the [L0 development](../developers/l0.md) track.
 
 ## What it is
 
@@ -73,7 +73,7 @@ For the privacy-preserving path, **A is not B and C is not B**. Client `/post` m
 | Nested peel / hop-sign | After a local decrypt, hop-sign the **inner UTF-8 armor string**. Hop-sign or next-hop connect failure is a **fast 404**, not a hung SSE. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) |
 | Delivery evidence | Entry acceptance or an SSE handshake is transport progress, **not** proof that the application processed the message |
 | UDP key exchange | Encrypt `udp_subscribe` to the UDP server's **user PGP**; never expose its symmetric key to mailbox B |
-| Exclusive L0 listen | `l0_listen` or `mining` + `listenKind: "l0"`. First `l0_connect` occupies the SSE; SI pipes remaining TCP and 409s later inflows |
+| Exclusive L0 listen | `l0_listen` or `mining` + `listenKind: "l0"`. First `l0_connect` occupies (HTTP 200 keep-alive + AES pipe). Second connect is 409; Chat/mining gossip continues |
 | Duplex key exchange | Application JSON: encrypt `duplex_offer` to the peer **user PGP**. Accept / reject / frames are AES on the occupied L0 pipe. Never put overlay AES on `l0_listen` / `l0_connect`. SI does **not** implement `duplex_*`. Missing `duplex_accept` keeps P1 gossip |
 
 The A/B/C rule governs application mailbox delivery and control traffic. A LayerMinus mining collector intentionally dials each target SI directly to receive that node's signed gossip. This infrastructure exception is not an approved shortcut for Chat, presence, delivery ACKs, or UDP sessions.
@@ -82,7 +82,7 @@ The A/B/C rule governs application mailbox delivery and control traffic. A Layer
 
 IP addresses remain necessary for packet delivery, but they are poor long-term application identities: they expose network location, change across networks, and are easy to filter. Layer Minus keeps those transient locators in the underlay while applications resolve and authenticate wallets.
 
-This design is a shared forwarding plane. Applications combine it into Chat, typed Beamio control messages, mining gossip, presence queries, delivery acknowledgements, encrypted UDP-shaped frames, duplex overlay pipes, and SilentPass egress. Product-specific proxy traffic may also use short **Fetch-and-Close** sessions. L0 does not implement those products; it forwards the envelopes they create.
+This design is a shared forwarding plane. Applications combine it into Chat, typed Beamio control messages, mining gossip, presence queries, delivery acknowledgements, encrypted UDP-shaped frames, duplex overlay pipes, SilentPass egress, L1 consensus overlay (lab-proven path), and (destination) **Web3 Enterprise Gateway** hosting via [conet-l0d](../applications/conet-l0d.md) + [Web3 Application Protocol](web3-application-protocol.md). Product-specific proxy traffic may also use short **Fetch-and-Close** sessions. L0 does not implement those products; it forwards the envelopes they create.
 
 ## Guarantees and limits
 
@@ -118,7 +118,8 @@ The mailbox, Chat listen, offline ciphertext store, acknowledgements, presence q
 9. [HTTP transport and Fetch-and-Close](http-mimicry.md) — wire shape and short-session mode.
 10. [UDP frame forwarding](udp-forward.md) — one composition: symmetric payload relay without giving the key to B.
 11. [Duplex overlay](duplex-forward.md) — application AES on Chat gossip; SI does not implement duplex commands.
-12. [Security limits and threat grades](security-limits.md) — what the live plane does and does not protect.
-13. [Node and client roles](node-roles.md) — runtime responsibilities and boundaries.
+12. [CoNET Web3 Application Protocol](web3-application-protocol.md) — draft URI / request / session for Enterprise Gateway (not an extra L0 wire command).
+13. [Security limits and threat grades](security-limits.md) — what the live plane does and does not protect.
+14. [Node and client roles](node-roles.md) — runtime responsibilities and boundaries.
 
-User-facing products are documented under [Applications](../applications/README.md), including [SilentPass](../applications/silentpass-vpn.md), [Beamio](../applications/beamio.md), and [DePIN Chat](../applications/depin-chat.md).
+User-facing products are documented under [Applications](../applications/README.md), including [SilentPass](../applications/silentpass-vpn.md), [Beamio](../applications/beamio.md), [DePIN Chat](../applications/depin-chat.md), and [conet-l0d](../applications/conet-l0d.md) (L1 overlay + Web3 Enterprise Gateway destination).

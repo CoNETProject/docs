@@ -55,12 +55,12 @@ The historical `doceng.conet.network` export is archived in the documentation re
 | Beamio Consumer | https://beamio.app/app/ | Product endpoint |
 | Beamio Merchant OS | https://biz.beamio.app | Product endpoint |
 | Beamio POS | https://pos.conet.network/ · https://beamio.app/pos/ · https://pos.beamio.app/ | Product endpoints; Embedded OTA at `https://pos.beamio.app/update.json` |
-| Beamio API host | https://beamio.app | Application API, metadata, `walletDeposit`, and card-checkout `/api/eoaUsdcStripe/*` · webhook `/api/eoa-usdc-stripe-webhook` |
+| Beamio API host | https://beamio.app | Application API, metadata, `walletDeposit`, and Stripe Crypto Onramp `/api/eoaUsdcStripe/*` · webhook `/api/eoa-usdc-stripe-webhook` |
 | SilentPass | https://vpn9.conet.network/ | Product entry point |
 | SilentPass beta | https://vpn-beta.conet.network/ | Access-controlled beta entry point |
 | Miner-matched order-book exchange | No public client endpoint yet | Under development / design study |
 | BT over DePIN DCDN | No public client endpoint yet | Under development |
-| L1 overlay daemon (conet-l0d) | No public product endpoint; Linux command in the engineering crate | Under development |
+| L1 overlay / Web3 Enterprise Gateway (conet-l0d) | No public product endpoint; Linux command in the engineering crate; Enterprise Gateway hosting is destination | Under development |
 
 Product status and protocol dependencies are documented under [Applications](applications/README.md).
 
@@ -115,7 +115,7 @@ Public source and a finished product are different claims.
 | Archive second implementation | Listed as an open production blocker in the public Archive spec | Not complete; production archive signing is forbidden until the spec’s blockers close |
 | DEX client | No public exchange client repository identified | Design study |
 | BT / DCDN client | No CoNET BitTorrent or DCDN client repository identified | Under development; do not treat upstream WebTorrent as the CoNET product |
-| L1 overlay daemon | Crate MVP accepted + [Applications](applications/conet-l0d.md) / [Developers](developers/conet-l0d.md) pages | Under development; application duplex on Chat gossip preferred, P1 gossip if the peer app never sends `duplex_accept`; `[l0]` default off; authorized lab may enable `[l0]`; 2026-08-18: `.45` advertises overlay vIP; overlay geth + beacon TCP; CL initial-sync in progress; lab overlay UDP / DHT-port comms accepted; lab discv5 via L0 accepted (after DNAT, `ss` public `:4200` is original dest, not a leak; not a production product); production mailbox delivery not shipped; do not treat SI `duplex_*` / `p2p_stream_*` as current SI |
+| L1 overlay / Web3 Enterprise Gateway (conet-l0d) | Crate MVP (L1 overlay) + [Applications](applications/conet-l0d.md) / [Developers](developers/conet-l0d.md) + [Web3 Application Protocol](l0/web3-application-protocol.md) | Under development; Role A L1 overlay lab-proven; Role B Enterprise Gateway + Application Protocol = destination (not shipped public hosting); application duplex on Chat gossip preferred, P1 gossip if the peer app never sends `duplex_accept`; `[l0]` default off; authorized lab may enable `[l0]`; do not treat SI `duplex_*` / `p2p_stream_*` as current SI |
 | SNS / creator client | No public feed or creator-studio client identified | Economic design studies only |
 | POS PWA | Public product endpoints; **no standalone public repository identified** | Live POS PWA |
 
@@ -132,7 +132,7 @@ Paths below are relative to the named **public repository**.
 | L0 client how-to | This book: [L0 development](developers/l0.md) · [SI developer guide](l0/si-developer-guide.md) |
 | Chat client how-to | This book: [Chat developer guide](l0/chat-developer-guide.md) |
 | L1 node how-to + genesis downloads | This book: [Run an L1 node](developers/l1-node.md) · [genesis.json](https://gitbook.conet.network/l1/network/genesis.json) · [genesis.ssz](https://gitbook.conet.network/l1/network/genesis.ssz) · [config.yml](https://gitbook.conet.network/l1/network/config.yml) |
-| L1 overlay operator / developer how-to | This book: [Applications — conet-l0d](applications/conet-l0d.md) · [Developers — conet-l0d](developers/conet-l0d.md) |
+| L1 overlay / Enterprise Gateway how-to | This book: [Applications — conet-l0d](applications/conet-l0d.md) · [Developers — conet-l0d](developers/conet-l0d.md) · [Web3 Application Protocol](l0/web3-application-protocol.md) |
 | DePIN mining how-to | This book: [Participate in mining](developers/l1-mining.md) |
 | ERC-20 Treasury ingress | This book: [Bring an ERC-20 into CoNET](developers/l1-erc20-bridge.md) |
 | L2 / DLE how-to | This book: [L2 development](developers/l2.md) · [DLE explorer](l2/explorer.md) · [Lab honesty track](l2/lab-honesty-track.md) · [routing registry](l2/routing-registry.md) |

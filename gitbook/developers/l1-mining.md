@@ -20,6 +20,8 @@ A temporary gap between registered Guardians and live miners is expected after a
 
 This page is the developer path for **DePIN mining gossip** (Guardian + LayerMinus). L1 validator operation is a separate, **permissionless** consensus stack (geth + Prysm). Genesis downloads and peers: [Run an L1 node](l1-node.md). The **32 CNET** unit on the Beacon deposit contract (`0x4242…`) is not the same as a **VDR-counted** deposit record. See [Validators](../l1/validators.md).
 
+A lab may carry **geth / beacon P2P over Layer Minus** (`conet-l0d`) while the Prysm **validator stays on loopback**. That is **L1 consensus peering**, not this DePIN gossip listen. Lab hub `.98` proved overlay geth + overlay beacon TCP toward `.82`; it is **not** origin-anonymous and had **no local validator** on that snapshot. Verdict: [conet-l0d lab evaluation](../applications/conet-l0d.md#lab-evaluation-2026-08-20-98-overlay-local-validator).
+
 ## What DePIN mining is
 
 ```text
@@ -135,6 +137,7 @@ Page `getAllNodes` as in the [SI node sample](../l0/si-developer-guide.md#sample
 
 - [Guardian Nodes](../l1/guardian-staking.md) — registry vs runtime
 - [Run an L1 node](l1-node.md) — permissionless geth + Prysm + Beacon deposit
+- [conet-l0d lab evaluation](../applications/conet-l0d.md#lab-evaluation-2026-08-20-98-overlay-local-validator) — overlay geth/beacon ≠ this DePIN gossip page
 - [Validators](../l1/validators.md) — Beacon consensus role versus the VDR 32 CNET ledger
 - [Node and client roles](../l0/node-roles.md) — SI vs LayerMinus
 - [SI developer guide](../l0/si-developer-guide.md) — `/post` and command catalog

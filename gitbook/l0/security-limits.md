@@ -74,7 +74,7 @@ Current Chat clients may still post a single user-PGP layer (A forwards without 
 
 ## Chat SSE is a primary L0 traffic fingerprint
 
-DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C** (`command: "mining"`, `listenKind: "chat"`). Mining collectors, UDP listens, and exclusive **L0 occupancy** (`l0_listen`) also keep SSE sessions. After `l0_connect` occupies an L0 SSE, SI pipes opaque lines and 409s later inflows. Application duplex still puts `duplex_offer` on Chat gossip so it cannot occupy that pipe. Spec: [Duplex overlay](duplex-forward.md).
+DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C** (`command: "mining"`, `listenKind: "chat"`). Mining collectors, UDP listens, and exclusive **L0 occupancy** (`l0_listen`) also keep SSE sessions. After `l0_connect` occupies an L0 SSE, SI pipes opaque AES lines and **409**s a **second `l0_connect`**. Chat / mining gossip on the same node must continue. Idle L0 SSE needs comment keepalives **while idle** so the 60s socket idle timeout does not drop the listen. After occupy, SI must **stop** those comments. Application duplex still puts `duplex_offer` on Chat gossip so it cannot occupy that pipe. Spec: [Duplex overlay](duplex-forward.md).
 
 An ISP or entry C can observe:
 

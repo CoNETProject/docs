@@ -14,6 +14,10 @@ The current L1 stack separates execution and consensus responsibilities:
 
 Execution-layer and consensus-layer peer networking remain part of L1 operation. Public JSON-RPC access is an application interface, not the validator network itself.
 
+**Network identity (destination):** CoNET aims to keep BLS validator identity while moving **application-layer** geth / beacon peer location onto wallet-addressed Layer Minus routes ([L1 vision](../developers/l1-node.md#vision-wallet-addressed-consensus-transport)). TCP/IP remains the substrate; a fixed public IP is not required as the long-lived P2P identity. **Today:** permissionless join still documents public hubs; [conet-l0d](../applications/conet-l0d.md) overlay is lab-proven / under development — not a claim that every production proposer already runs L0-only gossip.
+
+The validator client still talks **only** to a **local** beacon. Overlay catch is geth / beacon P2P, never the deposit keystore. Lab hub `.98` (2026-08-20): overlay geth + overlay beacon TCP toward `.82` **accepted**; host still advertises a public IP; **no local `validator`** on that snapshot. [Lab evaluation](../applications/conet-l0d.md#lab-evaluation-2026-08-20-98-overlay-local-validator).
+
 ## Validators are not Guardian Nodes
 
 An **L1 validator** participates in proof-of-stake consensus. A **Guardian Node** participates in the DePIN service plane and may provide routing, mailbox, bandwidth, or mining-gossip services.

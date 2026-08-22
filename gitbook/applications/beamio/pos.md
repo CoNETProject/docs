@@ -18,7 +18,7 @@ Revision: **2026-08-22**.
 
 A POS terminal is a **wallet that is also a lower-level merchant administrator**. The same EOA can be payee and executing terminal. It performs in-store Charge, Top-up, membership issue, coupon claim, redeem, and coupon burn.
 
-It is not Merchant OS. It does not create program cards or edit Programs metadata. Consumer card checkout and Coinbase deposit are **not** POS flows.
+It is not Merchant OS. It does not create program cards or edit Programs metadata. Consumer Stripe Onramp (Buy USDC with card) and Coinbase deposit are **not** POS flows.
 
 ## What exists today
 

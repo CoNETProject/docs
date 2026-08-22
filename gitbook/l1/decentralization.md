@@ -4,6 +4,8 @@
 
 A live chain is evidence of **operation**. Decentralization requires additional public facts: who may join, who may change protocol state, how stake and geography concentrate, and which clients actually produce blocks.
 
+**Network identity vs consensus census:** Beacon indexes past **2000** show registry allocation. They do **not** mean “2000+ validators already gossip only over wallet-addressed L0.” The destination architecture for L1 peer transport is described in [Run an L1 node — Vision](../developers/l1-node.md#vision-wallet-addressed-consensus-transport). Overlay maturity remains separate from validator-count evidence.
+
 ## What this page does and does not measure
 
 | Question | What is published here | What is not inferred |

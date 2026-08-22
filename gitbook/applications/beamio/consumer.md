@@ -37,18 +37,18 @@ Two independent deposit rails. Do not merge them in UI copy or implementation:
 | Rail | User-visible result | Chapter |
 | --- | --- | --- |
 | Coinbase / `walletDeposit` | CONET-USDC via Treasury LockMint | [Cash and USDC](cash-and-usdc.md) |
-| **Buy USDC with card** | Native **USDC on Base** transferred to the owner **EOA** | [Cash and USDC](cash-and-usdc.md) |
+| **Buy USDC with card** | Stripe Crypto Onramp sends native **USDC on Base** to the owner **EOA** | [Cash and USDC](cash-and-usdc.md) |
 
-The Consumer UI exposes card checkout on Home / Wallet as **Buy USDC with card**. Checkout opens in the system browser (or native `openURL` bridge). Return lands on `https://beamio.app/app/?eoa_usdc_stripe=…`.
+The Consumer UI exposes this on Home / Wallet as **Buy USDC with card**. Stripe Onramp opens in the system browser (or native `openURL` bridge). Return lands on `https://beamio.app/app/?eoa_usdc_stripe=…`.
 
-The client should pass the **EOA** (`keyID`), not the AA address. If an AA address is submitted, fulfillment still resolves the owner EOA before the Base transfer.
+The client should pass the **EOA** (`keyID`), not the AA address. If an AA address is submitted, Master resolves the owner EOA **when creating** the Onramp session and locks that wallet. Success is Stripe `fulfillment_complete`, not a Beamio `USDC.transfer`.
 
 ## Protocol dependencies
 
 | Dependency | Consumer use |
 | --- | --- |
 | CoNET L1 | Account, program assets, Smart Wallet, Chat index, mining / referral views |
-| Base | Card-checkout USDC payout; Coinbase lock step; optional institutional AA |
+| Base | Stripe Onramp USDC destination; Coinbase lock step; optional institutional AA |
 | Layer Minus | Chat listen / send (entry ≠ mailbox) |
 | Cluster / Master | Gas-sponsored writes, Stripe session create / poll, `walletDeposit` |
 | Local IndexedDB | Mnemonic and derived key (Consumer allows persistence; Merchant OS does not) |
@@ -58,7 +58,7 @@ The client should pass the **EOA** (`keyID`), not the AA address. If an AA addre
 - Device storage of the mnemonic is a product choice for Consumer. Device compromise can expose the wallet.
 - Relays and Stripe do not receive the user’s private key.
 - Discover lists are application-filtered public catalogs, not a chain-wide census of every created card.
-- Card checkout succeeds for the user only after Stripe payment **and** a successful Base USDC transfer from the operator settle wallet.
+- Buy USDC with card succeeds only after Stripe Onramp `fulfillment_complete`. Stripe sends the USDC; Beamio does not transfer operator inventory.
 
 ## Related
 

@@ -6,6 +6,8 @@ CoNET L1 is an EVM-compatible proof-of-stake network. It provides the canonical 
 
 EVM compatibility means that the chain executes Ethereum-style smart-contract bytecode and supports familiar account, signature, ABI, and JSON-RPC tooling. It does **not** mean that CoNET shares Ethereum or Base state, validators, balances, or finality.
 
+**Transport destination:** long-lived peer identity for consensus gossip is intended to be a routing EOA + OpenPGP route on Layer Minus (unmodified geth / Prysm behind [conet-l0d](../applications/conet-l0d.md)), not a stable public `IP:port`. **Today** this book still documents permissionless join via public hubs and P2P ports. Overlay peering is **under development / lab-proven**, not a claim that production proposers have abandoned public listen. See [Run an L1 node — Vision](../developers/l1-node.md#vision-wallet-addressed-consensus-transport).
+
 ## Network facts
 
 | Field | Canonical value |

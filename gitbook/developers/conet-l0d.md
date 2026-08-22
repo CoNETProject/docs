@@ -1,12 +1,37 @@
 # conet-l0d (L1 overlay & Web3 Enterprise Gateway)
 
+## `firstChunk` and `responseChunk`
+
+The local socket event is the sole session boundary. On a new
+`--clientDuplex` socket, L0d pauses after reading the initial bytes, registers
+the socket's temporary wallet/PGP route, waits until AddressPGP `searchKey`
+shows that `routeKeyID` (HTTP 200 from `regiestChatRoute` is not
+`isMyRoute`), and waits for its `l0_listen` SSE before encoding the bytes as
+`firstChunk` in `duplex_offer`. The offer must encrypt to the destination
+user PGP for that `mainWallet:port`; inbound decrypt follows PKESK
+recipients. A proxy may
+allocate a temporary identity only after recovering the signed
+`billingWallet` and validating `mainWallet:port`, the configured
+`--proxyDuplex` port, and a non-empty `firstChunk`. The proxy registers that
+identity and waits for its listen SSE before connecting upstream. It forwards
+the initial bytes, pauses after the first reply, and returns the reply as
+`responseChunk` in `duplex_accept`. It reverse-occupies the initiator listen
+only if that return pipe is still empty, then starts upstream-to-pipe
+forwarding. It does not wait for a second local protocol chunk: geth /
+beacon often stay paused after Hello until both occupied pipes are up. The
+initiator decrypts accept/reject control with the per-socket temporary PGP
+secret, writes `responseChunk` to the local socket, and occupies immediately
+(an empty first AES blob is allowed).
+Later traffic is routed only by the opaque `pipe_handle`; unsigned, stale,
+unmatched, or ambiguous offers are rejected.
+
 > **Current transport revision (2026-08-20):** the old deterministic
 > wallet/port `sessionId` and SSE teardown notices are retired. New code uses
 > temporary listen identities and a fresh random opaque `pipe_handle` per
 > occupied TCP. `l0_pipe_end` is valid only on that already-bound TCP; it must
 > contain only `pipe_handle` and `reason`. SSE must not parse or emit it.
 
-**Evidence level: Under development.** The CLI, config, TUN/iptables lifecycle, and locator grammar are implemented in-crate for the **L1 overlay** path. Overlay TCP over live Layer Minus prefers SI **`l0_listen` / `l0_connect`** occupancy plus application duplex. P1 gossip remains the fallback if the peer app never sends `duplex_accept` or the occupied pipe is missing. There is **no** production SI command named `duplex_*` or `p2p_stream_*` in this revision. `l0_listen` / `l0_connect` **are** current SI.
+**Evidence level: Under development.** The CLI, config, TUN/iptables lifecycle, and locator grammar are implemented in-crate for the **L1 overlay** path. `--client` is P1 request/response; `--clientDuplex` is the explicit persistent duplex mode. Overlay TCP over live Layer Minus uses SI **`l0_listen` / `l0_connect`** occupancy plus application duplex. A failed duplex line is closed and its bytes are discarded; P1 is not a fallback for duplex. `--proxy` is request/response configuration and `--proxyDuplex` is raw bidirectional forwarding; proxy-only mode does not create TUN/route/iptables resources. Server proxy mode uses the main wallet for duplex billing signatures and mailbox command signatures (peer-verified); each line keeps a fresh temporary route in `walletAddress` and sends the payer in `billingWallet`. There is **no** production SI command named `duplex_*` or `p2p_stream_*` in this revision. `l0_listen` / `l0_connect` **are** current SI.
 
 The **CoNET Web3 Enterprise Gateway** product role (host existing Web/API behind a wallet identity) and the [Web3 Application Protocol](../l0/web3-application-protocol.md) draft are **destination** documentation on the Applications page — not a claim that hosting v1 is shipped.
 
@@ -17,7 +42,7 @@ Application protocol draft: [CoNET Web3 Application Protocol](../l0/web3-applica
 L1 ports and public bootnodes: [Run an L1 node](l1-node.md)  
 Forwarding plane: [L0 development](l0.md) · [How to use Layer Minus](../l0/using-l0.md)
 
-Whitepaper / `RULES.md` revision **2026-08-18** (application duplex on Chat gossip + P1 gossip when the peer app does not accept; optional per-port `[[l0.channels]]` listen SSE; authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP proven; after the batching binary the limiter is Prysm initial-sync at ~3.2 blocks/s; EL still `0x0`; lab overlay UDP + live discv5 via L0 accepted; DHT drop recovery = flush ghost conntrack first; authorized `.45` `restart-beacon` after dial backoff; **2026-08-20** lab-only static overlay `--peer` after authorized hub-then-spoke `restart-beacon` proves CL catch-up (`head_slot`↑ / `sync_distance`↓); re-apply listen-DNAT not steer; prove geth via `geth.pid`; `ss` public `:4200` is DNAT dest, not a leak; not a production discv5 product; operator watch `scripts/watch-l0-follow.sh`). A change to those files must update **this page and the Applications page** in the same task. Duplex application JSON lives on [duplex-forward](../l0/duplex-forward.md); SI command tables must **not** list `duplex_*`. Do not document `p2p_stream_*` as current SI.
+Whitepaper / `RULES.md` revision **2026-08-22** (AddressPGP `searchKey` wait after register HTTP 200; PKESK-selected inbound decrypt; ready-gated per-socket duplex bootstrap; application duplex on Chat gossip + P1 gossip when the peer app does not accept; optional per-port `[[l0.channels]]` listen SSE; authorized L0_ONLY `.45` advertises overlay vIP; overlay geth + beacon TCP proven; after the batching binary the limiter is Prysm initial-sync at ~3.2 blocks/s; EL still `0x0`; lab overlay UDP + live discv5 via L0 accepted; DHT drop recovery = flush ghost conntrack first; authorized `.45` `restart-beacon` after dial backoff; **2026-08-20** lab-only static overlay `--peer` after authorized hub-then-spoke `restart-beacon` proves CL catch-up (`head_slot`↑ / `sync_distance`↓); re-apply listen-DNAT not steer; prove geth via `geth.pid`; `ss` public `:4200` is DNAT dest, not a leak; not a production discv5 product; operator watch `scripts/watch-l0-follow.sh`). A change to those files must update **this page and the Applications page** in the same task. Duplex application JSON lives on [duplex-forward](../l0/duplex-forward.md); SI command tables must **not** list `duplex_*`. Do not document `p2p_stream_*` as current SI.
 
 ## What you build
 
@@ -156,8 +181,8 @@ tcp_ports = [4200]
 # is in-crate when enabled plus listen_entries, mailbox_route_pgp_file
 # (this host's B route PUBLIC key), routing_eoa, routing_key_file, and
 # routing_eth_key_file (hex secp256k1; must match routing_eoa; not OpenPGP).
-# Optional [[l0.channels]]: one routing EOA + SSE per overlay port
-# (8400 / 4200 / 4300). Encrypt to the peer user PGP for that port.
+# Optional [[l0.channels]]: exactly one temporary routing EOA + SSE per
+# overlay port. A channel cannot own multiple ports or share a port.
 # Classify return-path TCP by source port. :4300 is overlay IPv4, not
 # udp_relay. listenKind stays "chat". Empty channels keep one EOA.
 # Listen is EIP-191 + SI { message, signMessage } base64. Listen ingest
@@ -173,9 +198,11 @@ tcp_ports = [4200]
 # routing_key_file = "/etc/conet-l0d/routing.key"
 # routing_eth_key_file = "/etc/conet-l0d/routing.eth"
 # mailbox_route_pgp_file = "/etc/conet-l0d/self-mailbox-route.asc"
+# billing_eoa = "0x<main-paid-wallet>"
+# billing_eth_key_file = "/etc/conet-l0d/billing.eth"
 #
 # [[l0.channels]]
-# ports = [8400]
+# port = 8400
 # routing_eoa = "0x<geth-routing-eoa>"
 # routing_key_file = "/etc/conet-l0d/geth.key"
 # routing_eth_key_file = "/etc/conet-l0d/geth.eth"
@@ -186,6 +213,80 @@ tcp_ports = [4200]
 # user_pgp_file = "/etc/conet-l0d/peer-user.asc"
 # route_pgp_file = "/etc/conet-l0d/peer-route.asc"
 ```
+
+For a duplex request, the routing key is `mainWallet:port`. Duplex offer/accept
+are signed by the main paid wallet and peer-verified. Mailbox `l0_listen` /
+`l0_connect` retain the temporary route in `walletAddress` and carry
+`billingWallet`; the main paid wallet signs them and SI verifies that signer.
+The explicit new-line request validates `mainWallet:port`, allocates a fresh
+temporary wallet and PGP identity, and registers that identity with AddressPGP
+before any offer is processed. Registration is not complete until `searchKey`
+on CoNET RPC returns the same `routeKeyID`. The temporary identity becomes the communication
+subject and must never be shared by another line or confused with the billing
+wallet.
+
+Offer handling is deliberately scoped to the configured proxy boundary. An
+incoming `duplex_offer` is eligible for a new proxy line only when its signed
+`mainWallet:port` matches a configured `proxyDuplex` port. The proxy then
+allocates and registers exactly one temporary identity for that accepted
+request. An offer that only resembles a known port, has the wrong billing
+wallet, or is stale/ambiguous is rejected without allocation, session
+creation, or another `l0_connect`; this prevents SI exclusive-occupy `409`
+feedback loops. Once allocated, later offers reuse the existing opaque
+`pipe_handle` or temporary `listenWallet` session and never allocate again.
+
+Optional TOML / CLI for the lab proxy path:
+
+```toml
+# Proxy-only server (no TUN, route, or iptables): [[l0.proxy_duplex]] and/or
+# [[l0.proxies]] set, with no [[l0.clients]] / [[l0.client_duplex]]
+# Multi-port proxy needs one [[l0.channels]] routing EOA per port (SI exclusive
+# occupy). billing_eoa still matches inbound duplex_offer.mainWallet.
+# proxy_duplex AES frames → raw TCP upstream; proxy is TUN-less.
+# [[l0.proxies]]
+# host = "127.0.0.1"
+# port = 8400
+
+# Client request/response endpoint: expose the peer on local_vip:port
+# [[l0.clients]]
+# target = "web3://0x<peerMainWallet>:8400"
+# CLI: --client 'web3://0x<peerMainWallet>:8400'
+#
+# Client duplex endpoint: seed an occupied bidirectional channel
+# [[l0.client_duplex]]
+# target = "web3://0x<peerMainWallet>:4000"
+# CLI: --clientDuplex 'web3://0x<peerMainWallet>:4000'
+```
+
+`proxy_server_only()` is true when proxy targets are configured and clients are
+empty: `start` does not create TUN, routes, or iptables. A configured
+`--client` exposes a local request/response endpoint, while
+`--clientDuplex` seeds a long-lived occupied duplex line. The endpoint is
+allocated from the daemon's local virtual network (for example
+`web3://0x<peerMainWallet>:4000 -> 100.64.0.5:4000`); the application connects
+to the right-hand side and does not need to install its own iptables rules.
+Duplex clients use a local TCP listener and send raw stream bytes through the
+occupied AES pipe. The listener is connection-driven: every `accept()` event
+is a new local socket handle and allocates a new temporary wallet/PGP route,
+AES key, return queue, and occupied pipe. The same socket keeps its handle
+until EOF or error; a second socket on the same local port gets a separate
+line. L0d does not prepend a private header to Geth/Prysm bytes; the socket
+handle and encrypted `pipe_handle` provide correlation. If the requested local
+port is already occupied by a
+wildcard service (for example local geth on `*:8400`), L0d uses
+`local_port + 10000` and prints the actual endpoint. In duplex-only mode the
+listener binds local interfaces rather than requiring the configured overlay
+VIP, because that mode intentionally has no TUN; use the printed endpoint
+(normally `127.0.0.1:<local_port>`). Legacy packet-mode traffic continues to
+use the client TUN path.
+
+For a Beacon or other P2P process that connects through this local listener,
+the lab restart scripts provide `L0_STREAM_ONLY=1`. In this mode
+`EXTRA_BEACON_PEERS` is the complete explicit peer list, `--no-discovery` and
+`--disable-quic` are enabled, and no TUN, iptables, DHT steering, or
+listen-DNAT is required. Explicit command-line peer values override host
+environment defaults; this prevents a stale `.98` VIP from replacing the
+configured local `.82` stream target.
 
 `web3://` is a **peer locator**, not ERC-4804 content.
 
@@ -239,10 +340,11 @@ Toml locators are **wallet-addressed** (`web3://<EOA>/p2p/beacon` / `/p2p/geth`)
 
 ```text
 --p2p-allowlist=100.64.0.0/10 --no-discovery
---peer=/ip4/<hub-vip>/tcp/4200/p2p/<hub-live-peer-id>
+--peer=/ip4/100.64.0.7/tcp/4200/p2p/16Uiu2HAmDJCHuVkXtkPrrL8YykQ9gFZnQkR9Q6WjZZUrmueohPfd
+--peer=/ip4/100.64.0.6/tcp/4200/p2p/16Uiu2HAmF1SXGHnne9DQTHGfgGQgje3cBV8pdSLJF25ajYKr2hvS
 ```
 
-Fetch `peer_id` from hub `:4100`. Production `.82`: `/ip4/100.64.0.7/tcp/4200/p2p/16Uiu2HAmDJCHuVkXtkPrrL8YykQ9gFZnQkR9Q6WjZZUrmueohPfd`. Identify listing `/ip4/<public>/tcp/4200` plus a gater deny is expected on L0_ONLY. Geth overlay static peers are `enode://…@<hub-vip>:8400` with `--nodiscover --netrestrict 100.64.0.0/10`; `admin_peers` must show `100.64.0.x:8400`, not the public IP. Same node id already on the public enode → `admin_removePeer` first. Full split: [l1-node — two layers](l1-node.md#two-layers-l0-wallet-vs-overlay-vip-flags).
+Pinned IDs: crate `scripts/l1-beacon-static-peers.env` ([Applications — 4c](../applications/conet-l0d.md#4c-canonical-hub-beacon-ids)). Do **not** fetch `.98` `:4100` identity (HTTP 500 / nil ENR when `--no-discovery`). Do **not** use a DHT `:4110` id as production beacon `--peer`. Identify listing `/ip4/<public>/tcp/4200` plus a gater deny is expected on L0_ONLY. Geth overlay static peers are `enode://…@<hub-vip>:8400` with `--nodiscover --netrestrict 100.64.0.0/10`; `admin_peers` must show `100.64.0.x:8400`, not the public IP. Same node id already on the public enode → `admin_removePeer` first. Full split: [l1-node — two layers](l1-node.md#two-layers-l0-wallet-vs-overlay-vip-flags).
 
 geth `--nat=extip:<local_vip>` and beacon `--p2p-host-ip=<local_vip>` **advertise**. Authorized L0_ONLY `.45` uses overlay vIP `100.64.0.5` plus `--p2p-static-id`. `.98` and production proposers keep the public IP. Production hub `.82` (`100.64.0.7`) accepts **other overlay geth on `:8400`** without changing `--nat` to the VIP: hub toml `[[peers]]` per spoke (unique user PGP); spoke dials overlay `enode://f1e249c9…@100.64.0.7:8400` (`scripts/l0-prod82-hub.env`); `admin_removePeer` the public enode first if the same node id is already connected. listen-DNAT excludes `:8400`. Hub HTTP **`:8889`**. Overlay beacon identity is `--p2p-static-id` via `06_restart_node66.sh` `start_beacon` / systemd boot (`16Uiu2HAmDJCHuVkXtkPrrL8YykQ9gFZnQkR9Q6WjZZUrmueohPfd`); do **not** `systemctl restart` the oneshot unit. Bounce only `conet-l0d`; do not restart geth. **2026-08-20:** `.98` overlay-ESTAB to `.82`; `.45` already overlay to both hubs. Lab hub `.98` DHT-over-L0 toward `.82` is steer dest `216.225.202.82:4300/:4200` → `100.64.0.7` plus `enable-l0-dht` (keep public discv5 hub; **no** last-wins `/32`). **2026-08-20 ~07:13Z** authorized `.98` `restart-beacon`: `--disable-quic` + extra `.82` ENR. Overlay TCP proof = conntrack overlay tuple; `ss` may show public dest. Hybrid hub, **not** L0_ONLY. Listen ports stay `0.0.0.0:8400` / `:4200`. Engine and HTTP stay `127.0.0.1`. Verdict: [Lab evaluation](#lab-evaluation-2026-08-20-98-overlay-local-validator).
 
@@ -277,7 +379,7 @@ Content-Type: application/json
 
 Live overlay duplex is SI **`l0_listen` / `l0_connect`** plus **application** JSON ([Duplex overlay](../l0/duplex-forward.md)). Chat / mining / udp / L0 exclusive pools stay isolated. SI does **not** implement `duplex_*`. Do **not** send `command: "mining"` with `listenKind: "duplex"`. `listenKind: "l1p2p"` / `p2p_stream_*` are **not** current SI.
 
-Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and keys + entries exist, the crate prefers duplex: `duplex_offer` (AES key + session `listenWallet`) to the peer **long-lived** user PGP; exclusive `l0_listen`; `l0_connect` occupies; AES `duplex_accept` / `duplex_reject` / `duplex_frame` on the occupied pipe (`payload` = standard base64 of `L0D1||IPv4`). Crate installs outbound `pipe_tx` **only after** occupy HTTP **200** keep-alive (TUN `try_send` before that is P1, not a live AES pipe). SI 409 applies to a **second `l0_connect`**, not Chat gossip. Idle `l0_listen` has no mining epoch — SI must emit SSE comment keepalives **only while idle**, **stop** those comments after occupy, and clear the 60s idle timeout on **client→C** (`sourceSocket.setTimeout(0)`) as well as C→B. Occupied-pipe AES `duplex_accept` may omit `listenUserPgp` (Chat accept still includes it). SSE AES frames complete on `\r\n\r\n`. User-PGP gossip always lands in the Chat pool; idle L0 may get a copy. `duplex_reject` or missing `duplex_accept` or missing pipe keeps **P1 gossip**. After exclusive `l0_listen` HTTP **200** (SSE still live), the crate **rebuilds** outbound `l0_connect` for already-attached sessions and **retries** occupy failures — it must not leave a dead `pipe_tx` installed (TUN then hits queue-full and stays on P1, which cannot complete beacon `:4200` TCP). Rebuild must **not** run after the listen SSE has already ended. Occupy TCP **EOF** (no `l0_pipe_end` JSON) clears `pipe_tx` and retries the same as `Err`. When SI tears down an occupied listen it sends **`l0_pipe_end`** on the inbound TCP and optional **`l0_listen_released`** on SSE; the crate parses both, releases the local pipe, and retries occupy with a shorter backoff. A restarted client's `l0_listen` is **409** while occupy sockets are still live; SI drops ghost occupy (inbound destroyed or SSE stale) so the new process can listen again. Entry `socketForward` must not use 60s receive-idle destroy on long SSE / L0 pipes ([duplex-forward](../l0/duplex-forward.md), [peel-hop-listen](../l0/peel-hop-listen.md)). Crate MVP session listen is the registered per-port channel EOA. Inbound: decrypt user-PGP armor or AES duplex frames → overlay IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Optional `[[l0.channels]]` is one EOA + SSE per overlay port (8400 / 4200 / 4300). Empty channels keep one EOA. `:4300` is overlay IPv4, not `udp_relay`. `[l0]` defaults **off**. An authorized lab may enable `[l0]`. HTTP 200 on Chat gossip ≠ delivery. Do not claim production mailbox delivery. Do not treat SI `duplex_*` or `p2p_stream_*` as current SI.
+Crate MVP forwards are a **stub** (accepted): the daemon counts TUN IPv4 packets. When `[l0].enabled = true` and keys + entries exist, the crate prefers duplex: `duplex_offer` (AES key + session `listenWallet`) to the peer **long-lived** user PGP; exclusive `l0_listen`; `l0_connect` occupies; AES `duplex_accept` / `duplex_reject` / `duplex_frame` on the occupied pipe (`payload` = standard base64 of `L0D1||IPv4`). Crate installs outbound `pipe_tx` **only after** occupy HTTP **200** keep-alive (TUN `try_send` before that is suppressed, not a live AES pipe). SI 409 applies to a **second `l0_connect`**, not Chat gossip. Idle `l0_listen` has no mining epoch — SI must emit SSE comment keepalives **only while idle**, **stop** those comments after occupy, and clear the 60s idle timeout on **client→C** (`sourceSocket.setTimeout(0)`) as well as C→B. Occupied-pipe AES `duplex_accept` may omit `listenUserPgp` (Chat accept still includes it). SSE AES frames complete on `\r\n\r\n`. User-PGP gossip always lands in the Chat pool; idle L0 may get a copy. A configured duplex session suppresses overlay P1 while negotiating or rebuilding; batches are dropped until the occupied pipe is ready, and P1 resumes only after an explicit `duplex_reject`. The initiator alone opens `l0_connect`; the responder only returns `duplex_accept`. After exclusive `l0_listen` HTTP **200** (SSE still live), the crate **rebuilds** outbound `l0_connect` for already-attached sessions and **retries** occupy failures — it must not leave a dead `pipe_tx` installed. Rebuild must **not** run after the listen SSE has already ended. Occupy TCP **EOF** (no `l0_pipe_end` JSON) clears `pipe_tx` and retries the same as `Err`. When SI tears down an occupied listen it sends **`l0_pipe_end`** on the inbound TCP and optional **`l0_listen_released`** on SSE; the crate parses both, releases the local pipe, and retries occupy with a shorter backoff. A restarted client's `l0_listen` is **409** while occupy sockets are still live; SI drops ghost occupy (inbound destroyed or SSE stale) so the new process can listen again. Entry `socketForward` must not use 60s receive-idle destroy on long SSE / L0 pipes ([duplex-forward](../l0/duplex-forward.md), [peel-hop-listen](../l0/peel-hop-listen.md)). Crate MVP session listen is the registered per-port channel EOA. Inbound: decrypt user-PGP armor or AES duplex frames → overlay IPv4 queued to TUN when `routing_key_file` is an OpenPGP secret cert. Optional `[[l0.channels]]` is one EOA + SSE per overlay port (8400 / 4200 / 4300). Empty channels keep one EOA. `:4300` is overlay IPv4, not `udp_relay`. `[l0]` defaults **off**. An authorized lab may enable `[l0]`. HTTP 200 on Chat gossip ≠ delivery. Do not claim production mailbox delivery. Do not treat SI `duplex_*` or `p2p_stream_*` as current SI.
 
 ## Failure semantics
 
@@ -312,6 +414,17 @@ explicit:
   `overlay-beacon-listen-dnat.sh` so overlay VIP traffic reaches it.
 - HTTP `409` from `l0_connect` is an exclusive-pipe collision. P1 fallback
   or an entry HTTP 200 is not proof of duplex delivery.
+- Once a configured duplex session exists, P1 is suppressed while it is
+  negotiating or rebuilding. A missing `duplex_accept` or a full occupied
+  queue drops the overlay batch rather than racing `l0_connect`; P1 resumes
+  only after an explicit `duplex_reject`.
+- A fresh daemon incarnation rejects `duplex_offer` messages whose existing
+  `timestamp` predates the local pending session (with a small clock-skew
+  allowance). It also rejects offers older than **90 seconds** wall-clock age
+  (`DUPLEX_OFFER_MAX_AGE_SECS`), even when no live peer:port pipe exists yet.
+  That blocks mailbox offline flush of a previous process from opening ghost
+  additional-line sessions (wrong AES keys / sustained decrypt failures)
+  before the current bounce's offers arrive.
 
 Recommended sequence:
 

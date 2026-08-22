@@ -1,12 +1,36 @@
 # conet-l0d — L1 overlay daemon & Web3 Enterprise Gateway
 
-**Maturity: Under development.** Crate MVP is accepted for the **L1 overlay** path (Linux command, TUN/iptables lifecycle, `web3://` locator, packet counters, occupied duplex + P1 fallback). The **CoNET Web3 Enterprise Gateway** product role and the [Web3 Application Protocol](../l0/web3-application-protocol.md) draft extend that daemon toward hosting existing Web / API / AI services behind a wallet identity — that hosting path is **destination architecture**, not a shipped public hosting product. Overlay `/post` prefers SI **`l0_listen` / `l0_connect`** occupancy plus **application duplex** (`duplex_offer` on Chat gossip; accept / reject / AES `duplex_frame` on the occupied pipe); **P1 gossip** remains the fallback if the peer app never sends `duplex_accept` or the pipe is missing. P1 outbound encrypt + mailbox wrap + `POST { data }`, inbound decrypt + TUN write-back, and listen HTTP+SSE workers exist in-crate (`[l0]` default off). Listen ingest matches SI `forWardPGPMessageToClient` raw JSON `{ "data": "<armor>" }` (Chat `handleInbound`) plus duplex JSON frames. In-crate listen matches SI `checkSign`. An authorized lab may enable `[l0]`. Optional `[[l0.channels]]` is one routing EOA + listen SSE per overlay port (8400 / 4200 / 4300); outbound encrypts to the peer user PGP for that port (classify by well-known src or dest port). Empty channels keep one EOA. `:4300` is overlay IPv4, not SI `udp_relay`. The 2026-08-17 23:12Z L0-only lab returned HTTP 200 on outbound `/post` but did not write inbound IPv4 (old SSE-only parser). **23:30Z** (restart only `conet-l0d`) wrote inbound IPv4 on both TUNs and completed overlay geth TCP (`.45` `100.64.0.5` ↔ `.98` `100.64.0.6:8400`). **2026-08-18:** authorized L0_ONLY `.45` advertises overlay vIP `100.64.0.5`; overlay geth + beacon TCP ESTAB; dest-aggregated IPv4 + POST concurrency 32 / queue 2048 (upgrade both lab binaries together). After that binary, overlay queue-full is 0; remaining follow-the-chain limiter is Prysm initial-sync (~3.2 blocks/s, ~15 h). EL still `0x0`. Read-only watch: `scripts/watch-l0-follow.sh`. Follow-the-chain is **not** complete. Lab overlay UDP echo and `:4300` (direct + public-ENR steer) arrived on the peer TUN; lab discv5 via L0 is **accepted** (`L0_DHT` allowlist = overlay + hub `/32`; packets still DNAT onto L0; not `FOLLOW_OK`; not a production product). If beacon `connected` drops, re-apply `overlay-dht-steer.sh` first (flush ghost conntrack; do not restart EL/CL). Authorized `.45` `restart-beacon` is only for Prysm dial backoff (**~17:28Z** restored `connected=1` and `Processing blocks`; do not re-apply steer immediately after start). After DNAT, `.45` `ss` may show hub public `:4200` (original dest, not a leak); overlay proof is TUN VIP + isolate DROP=0. First-minute `suitable=0` is expected. HTTP 200 ≠ delivery. This is **not** a public mailbox product. This label is not a security audit.
+**Maturity: Under development.** Crate MVP is accepted for the **L1 overlay** path (Linux command, TUN/iptables lifecycle, `web3://` locator, packet counters, and occupied duplex). The **CoNET Web3 Enterprise Gateway** product role and the [Web3 Application Protocol](../l0/web3-application-protocol.md) draft extend that daemon toward hosting existing Web / API / AI services behind a wallet identity — that hosting path is **destination architecture**, not a shipped public hosting product. Overlay `/post` uses SI **`l0_listen` / `l0_connect`** occupancy plus application duplex; a duplex failure closes the current line and does not fall back to P1. `--proxy` is request/response configuration while `--proxyDuplex` is persistent raw forwarding. Proxy-only mode does not create a TUN, route, or iptables chain. Server proxy mode uses `billing_eoa` for duplex offer/accept and mailbox command signatures (peer-verified); `walletAddress` remains the temporary route subject while `billingWallet` identifies the payer. Each accepted line gets a fresh temporary wallet/PGP/AES/session, registers it before routing, and forwards the occupied byte stream to the configured `host:port`. Multiple lines may use one logical port, but no identity or socket is shared and no offline data is saved. This is **not** a public mailbox product. This label is not a security audit.
 
 Public site: [https://gitbook.conet.network/applications/conet-l0d.html](https://gitbook.conet.network/applications/conet-l0d.html)
 
 Developer CLI and config: [Developers — conet-l0d](../developers/conet-l0d.md)  
 Application protocol draft: [CoNET Web3 Application Protocol](../l0/web3-application-protocol.md)  
-Design: crate whitepaper revision **2026-08-18** (application duplex on Chat gossip + P1 gossip when the peer app does not accept; optional per-port `[[l0.channels]]` listen SSE; overlay IPv4 batch + POST 32/512; Prysm-bound follow-the-chain; lab overlay UDP + live discv5 via L0 accepted; DHT drop recovery = flush ghost conntrack first; authorized `.45` `restart-beacon` after dial backoff; **2026-08-20** lab-only static overlay `--peer` after authorized hub-then-spoke `restart-beacon` proves CL catch-up (`head_slot`↑ / `sync_distance`↓); re-apply listen-DNAT not steer; prove geth via `geth.pid`; `ss` public `:4200` is DNAT dest, not a leak; not a production discv5 product) (pair in [CoNET-L0D/whitepaper](https://github.com/CoNET-project/CoNET-L0D/tree/main/whitepaper)).
+Design: crate whitepaper revision **2026-08-22** (AddressPGP `searchKey` wait after register HTTP 200, PKESK-selected inbound decrypt, ready-gated bootstrap, main-wallet billing, temporary per-line identities, same-port independent proxy lines, occupied duplex only, no offline save) (pair in [CoNET-L0D/whitepaper](https://github.com/CoNET-project/CoNET-L0D/tree/main/whitepaper)).
+
+## Duplex bootstrap
+
+Each local TCP accept is a unique session handle. The client creates its
+temporary identity only for that new socket, registers its route, waits until
+AddressPGP `searchKey` shows that `routeKeyID` (HTTP 200 from
+`regiestChatRoute` is queue admission only), waits for its temporary listen
+SSE, and then puts the first application bytes in
+`duplex_offer.firstChunk`. The offer is encrypted to the destination user PGP
+for that `mainWallet:port`; the receiver decrypts with the PKESK-matched
+listen wallet, not the first secret that happens to unwrap. After verifying
+the billing signature, exact
+`mainWallet:port`, and `--proxyDuplex` target, the proxy registers a fresh
+temporary route and waits for its listen SSE before opening one upstream
+socket. It forwards `firstChunk`, returns the first upstream bytes in
+`duplex_accept.responseChunk`. The proxy reverse-occupies the initiator
+listen only if that return pipe is still empty, then starts upstream-to-pipe
+forwarding. It does not wait for a second local protocol chunk. The client
+decrypts the accept with its per-socket temporary PGP key, writes
+`responseChunk` to the local socket, and occupies immediately (an empty first
+AES blob is allowed). Existing
+`pipe_handle` or listen-wallet matches reuse the established line; an
+unsigned, stale, unmatched, or ambiguous offer never creates another
+temporary line.
 
 If that whitepaper or the crate `RULES.md` changes, this page and the Developers page must change in the **same task**.
 
@@ -208,11 +232,11 @@ geth --nat extip:100.64.0.5 --port 8400 --discovery.port 8400 \
 beacon-chain --p2p-host-ip=100.64.0.5 --p2p-static-id \
   --p2p-tcp-port=4200 --p2p-udp-port=4300 \
   --p2p-allowlist=100.64.0.0/10 --no-discovery \
-  --peer=/ip4/100.64.0.7/tcp/4200/p2p/<hub-live-peer-id> \
+  --peer=/ip4/100.64.0.7/tcp/4200/p2p/16Uiu2HAmDJCHuVkXtkPrrL8YykQ9gFZnQkR9Q6WjZZUrmueohPfd \
   --rpc-host=127.0.0.1 --grpc-gateway-host=127.0.0.1
 ```
 
-Fetch `<hub-live-peer-id>` from the hub `:4100` identity API. Example production hub `.82`: VIP `100.64.0.7`, pinned id `16Uiu2HAmDJCHuVkXtkPrrL8YykQ9gFZnQkR9Q6WjZZUrmueohPfd`. Do **not** use `/ip4/<public-ip>/tcp/4200`. Identify may still list the hub public multiaddr; the allowlist gater refusing that address is expected, not a reason to put the public IP in `--peer`. If `admin_peers` already shows the **same geth node id** on `…@<public-ip>:8400`, `admin_removePeer` that URL first, then add the overlay enode.
+Use the **pinned** hub `--peer` from the crate file `scripts/l1-beacon-static-peers.env` (see [4c](#4c-canonical-hub-beacon-ids)). Do **not** fetch `.98` `:4100` `/eth/v1/node/identity` (HTTP 500 / nil ENR when `--no-discovery`). Do **not** use a DHT sidecar `:4110` id as a production beacon `--peer`. Do **not** use `/ip4/<public-ip>/tcp/4200` on an L0_ONLY spoke. Identify may still list the hub public multiaddr; the allowlist gater refusing that address is expected. If `admin_peers` already shows the **same geth node id** on `…@<public-ip>:8400`, `admin_removePeer` that URL first, then add the overlay enode.
 
 Keep `--http.addr`, `--authrpc.addr`, `--rpc-host`, and `--p2p-local-ip` on loopback. Binding them to the overlay vIP can fail startup if the TUN is down.
 
@@ -220,7 +244,7 @@ Advertise-only flags do **not** stop geth/beacon when the TUN is absent; you sim
 
 ### 4b. Production hub `.82` — other geth over L0
 
-Hub `216.225.202.82` keeps the **public** geth enode (`…@216.225.202.82:8400`). Overlay VIP is `100.64.0.7`. Do **not** set hub `--nat` to that VIP. listen-DNAT **excludes** `:8400`; overlay TCP to `100.64.0.7:8400` hits the existing `*:8400` listen. Overlay beacon `--peer` is pinned with `--p2p-static-id` in `06_restart_node66.sh` `start_beacon` (systemd `ExecStart` → `start`; also `restart-beacon`). Keys: `consensus/beacondata/network-keys`. Current id: `16Uiu2HAmDJCHuVkXtkPrrL8YykQ9gFZnQkR9Q6WjZZUrmueohPfd`. Do **not** `systemctl restart conet-node66.service` (would bounce geth+validator).
+Hub `216.225.202.82` keeps the **public** geth enode (`…@216.225.202.82:8400`). Overlay VIP is `100.64.0.7`. Do **not** set hub `--nat` to that VIP. listen-DNAT **excludes** `:8400`; overlay TCP to `100.64.0.7:8400` hits the existing `*:8400` listen. Overlay beacon `--peer` is pinned with `--p2p-static-id` in `06_restart_node66.sh` `start_beacon` (systemd `ExecStart` → `start`; also `restart-beacon`). Keys: `consensus/beacondata/network-keys` (backup **outside** `beacondata`). Current id: `16Uiu2HAmDJCHuVkXtkPrrL8YykQ9gFZnQkR9Q6WjZZUrmueohPfd`. Do **not** `systemctl restart conet-node66.service` (would bounce geth+validator). Do **not** wipe `network-keys` or run `restart-beacon-clean`.
 
 Other overlay geth dial:
 
@@ -231,6 +255,23 @@ enode://f1e249c97ce861441b3bd4832213cc634dd5c23d1a8722cd9c1aea28492779f6b64e012e
 On the hub toml add a `[[peers]]` row for **that spoke** (locator + VIP + port `8400` + the spoke’s own geth user PGP — do not reuse hub `self-user.asc`). Bounce **only** `conet-l0d` hub then spoke. If the spoke is already peered to the **same node id** on the public enode, `admin_removePeer` the public URL first, then `admin_addPeer` the overlay enode. Hub / `.98` geth HTTP is **`:8889`**. Do **not** restart geth. Proof: overlay `ss` ESTAB to `100.64.0.7:8400`, duplex AES, **`geth.pid` unchanged**. **2026-08-20:** `.45` and `.98` overlay-ESTAB to `.82`. This does **not** mean every production proposer has left public listen. Crate notes: `docs/operator-flags.md`, `scripts/l0-prod82-hub.env`.
 
 Lab hub **`.98` DHT-over-L0 toward `.82`** is **steer-only**: DNAT dest `216.225.202.82:4300`/`:4200` onto `100.64.0.7`. `.98` stays a public discv5 hub for `.45` — do **not** L0_ONLY isolate or last-wins allowlist `/32`. `start-shared-beacon-98.sh enable-l0-dht` writes env and does **not** restart EL/CL. **2026-08-20 ~07:13Z** authorized `.98` `restart-beacon` (geth untouched): `--disable-quic` + extra `.82` ENR. Overlay proof is **conntrack** reply `100.64.0.7` ↔ `100.64.0.6:4200`; `ss` may still show the public dest `216.225.202.82:4200` (DNAT original dest, not a leak). REST `last_seen` may list `/ip4/216.225.202.82/tcp/4200`. **Not** VIP↔VIP `ss` as the only proof. **Not** `FOLLOW_OK`. **Not** L0_ONLY anonymity on `.98`. Full verdict: [Lab evaluation](#lab-evaluation-2026-08-20-98-overlay-local-validator).
+
+### 4c. Canonical hub beacon IDs
+
+Other nodes join these **pinned** production / lab-hub beacon IDs. Both hubs already use `--p2p-static-id`. Pinning the ID is **not** overlay join: hub toml `[[peers]]`, ordered `conet-l0d` bounce, and listen-DNAT are still required. `.98` uses `--no-discovery` + allowlist; an unlisted overlay joiner is not accepted just because `--peer` is correct.
+
+Crate source: `scripts/l1-beacon-static-peers.env`.
+
+Overlay (spoke `--peer` host **must** be the VIP):
+
+```text
+--peer=/ip4/100.64.0.7/tcp/4200/p2p/16Uiu2HAmDJCHuVkXtkPrrL8YykQ9gFZnQkR9Q6WjZZUrmueohPfd
+--peer=/ip4/100.64.0.6/tcp/4200/p2p/16Uiu2HAmF1SXGHnne9DQTHGfgGQgje3cBV8pdSLJF25ajYKr2hvS
+```
+
+Public Internet join uses the **same** `peer_id` with `216.225.202.82` / `198.251.77.98`. L0_ONLY allowlist refuses those public multiaddrs.
+
+Do **not** curl `.98` `:4100` for identity. Read `beacon.log` (`Running node with peer id of …`) or the env file. `.82` DHT sidecar id `16Uiu2HAmGnXx…` on `:4110` is **not** a beacon `--peer`.
 
 Phase 1: use **static** overlay bootnodes. The crate envelope already carries IPv4 including UDP. A lab may prove overlay UDP / DHT-port comms and live discv5 via L0 (`docs/P2.md` in the crate): `L0_DHT` drops static `--peer`, allowlists overlay plus the hub public `/32`, and DNATs that dest onto overlay (isolate still drops unsteered public P2P). Public-advertise and L0_ONLY beacons still bind the host public IP, so operator `overlay-beacon-listen-dnat.sh` maps overlay-VIP tcp/udp (except geth `:8400`) into that listen. The TUN needs `accept_local` / `route_localnet` / `rp_filter=0` so DNAT to a locally bound public IP reaches the socket; apply must not flush overlay geth `:8400`. discv5 / libp2p ephemeral replies must un-SNAT. If beacon `connected` later drops while overlay geth stays ESTAB, re-apply `overlay-dht-steer.sh` **first** (flushes ghost hub `:4200/:4300` conntrack; **do not** restart geth or beacon for that). Authorized `.45` `restart-beacon` is only for Prysm dial backoff after that flush (**~17:28Z** restored `connected=1` and `Processing blocks`). After that restart, do **not** re-apply steer immediately. After DNAT, `.45` `ss` may show ESTAB to hub public `:4200` (original dest, not a leak); overlay proof is TUN VIP + isolate DROP=0. First-minute `suitable=0` then `Processing blocks` is expected. That is not a production discv5 product, is **not** `FOLLOW_OK`, and does not close follow-the-chain. EL may stay `0x0`.
 
@@ -374,6 +415,20 @@ Use this recovery order:
 4. If 409 persists, an authorized operator may clear the stale SI occupy
    on mailbox B, wait for SI to become active, and repeat the ordered
    daemon bounce. Bouncing only the spoke is insufficient.
+
+During duplex negotiation or `l0_connect` recovery, P1 is deliberately
+suppressed. A missing `duplex_accept` or a full occupied-pipe queue drops the
+overlay batch instead of sending a competing P1 packet; P1 is eligible again
+only after an explicit `duplex_reject`. This prevents fallback traffic from
+racing the automatic duplex reconnect.
+After a daemon restart, an offer delivered from the mailbox may belong to the
+previous daemon incarnation. The crate compares the offer's existing
+`timestamp` with the locally created pending session and ignores older offers
+(with a small clock-skew allowance). It also rejects offers older than **90
+seconds** wall-clock age even when no live peer:port occupy exists yet, so
+mailbox offline flush cannot open ghost sessions (wrong AES keys) ahead of the
+current bounce. This prevents an old `pipe_handle` from claiming the fresh port
+session and causing AES key or `l0_connect` mismatches.
 5. Only after the overlay TCP path is healthy, and only with explicit
    authorization, restart the named beacon if Prysm remains in dial
    backoff. Verify geth with `geth.pid`, not `pgrep -n geth`.
@@ -439,6 +494,69 @@ MVP `resolve` parses the URI against the config table. AddressPGP `searchKey` AB
 | Production SI `p2p_stream_*` / `listenKind: "l1p2p"` | **Not** a live command. Do not treat it as current SI. |
 | Slot-critical overlay metrics vs public P2P | **Unpublished** as a cutover. See [publication gate](#slot-critical-publication-gate). Lab 15 min overlay RTT snapshot is not P50/P95/P99 |
 | Multi-Guardian / multi-Mailbox | Lab overlay used **one** mailbox B. Per-port `[[l0.channels]]` ≠ path diversity. See [multi-Guardian](#multi-guardian-and-multi-mailbox) |
+
+## Temporary channel identity and main-wallet billing (2026-08-21)
+
+An explicit new-line request is keyed by `mainWallet:port` and is signed by the
+main paid wallet (peer-verified). Mailbox `l0_listen` / `l0_connect` keep the
+temporary route in `walletAddress` and carry `billingWallet`; SI verifies the
+signature against the billing wallet. The line allocates and registers its
+fresh temporary wallet and PGP identity during this request, before any offer
+is processed. The temporary identity is the communication subject, never the
+payer.
+
+Every explicit new-line request receives its own temporary identity, AES key,
+opaque `pipe_handle`, and socket. Multiple independent lines may use the same
+proxy port, but no client may share another line's identity, PGP, key, or
+socket. On a proxy-only host, the signed `mainWallet:port` match on an
+incoming offer is the explicit new-line boundary: the proxy allocates and
+registers one temporary identity, then attaches the offer to that line.
+Unknown, stale, or ambiguous offers are rejected without allocation. Once a
+line exists, matching `pipe_handle` or temporary `listenWallet` values only
+reuse that line; they never create another wallet or `l0_connect`.
+
+**Proxy-only server:** when proxy targets are set and no `l0.clients` /
+`--client` targets are configured, `start` does not create TUN, routes, or
+iptables. `[[l0.proxy_duplex]]` lines carry raw TCP stream bytes through the
+occupied AES pipe directly to the configured upstream `host:port`. Legacy
+packet-mode clients still own the TUN path on the client side.
+Multi-port proxy (for example `:8400` and `:4200`) must use a distinct
+`[[l0.channels]]` routing EOA per port — SI exclusive occupy is one pipe per
+listen wallet. Empty channels collapse every port onto `billing_eoa` and cause
+sustained `l0_connect` HTTP 409. Inbound offer matching still uses
+`billing_eoa` as `mainWallet:port`.
+
+**Client endpoint:** `--client 'web3://<peerMainWallet>:port'` (or
+`l0.clients`) exposes the target on this daemon's `local_vip:port` (for
+example `100.64.0.5:4000`). L0d owns the TUN and routing rules, so an
+application can open that local endpoint without installing separate
+iptables rules. This is the request/response P1 client mode.
+
+Use `--clientDuplex 'web3://<peerMainWallet>:port'` (or `l0.client_duplex`)
+when the application needs a long-lived occupied bidirectional channel.
+The startup output prints every mapping, for example:
+`web3://0x…:4000 -> 100.64.0.5:4000`. If the requested local port is already
+occupied by a wildcard listener (for example local geth on `*:8400`), L0d
+uses `local_port + 10000` and prints the actual endpoint instead. A
+duplex-only client has no TUN, so its raw TCP listener binds local interfaces;
+applications should use the printed endpoint, normally
+`127.0.0.1:<local_port>`.
+
+For lab Beacon connections through `127.0.0.1:14200`, use
+`L0_STREAM_ONLY=1` with an explicit `EXTRA_BEACON_PEERS` value. The restart
+scripts then use only that local stream peer, enable `--no-discovery` and
+`--disable-quic`, and skip TUN, iptables, DHT steering, and listen-DNAT.
+Explicit peer values take precedence over host defaults, so `.45` and `.98`
+cannot accidentally dial each other's overlay VIP.
+
+The local listener uses the socket `accept()` event as the sole connection
+handle. A new socket is never attached to an existing port-selected line:
+L0d allocates a new temporary wallet/PGP identity, AES pipe, and upstream
+connection for it. All later bytes from that socket continue on its own line
+until EOF or error. Multiple sockets may connect concurrently to the same
+endpoint, and each remains isolated. No private header is inserted into the
+raw Geth/Prysm stream; the socket handle and encrypted `pipe_handle` carry the
+correlation.
 
 ## Related
 

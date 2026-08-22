@@ -155,6 +155,7 @@ SMOKE_PATHS=(
 	"/applications/"
 	"/applications/silentpass-vpn.html"
 	"/applications/conet-l0d.html"
+	"/applications/web3-url.html"
 	"/applications/miner-orderbook-dex.html"
 	"/use-cases/decentralized-sns.html"
 	"/resources.html"

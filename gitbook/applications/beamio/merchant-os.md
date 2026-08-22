@@ -63,6 +63,8 @@ Merchant Kit Stripe (CAD kits → B-Units / Ket) is **not** the consumer “Buy 
 
 Merchant program cards are **CoNET L1 only**. Do not treat the historical Base UserCard Factory as the current merchant chain.
 
+New cards issued after the CoNET UserCard beacon cutover are **BeaconProxy**. The platform upgrades every such card together with `beacon.upgradeTo`; card addresses stay the same. Historical CREATE cards cannot join the beacon and keep the ChargeReward runtime preCheck.
+
 Writes that need sponsored gas go Cluster → Master (CoNET settle pool). Reads of program state, metadata, and KPI should prefer RPC / trusted cache, not a centralized API as the source of truth.
 
 ## Trust boundary

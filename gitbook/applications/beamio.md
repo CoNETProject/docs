@@ -13,7 +13,7 @@ Chapters in this whitepaper:
 | [Consumer PWA](beamio/consumer.md) | Wallet, Discover, coupons, Chat, mining tools, and how users add USDC |
 | [Merchant OS](beamio/merchant-os.md) | Programs, staff, terminals, catalogs, coupons, and merchant treasury |
 | [POS terminal](beamio/pos.md) | In-store charge, top-up, membership, claim, and redeem |
-| [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails: Coinbase / Treasury CONET-USDC vs card checkout to Base USDC |
+| [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails: Coinbase / Treasury CONET-USDC vs Stripe Onramp Base USDC to EOA |
 
 Cursor rule: when a Beamio product capability is added or changed, update the matching chapter in the same task (`beamio-gitbook-whitepaper-sync.mdc`).
 
@@ -44,7 +44,7 @@ A related **Alliance** client exists as another Beamio-family surface. It is not
 | **Local application storage** | Holds client state and, depending on the product, self-custody wallet material or session state |
 | **Base (`chainId` 8453)** | Treasury and USDC operations, plus supported institutional multisig deployments; not new merchant programs or new consumer Smart Wallet issuance |
 
-Merchant program cards and new consumer Smart Wallet accounts belong on CoNET L1. Base remains a separate execution environment for its limited active roles. A matching address on two chains does not imply shared balances or shared application state.
+Merchant program cards and new consumer Smart Wallet accounts belong on CoNET L1. New CoNET merchant cards use a shared UpgradeableBeacon so the platform can upgrade implementation bytecode without changing card addresses. Base remains a separate execution environment for its limited active roles. A matching address on two chains does not imply shared balances or shared application state.
 
 ## How protocol capability becomes product behavior
 
@@ -85,7 +85,7 @@ The following capabilities are live on the public surfaces. Detail and limits li
 | Identity | `@BeamioTag`, EOA, optional Smart Wallet | Owner EOA, staff, pending terminal authorization | Terminal EOA as lower-level admin |
 | Programs | Hold membership / points, Discover brands | Create and publish program cards, membership, reward rules | Issue membership, top-up, charge |
 | Commerce | Claim coupons and catalogs, pay | Issue coupons and catalogs, review transactions | Charge, top-up, claim, redeem, burn |
-| Cash | Coinbase → CONET-USDC; card checkout → Base USDC to EOA | Treasury / USDC views; Fuel packs as B-Units | Uses program points and membership; does not replace consumer deposit rails |
+| Cash | Coinbase → CONET-USDC; Stripe Onramp → Base USDC to EOA | Treasury / USDC views; Fuel packs as B-Units | Uses program points and membership; does not replace consumer deposit rails |
 | Messaging | DePIN Chat | Chat plus POS permission inbox | Sends POS permission envelopes; not a general Messages product |
 
 Two USDC deposit rails must not be merged:
@@ -93,7 +93,7 @@ Two USDC deposit rails must not be merged:
 | Rail | User-visible result | Chain | See |
 | --- | --- | --- | --- |
 | **Coinbase / `walletDeposit`** | CONET-USDC via Treasury LockMint | CoNET settlement after Base lock | [Cash and USDC](beamio/cash-and-usdc.md) |
-| **Card checkout (`eoaUsdcStripe`)** | Native USDC transferred to the owner **EOA** | **Base** | [Cash and USDC](beamio/cash-and-usdc.md) |
+| **Buy USDC with card (`eoaUsdcStripe`)** | Stripe Crypto Onramp sends native USDC to the owner **EOA** | **Base** | [Cash and USDC](beamio/cash-and-usdc.md) |
 
 Merchant Kit Stripe (CAD kits → B-Units / Ket) is a third Stripe product and is **not** a consumer USDC deposit rail.
 
@@ -134,7 +134,7 @@ The public surfaces and source show that the suite and its major integration pat
 - Improve feature parity and accessibility across Consumer, Merchant OS, POS PWA, and native shells.
 - Publish measured availability and performance expectations for RPC, relay, mailbox, metadata, and index-backed views.
 - Continue simplifying boundaries between user-facing state, trusted chain reads, cached application data, and asynchronous settlement.
-- Card-checkout Base USDC still depends on operator configuration (Stripe webhook secret and settle-wallet inventory). A live create-session route is not by itself a guarantee that every paid session has already settled on Base.
+- Stripe Onramp Base USDC still depends on operator configuration (Crypto Onramp enabled; webhook secret; `crypto.onramp_session.updated`). A live create-session route is not by itself a guarantee that USDC has arrived.
 
 ## Trust and security boundary
 
@@ -147,7 +147,7 @@ The public surfaces and source show that the suite and its major integration pat
 | **Layer Minus messaging** | Business plaintext is encrypted to recipient keys, but entries and mailboxes still observe limited routing, timing, and volume metadata. |
 | **POS terminal authority** | A compromised authorized terminal can exercise the permissions granted to that terminal until access is revoked. |
 | **Multiple chains** | CoNET and Base have independent state. A same-address deployment does not synchronize balances, nonces, policies, or tasks. |
-| **Card checkout inventory** | Base USDC payout uses an operator settle wallet. Users receive USDC only after Stripe confirmation and a successful on-chain transfer. |
+| **Stripe Crypto Onramp** | Stripe sends Base USDC to the locked EOA. Cluster / Master create and observe the session; they do not transfer operator USDC. Success is `fulfillment_complete`, not `createSession`. |
 
 Beamio is self-custody software with supporting relays and application services; it should not be described as trust-free, as a bank, or as a guarantee that every off-chain view is immediately current.
 

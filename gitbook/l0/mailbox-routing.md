@@ -88,7 +88,7 @@ The SI runtime labels long-lived sessions so that unrelated lifecycle policies d
 | LayerMinus mining gossip | `mining` | Omitted; defaults to **mining** | Shared liveness pool, labeled mining |
 | UDP client | `udp_listen`, or `mining` | `udp` | Separate UDP client pool |
 | UDP server | `udp_server_listen`, or `mining` | `udp_server` | Separate UDP server pool |
-| Exclusive L0 occupancy | `l0_listen` or `mining` | **`l0`** | Separate `l0ListenPool`. First `l0_connect` occupies; later inflows **409**. Idle gossip does not occupy |
+| Exclusive L0 occupancy | `l0_listen` or `mining` | **`l0`** | Separate `l0ListenPool`. First `l0_connect` occupies (HTTP 200 keep-alive; stop idle comment keepalives). Second `l0_connect` is **409**. Replacement `l0_listen` while live occupied is **409**; dead/stale occupy sockets are dropped so a restarted client can re-listen. Chat / mining gossip on the same node continues. Idle gossip does not occupy |
 
 Chat / mining / UDP / L0 exclusive are SI listen namespaces. Application `duplex_*` JSON is **not** an SI command. Offer uses Chat; accept / frames use the occupied L0 pipe. Spec: [Duplex overlay](duplex-forward.md).
 

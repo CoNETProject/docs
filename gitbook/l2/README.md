@@ -30,7 +30,7 @@ The routing registry lives on CoNET L1. Bootstrap storage key `groupId = 1` hold
 
 CoNET L1 is a live network. DLE is not documented here as a fully launched production system.
 
-This digest was checked against the whitepaper revision dated **2026-08-17**. Lab M6 fission is a laboratory gather (`liveGroupCount: 2`); hosts emit the G2 L1 `registerLiveGroup` tx as the second Group ID. The repository honesty track (P12–P22) is engine + tests. **P23** keep-deploy evidence is landed as **6/7 `LIVE_OK`** plus fd-01 new-chain 409→accept; fd-06 HTTP is unstable. **P24** wires isolated `node.ts` to the same official-standby gate. **P25** lands Explorer **non-green** overlays (`explorer:test` 8/8). Home / archive-detail seating copy is **lab EIP-712**, never HMAC. The public SPA on [dle.conet.network](https://dle.conet.network/) now serves `index-U1o9ul_I.js` (2026-08-18T00:18:49Z). Live `/health` at publish still `officialStandbysReady=false` (`count=1`). It is **not** 7/7 healthy and **not** 30-day qualification. Next: parked / review only. Review: [Lab honesty track](lab-honesty-track.md).
+This digest was checked against the whitepaper revision dated **2026-08-18**. Lab M6 fission is a laboratory gather (`liveGroupCount: 2`); hosts emit the G2 L1 `registerLiveGroup` tx as the second Group ID. The repository honesty track (P12–P22) is engine + tests. **P23** keep-deploy evidence is landed as **6/7 `LIVE_OK`** plus fd-01 new-chain 409→accept; later fd-06 remap / inventory freeze / clock start are **not** P26. **P24** wires isolated `node.ts` to the same official-standby gate. **P25** lands Explorer **non-green** overlays. Home / archive-detail seating copy is **lab EIP-712**, never HMAC. The public SPA on [dle.conet.network](https://dle.conet.network/) now serves `index-C8IdTq4H.js` (2026-08-18T10:15:00Z; `explorer:test` 10/10). Clock started `2026-08-18T09:53:58.092Z` (`pilotQualified=false`). Home + Certificates show a **non-green** clock chip. It is **not** 30-day qualification. Next: 30-day wait / review. Do **not** invent P26. Review: [Lab honesty track](lab-honesty-track.md).
 
 The source set includes frozen product decisions, executable vectors, a bounded formal-model result, and TypeScript archive reference work. It also records unresolved production gates. In particular:
 
@@ -62,7 +62,7 @@ The target design has six main parts:
 5. [Cross-chain assets in DLE](cross-chain-assets.md) — Treasury hand-off, admission, burn/activation, and conservation
 6. [Economics](economics.md) — the three-ledger funding model
 7. [DLE explorer](explorer.md) — public lab UI at [https://dle.conet.network/](https://dle.conet.network/)
-8. [Lab honesty track](lab-honesty-track.md) — 2026-08-17 MVP review; P12–P24 engine; P23 keep-deploy 6/7 + 409→accept; P24 isolated `node.ts` gate; P25 Explorer overlays landed + seating copy is lab EIP-712 + public SPA `index-U1o9ul_I.js`
+8. [Lab honesty track](lab-honesty-track.md) — 2026-08-18 MVP review; P12–P24 engine; P23 keep-deploy 6/7 + 409→accept; P24 isolated `node.ts` gate; P25 Explorer overlays; clock started `2026-08-18T09:53:58.092Z`; public SPA `index-C8IdTq4H.js`
 9. [Normative sources](specs-index.md) — controlling documents, evidence, and non-normative material
 
 Developer how-to: [L2 development](../developers/l2.md).

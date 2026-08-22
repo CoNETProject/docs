@@ -8,7 +8,7 @@ English whitepaper:
 
 [Decentralization Cluster multi-chain.md](https://github.com/CoNET-project/CoNET-DLE/blob/main/src/whitepaper/Decentralization%20Cluster%20multi-chain.md)
 
-Reviewed revision: **2026-08-17** (EIP-155 plane Chain ID `0x44c45` vs Group ID = L1 register tx hash; L1 uint `groupId` is a storage key only — §5.2.0d; G2 user-visible Group ID is L1 `registerLiveGroup` tx `0xf781f2c23fe3b3dac09dc3e1929016b0af200ee93978e916df64d750876d5153`; laboratory keccak aliases it; laboratory honesty-track review does not change production formulas)
+Reviewed revision: **2026-08-18** (EIP-155 plane Chain ID `0x44c45` vs Group ID = L1 register tx hash; L1 uint `groupId` is a storage key only — §5.2.0d; G2 user-visible Group ID is L1 `registerLiveGroup` tx `0xf781f2c23fe3b3dac09dc3e1929016b0af200ee93978e916df64d750876d5153`; laboratory keccak aliases it; laboratory clock started `2026-08-18T09:53:58.092Z` and is **not** 30-day qualification; honesty-track review does not change production formulas)
 
 Paired translation:
 
@@ -87,7 +87,7 @@ When asserting protocol behavior:
 - [L2 development](../developers/l2.md) — implementer how-to
 - [Global Archive Routing Registry](routing-registry.md) — deployed L1 facade
 - [DLE explorer](explorer.md) — [https://dle.conet.network/](https://dle.conet.network/)
-- [Lab honesty track](lab-honesty-track.md) — 2026-08-17 laboratory review (non-normative)
+- [Lab honesty track](lab-honesty-track.md) — 2026-08-18 laboratory review (non-normative; clock ≠ qualification)
 - [Cross-chain assets in DLE](cross-chain-assets.md) — Treasury-to-DLE admission and conservation digest
 - [Decentralized cross-chain Treasury](../l1/cross-chain-treasury.md) — production L1 route and quorum boundary
 

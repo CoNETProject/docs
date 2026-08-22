@@ -14,15 +14,19 @@ A change to the DePIN / L0 **protocol layer** must update **both** those archite
 | --- | --- | --- |
 | **L0 development** | A client against CoNET-SI: `POST /post`, mailbox listen, Chat, UDP, or another application envelope | [L0 development](l0.md) |
 | **L1 node** | A permissionless geth + Prysm full node, and optionally a 32 CNET Beacon validator | [Run an L1 node](l1-node.md) |
-| **L1 overlay daemon** | Optional Linux TUN + iptables catch so geth / beacon can use Layer Minus as a **static overlay** path. Crate MVP accepted; P1 outbound + inbound decrypt/TUN write-back + EIP-191 listen worker + SI gossip JSON ingest in-crate; `[l0]` default off; authorized lab may enable `[l0]`; 2026-08-18: `.45` advertises overlay vIP; overlay geth + beacon TCP; CL initial-sync in progress; lab overlay UDP / DHT-port comms accepted; lab discv5 via L0 accepted (`ss` public `:4200` after DNAT is original dest, not a leak; not a production product) | [conet-l0d](conet-l0d.md) |
+| **L1 overlay / Web3 Enterprise Gateway** | Optional Linux TUN + iptables catch so geth / beacon can use Layer Minus as a **static overlay** path (lab-proven). Same daemon is the intended **Enterprise Gateway** host boundary; Application Protocol draft on L0. Crate MVP for overlay; `[l0]` default off; authorized lab may enable `[l0]`. Lab `.98`: overlay toward `.82` accepted; not origin-anonymous; validator stays local/loopback. Slot-critical cutover needs [publication gate](l1-node.md#slot-critical-publication-gate) vs public P2P | [conet-l0d](conet-l0d.md) · [Web3 Application Protocol](../l0/web3-application-protocol.md) · [lab evaluation](../applications/conet-l0d.md#lab-evaluation-2026-08-20-98-overlay-local-validator) |
 | **L1 mining** | A Guardian / LayerMinus participant, or a collector that verifies mining gossip | [Participate in mining](l1-mining.md) |
 | **L1 ERC-20 ingress** | Use, or request admission for, a foreign ERC-20 through the decentralized Treasury | [Bring an ERC-20 into CoNET](l1-erc20-bridge.md) |
 | **L2 development** | Implement or review against the CoNET-DLE specifications | [L2 development](l2.md) |
 
 ```text
 Developers
-  ├─ L0  → SI /post + application compositions (Chat, UDP, SilentPass)
-  ├─ L1  → geth + Prysm node  |  optional overlay daemon (conet-l0d)  |  DePIN mining  |  Treasury ERC-20
+  ├─ L0  → SI /post + application compositions (Chat, UDP, SilentPass, Application Protocol draft)
+  ├─ L1  → geth + Prysm (public join today)
+  │         ├─ conet-l0d Role A: L1 overlay (lab-proven / under development)
+  │         ├─ conet-l0d Role B: Enterprise Gateway host (destination)
+  │         ├─ DePIN mining
+  │         └─ Treasury ERC-20
   └─ L2  → DLE specs, vectors, lab explorer, L1 routing registry, and blocked production gates
 ```
 
@@ -30,7 +34,7 @@ Developers
 
 - **Forward ciphertext by wallet / OpenPGP key ID** → L0. Layer Minus is a permissionless cloud: use it without a license; treat **every node as untrusted**; compose privacy routing and fragmentation. It does not implement Chat, VPN, mining totals, or payments. See [Permissionless cloud](../l0/permissionless-cloud.md).
 - **Run geth + Prysm or stake 32 CNET on the Beacon deposit contract** → [Run an L1 node](l1-node.md). That path is permissionless. Genesis files and DHT / geth peers are published there.
-- **Optional overlay P2P for NAT / no public IP** → [conet-l0d](conet-l0d.md). The daemon owns TUN and iptables. It does **not** replace public 8400 / 4200 for the 6-second slot. Operator how-to: [Applications — L1 overlay daemon](../applications/conet-l0d.md).
+- **Optional overlay P2P for NAT / no public IP** → [conet-l0d](conet-l0d.md). The daemon owns TUN and iptables. It does **not** replace public 8400 / 4200 for the 6-second slot. Operator how-to (overlay + Enterprise Gateway destination): [Applications — conet-l0d](../applications/conet-l0d.md). Protocol draft: [Web3 Application Protocol](../l0/web3-application-protocol.md).
 - **Join DePIN mining** → [Participate in mining](l1-mining.md). Guardian registration, the VDR stake ledger, runtime miners, Treasury miners, and L1 Beacon validators are **different sets**. `totalStakedValidatorCount()` (~475) is not the Prysm active set.
 - **Move an ERC-20 into the CoNET asset set** → Treasury V3. A token address does not create a route. DLE admission is a later, separate machine and is **not live**.
 - **Write a parallel ledger** → L2 specifications. There is no production DLE SDK or production tip API in this book. The lab explorer at [https://dle.conet.network/](https://dle.conet.network/) is Archive inspection (lab M6 **Clusters = 2**; the second Group ID is the G2 L1 register tx). The L1 routing registry is readable for both live groups; Archive Certificate is not a production object.
@@ -54,7 +58,7 @@ Do not use deprecated `https://rpc.conet.network`. Do not invent a new hostname 
 
 1. [L0 development →](l0.md)
 2. [Run an L1 node →](l1-node.md)
-3. [conet-l0d overlay daemon →](conet-l0d.md)
+3. [conet-l0d (overlay & Enterprise Gateway) →](conet-l0d.md)
 4. [Participate in mining →](l1-mining.md)
 5. [Bring an ERC-20 into CoNET →](l1-erc20-bridge.md)
 6. [L2 development →](l2.md)

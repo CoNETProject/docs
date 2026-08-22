@@ -126,8 +126,8 @@ Source: CoNET-SI `localNodeCommandSocket`. Encrypt the command family to **route
 | `wallet_online_query` | Contact’s mailbox **B** route PGP | Entry **C ≠ B** | Presence. Fields: `walletAddress` (signer), `targetWallet`, `timestamp` (±600s). Success: `{ ok: true, wallet, online, listenAgeMs, nodeWallet }`. Do **not** use chain `routeOnline` |
 | `udp_subscribe` | UDP server **user** PGP | Entry **A ≠ B** | Contains `Securitykey`. SI rejects encryption to B (`encrypt_to_udp_server_user_pgp`) |
 | `udp_listen` / `udp_server_listen` / `udp_relay` / `udp_uplink` / `udp_unlisten` | **B** route PGP | Entry ≠ B | No `Securitykey`. See [UDP frame forwarding](udp-forward.md) |
-| `l0_listen` or `mining` + `listenKind: "l0"` | Own mailbox **B** route PGP | Long SSE via **C ≠ B** | Exclusive occupancy pipe. **No** overlay `Securitykey`. Handshake `{ ok, kind:"l0", wallet, nodeWallet }`. Idle L0 may receive user-PGP gossip without occupying. Separate from Chat / mining / UDP. Same EOA may also hold Chat SSE |
-| `l0_connect` | **Target** mailbox **B** route PGP | Entry ≠ B; keep TCP | First occupy of idle `targetWallet` L0 SSE: write `{ type:"l0_occupied" }`, pipe remaining TCP as SSE `data:` lines, SI stops parsing. Occupied → **409** `{ error:"occupied" }`. No overlay `Securitykey`. Occupancy is by `targetWallet` after decrypt, not by B route key ID. On teardown while occupied: write `{ type:"l0_pipe_end" }` + `\n` on inbound TCP, optional `{ type:"l0_listen_released" }` on listen SSE, then drop pool entry ([duplex-forward](duplex-forward.md)) |
+| `l0_listen` or `mining` + `listenKind: "l0"` | Own mailbox **B** route PGP | Long SSE via **C ≠ B** | Exclusive occupancy pipe. **No** overlay `Securitykey`. Handshake `{ ok, kind:"l0", wallet, nodeWallet }`. Idle L0 may receive user-PGP gossip without occupying. Separate from Chat / mining / UDP. Same EOA may also hold Chat SSE. Replacement while **live** occupied → **409**; if inbound TCP or SSE is already dead/stale, drop and accept (client restart) |
+| `l0_connect` | **Target** mailbox **B** route PGP | Entry ≠ B; keep TCP | First occupy of idle `targetWallet` L0 SSE: write `{ type:"l0_occupied" }` on SSE, **clear idle comment keepalive**, write **HTTP 200 keep-alive** on the occupy TCP (do not `end()`), pipe remaining TCP as SSE `data:` lines, SI stops parsing that socket. Second `l0_connect` → **409**. User-PGP Chat/mining gossip on the same node must **not** 409. Idle L0 needs SSE comment keepalive (no mining epoch); occupied L0 must not write comments. Occupancy is by `targetWallet` after decrypt, not by B route key ID. On teardown while occupied: write `{ type:"l0_pipe_end" }` + `\n` on inbound TCP, optional `{ type:"l0_listen_released" }` on listen SSE, then drop pool entry ([duplex-forward](duplex-forward.md)) |
 | `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` | Egress node route PGP | Product-specific | Paid proxy; not a Chat path |
 
 Old clients that omit `listenKind` on `mining` are treated as mining. A Chat client **must** send `listenKind: "chat"` so SI does not apply mining-only pool policy to the mailbox SSE.
@@ -542,3 +542,31 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 - [Security limits](security-limits.md)
 - [DePIN Chat product page](../applications/depin-chat.md)
 - [Resources](../resources.md)
+
+## Long-connection transport lifecycle
+
+For an overlay byte stream, keep the mailbox listen SSE and the occupied
+`l0_connect` TCP as separate objects. A client may use a temporary listen
+wallet/PGP identity for one attachment. Any `pipeHandle` is a random,
+hop-local opaque value; it must not be derived from an EOA, port, IP, or route
+key, and SI must not correlate it with another hop.
+
+SI does not emit a same-name teardown event on the SSE. The only application
+of `l0_pipe_end` is a control line on the occupied TCP that already owns the
+handle:
+
+```json
+{
+  "type": "l0_pipe_end",
+  "pipeHandle": "<64 lowercase hex>",
+  "reason": "transport_closed"
+}
+```
+
+The fields `wallet`, `connector`, `sessionId`, and `session_id` are forbidden.
+If an entry detects that a downstream SSE is gone before keep-alive is
+committed, it returns a transport error such as `410 Gone`. Once keep-alive is
+committed, it closes the corresponding TCP with FIN/RST. The sender stops
+writing packets and starts a bounded, backoff-controlled new attachment.
+Neither the transport error nor the opaque handle is a user-visible gossip
+message.

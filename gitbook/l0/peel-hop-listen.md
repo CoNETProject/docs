@@ -48,8 +48,9 @@ After a **local** decrypt, if the plaintext is still OpenPGP for another node:
 2. Hop-sig fields `n` (UTF-8 byte length) and `h` (`keccak256(utf8(armor))`) require a **real UTF-8 string**. Coerce first (`pgpArmorToUtf8String`): string, `Uint8Array`, thenable, async iterable, or `ReadableStream`. Official `encrypt()` already `await`s `armor()` because the runtime value is often **not** a string.
 3. Hop-sign failure or non-UTF-8 armor is a **fast 404** (or socket `end`). Do **not** leave the client SSE open.
 4. C→B `socketForward` has an **~8s TCP connect** budget. Timeout is a **404**, not a hang until the client’s 12s timer.
-5. `uncaughtException` that only logs is **not** a delivery path. A throw after peel must still close the client socket. Clients cannot see the TypeError.
-6. A healthy writable chat listen must **not** expire by wall-clock age (`LISTEN_SESSION_MAX_MS` of a few seconds). Heartbeats can still flow while business frames are only `saveLocal` and never `forWard`. Expiry is socket stale / unwritable only.
+5. C→B `socketForward` must **not** destroy the TCP on **60s receive-idle**. Also call `sourceSocket.setTimeout(0)` on the **client→C** half — `socketData` still arms 60s idle on every inbound socket; leaving it on kills idle L0 listen even when C→B is already 24h. Long-lived SSE (Chat / mining / `l0_listen`) and occupied L0 AES pipes can be quiet for minutes; a 60s idle kill ends the listen, drops L0 occupy, and causes later `l0_connect` **404** (`no idle listen`). Idle `l0_listen` must also emit SSE comment keepalives. Keepalive + `end`/`close`/`error` reclaim dead peers. A multi-hour safety idle (e.g. 24h) is optional. Short HTTP still completes via response `end`.
+6. `uncaughtException` that only logs is **not** a delivery path. A throw after peel must still close the client socket. Clients cannot see the TypeError.
+7. A healthy writable chat listen must **not** expire by wall-clock age (`LISTEN_SESSION_MAX_MS` of a few seconds). Heartbeats can still flow while business frames are only `saveLocal` and never `forWard`. Expiry is socket stale / unwritable only.
 
 Same-node inner PGP, hop count already 3, or this miner wallet already in `w[]` remains `end` / discard. See [hop-sigs](hop-sigs.md).
 

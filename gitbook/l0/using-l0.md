@@ -127,9 +127,9 @@ Encrypt a listen command to **B's route PGP** and open HTTP/SSE through a health
 | Chat / Merchant OS / Alliance mailbox | `mining` | **`chat`** |
 | LayerMinus mining gossip | `mining` | omit (SI defaults to mining) |
 | UDP client / server | `udp_listen` / `udp_server_listen`, or `mining` | `udp` / `udp_server` |
-| Exclusive L0 occupancy pipe | `l0_listen` or `mining` | **`l0`**. First `l0_connect` occupies; later inflows 409. See [Duplex overlay](duplex-forward.md) |
+| Exclusive L0 occupancy pipe | `l0_listen` or `mining` | **`l0`**. First `l0_connect` occupies (HTTP 200 keep-alive, then AES; stop idle comment keepalives). Second `l0_connect` is 409; Chat/mining gossip on the same node continues. Replacement `l0_listen` while live occupied is 409; dead/stale occupy sockets are dropped so a restarted client can listen again. See [Duplex overlay](duplex-forward.md) |
 
-Application `duplex_*` JSON is **not** an SI command. Offer still uses Chat (`mining` + `listenKind: "chat"`). Accept / reject / frames ride the occupied L0 pipe. When SI tears down an occupied listen, it emits `l0_pipe_end` on the inbound TCP and optional `l0_listen_released` on the listen SSE ([duplex-forward](duplex-forward.md)); conet-l0d clears its pipe and retries occupy.
+Application `duplex_*` JSON is **not** an SI command. The current attachment uses a temporary listen identity and a random hop-local `pipeHandle`; accept / reject / frames ride the occupied L0 pipe. SSE does not emit a same-name teardown event. If the downstream SSE disappears, the entry returns a transport error before keep-alive or closes the occupied TCP after keep-alive; conet-l0d stops its packet loop and retries only with bounded backoff ([duplex-forward](duplex-forward.md)).
 
 Entry acceptance or an SSE handshake is transport progress. The application still decrypts, verifies, and decides what the payload means.
 
@@ -154,9 +154,9 @@ The same forwarding plane is reused. Only the inner object and key roles change.
 | **POS terminal permission** | Same Chat delivery path | Typed `beamio_pos_terminal_permission_v1`; Staff pending, not Messages |
 | **Mining gossip** | `command: "mining"` listen (infrastructure may dial the target SI) | Signed epoch frames, miner accounting |
 | **UDP frames** | User-PGP `udp_subscribe`; route-PGP listen / relay / uplink | AES-256-GCM session, adapters, codecs |
-| **Duplex overlay** | Offer to long-lived user PGP; accept / reject / AES `duplex_frame` to the **session listen** user PGP; two owned Chat SSEs. No SI `duplex_*`. `duplex_reject` or missing accept keeps P1 gossip | AES-256-GCM of `L0D1` IPv4. Spec: [Duplex overlay](duplex-forward.md) |
+| **Duplex overlay** | Offer to long-lived user PGP; a new local socket carries its initial bytes as `firstChunk`; a matching proxy returns `responseChunk` in accept, then both sides reuse the opaque `pipe_handle`. No SI `duplex_*`; ambiguous offers cannot allocate lines | AES-256-GCM of `L0D1` IPv4. Spec: [Duplex overlay](duplex-forward.md) |
 | **SilentPass access** | Route-PGP `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` through an entry | Device tunnel or local proxy, admission, path rotation |
-| **L1 overlay (`conet-l0d` role A)** | Occupied `l0_listen` / `l0_connect` + application duplex ([duplex-forward](duplex-forward.md)); P1 if peer never accepts | TUN catch `100.64.0.0/10`; geth / beacon TCP (and lab UDP/discv5) without patching clients |
+| **L1 overlay (`conet-l0d` role A)** | Occupied `l0_listen` / `l0_connect` + application duplex ([duplex-forward](duplex-forward.md)); P1 if peer never accepts | TUN catch `100.64.0.0/10`; geth / beacon TCP (and lab UDP/discv5) without patching clients. Lab hub `.98` overlay toward `.82` accepted; not origin-anonymous; validator stays loopback — [lab evaluation](../applications/conet-l0d.md#lab-evaluation-2026-08-20-98-overlay-local-validator). Slot-critical cutover: [publication gate](../developers/l1-node.md#slot-critical-publication-gate) |
 | **Web3 Enterprise Gateway (`conet-l0d` role B)** | Same L0 forwarding plane; Application Protocol objects inside the envelope | Host-side adapt of local HTTP/API; wallet auth; origin IP hidden. Protocol draft: [Web3 Application Protocol](web3-application-protocol.md). **Destination** — not a public hosting product yet |
 | **On-demand new wallet** | New EOA + new user PGP + new AddressPGP row | Application identity rotation after a leak or for a new role |
 | **Split routing / app wallets** | AddressPGP + listen on a **routing** EOA; sender / recipient only inside user-PGP | Mailbox and hop GB do not see the product wallet. Mapping stays in the client |
@@ -175,10 +175,46 @@ These are valid **application designs** on top of a forwarding network. They are
 | Privacy poll receive mode | Weaker Chat online / arrival-time fingerprint than SSE | Not implemented |
 | Double Ratchet / MLS after AddressPGP handshake | Forward secrecy and post-compromise security for Chat | Not implemented |
 | Operator-domain entry/mailbox exclusion | A/B/C as independent operators, not only roles | Not implemented on L0 |
-| L1 overlay TCP byte-stream (`conet-l0d` role A) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP | SI **`l0_listen` / `l0_connect`** occupancy pipe + application duplex ([duplex-forward](duplex-forward.md)). Offer on Chat gossip; accept / reject / frames as AES blobs on the occupied pipe. **P1 gossip** if the peer never accepts. `[l0]` default off; authorized lab may enable it. Do **not** treat SI `duplex_*` / `p2p_stream_*` / `listenKind: "l1p2p"` as current SI |
+| L1 overlay TCP byte-stream (`conet-l0d` role A) | Catch overlay `100.64.0.0/10` and carry geth / beacon TCP | SI **`l0_listen` / `l0_connect`** occupancy pipe + application duplex ([duplex-forward](duplex-forward.md)). Current attachments use temporary listen identities and random hop-local `pipeHandle` values; the occupied TCP carries accept / reject / frames as AES blobs. **P1 gossip** if the peer never accepts. `[l0]` default off; authorized lab may enable it. Do **not** treat SI `duplex_*` / `p2p_stream_*` / `listenKind: "l1p2p"` as current SI |
 | Web3 Enterprise Gateway / Application Protocol v1 | Wallet-addressed host publish + browser Origin | **Destination** — draft [Web3 Application Protocol](web3-application-protocol.md); host role on [Applications — conet-l0d](../applications/conet-l0d.md). Do not equate Peer Locator with a finished Application Protocol |
 
 Document those as upgrades or product options. Do not describe them as the live L0 plane. See [security limits](security-limits.md).
+
+## Long-lived overlay attachment: current privacy boundary
+
+The L0 overlay byte-stream composition uses two separate lifetimes:
+
+1. the **listen SSE** is a mailbox-facing receive transport;
+2. the **occupied TCP** is the endpoint-facing byte pipe created by
+   `l0_connect`.
+
+For every attachment, each endpoint may create a temporary listen wallet/PGP
+identity and a fresh random opaque `pipeHandle`. The handle is not derived from
+wallets, ports, IPs, or route keys. It is carried only inside the encrypted
+endpoint handshake. An SI sees only its own waiting-pool entry, its own
+occupied TCP, and its local handle; it must not correlate handles across hops or
+learn the end-to-end AES key.
+
+The current transport teardown contract is:
+
+```json
+{
+  "type": "l0_pipe_end",
+  "pipeHandle": "<64 lowercase hex>",
+  "reason": "transport_closed"
+}
+```
+
+This line is valid only on the already-occupied TCP bound to that handle.
+`wallet`, `connector`, `sessionId`, and `session_id` are not valid fields.
+SSE does not emit or consume an SSE-side `l0_pipe_end` / release event.
+
+If an entry discovers that the downstream SSE has disappeared, it returns
+`410 Gone` (or an equivalent non-success transport response) before keep-alive
+is committed. After keep-alive, it closes the current TCP with FIN/RST. The
+sender must stop its packet loop on that error; reconnect is a bounded,
+backoff-controlled new attachment. This is transport control, not a user
+message and not a cross-mailbox notification.
 
 ## Implementation anchors
 
