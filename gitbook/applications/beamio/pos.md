@@ -26,7 +26,7 @@ It is not Merchant OS. It does not create program cards or edit Programs metadat
 | --- | --- |
 | **Charge** | Bill in the **card currency**. Client sends `amountFiat6 + currency`. The server computes points from `pointsUnitPriceInCurrencyE6`. The client must not convert fiat ↔ USDC for `items[].amount`. |
 | **Top-up** | Credits program points after a valid membership. Without a valid membership, plain top-up is refused; the cashier uses **Check Balance → issue membership**. |
-| **Membership** | Selector shows **base membership (index 0)** plus each higher paid tier. The terminal sends the locked `membershipFeeFiat6` and must not invent a price. |
+| **Membership** | Selector shows **base membership (index 0)** plus each higher paid tier. The terminal sends the locked `membershipFeeFiat6` and must not invent a price. Issue / upgrade charges **fee only** (two-decimal display). Cluster still mints one min-unit to `#0` to issue the membership NFT; cashiers must not add `0.000001` card credit onto the keypad amount. |
 | **Check Balance** | Reads membership and balances for the scanned / entered customer. |
 | **Claim / Redeem / Burn** | Issued NFT claim, redeem-code consume, POS coupon burn. |
 | **Authorization** | New terminals send `beamio_pos_terminal_permission_v1` over DePIN Chat to the merchant EOA. Merchant OS shows **Pending terminal authorization**, not a Messages bubble. |

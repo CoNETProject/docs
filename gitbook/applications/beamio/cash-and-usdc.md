@@ -4,11 +4,13 @@
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-08-22**.
+Revision: **2026-08-23**.
 
 ## Product role
 
 Beamio exposes **more than one cash rail**. They share Stripe or Coinbase as a payment front only when documented. They **must not** share fulfillment code, destination tokens, or user-facing copy.
+
+**Buy USDC with card** is the consumer card rail: the user pays with a credit card on Stripe Crypto Onramp, and Stripe sends native USDC on Base **directly to the owner EOA**. Beamio does not hold inventory USDC or call `USDC.transfer`.
 
 This chapter is the whitepaper source for deposit semantics. Merchant Fuel Packs and Merchant Kit are listed only so they are not confused with consumer USDC.
 
@@ -56,7 +58,7 @@ User completes Stripe Onramp in the system browser
   │
   ├─ return: https://beamio.app/app/?eoa_usdc_stripe=success|cancel&session_id=…
   ├─ poll:   POST /api/eoaUsdcStripe/poll
-  └─ hook:   POST /api/eoa-usdc-stripe-webhook  (crypto.onramp_session.*)
+  └─ hook:   POST /api/stripeBeamioHook  (crypto.onramp_session.*)
         ▼
   Stripe fulfillment_complete → session succeeded
   Optional transaction_id (0x + 64 hex) stored as usdcTxHash
@@ -82,7 +84,7 @@ A successful `createSession` is **not** proof that USDC has arrived. Success is 
 | --- | --- | --- | --- |
 | `POST` | `/api/eoaUsdcStripe/createSession` | `{ walletAddress, amountUsdc6 }` | `{ sessionId, url }` (`cos_` Onramp) |
 | `POST` | `/api/eoaUsdcStripe/poll` | `{ sessionId, userClosedCheckout? }` | Session status + optional `usdcTxHash` / `recipientEoa` |
-| `POST` | `/api/eoa-usdc-stripe-webhook` | Stripe signed payload | Mirrors Onramp status; **does not** send operator USDC |
+| `POST` | `/api/stripeBeamioHook` | Stripe signed payload | Shared live webhook; Onramp events mirror status and **do not** send operator USDC |
 
 Cluster performs precheck (address, amount bounds). Master creates the Onramp session and holds the in-memory session map. Master **does not** occupy `Settle_BasePool` and **does not** call `USDC.transfer` on this rail.
 
@@ -97,11 +99,13 @@ The product does **not** mint CONET-USDC on this rail and does **not** send USDC
 
 ### Operator configuration
 
-The Stripe account must have **Crypto Onramp** enabled (including sandbox approval in the Stripe Dashboard).
+The operator Stripe account is the **`StripeBeamio`** key on the API host’s local `~/.master.json`. Merchant Kit Checkout and Consumer Onramp use this account. The account must have **Crypto Onramp** enabled (including sandbox approval in the Stripe Dashboard).
 
-Webhook verification uses a dedicated secret name: `STRIPE_WEBHOOK_SECRET_EOA_USDC` (environment or the API host’s local `~/.master.json`). This book does not publish secret values. The Dashboard event set must include `crypto.onramp_session.updated`. Without that secret, Onramp can still be created, but webhook confirmation will abort.
+The only live Dashboard webhook is **`https://beamio.app/api/stripeBeamioHook`**. Verification uses **`STRIPE_WEBHOOK_SECRET_MERCHANT_KIT`** (environment or the same `~/.master.json`). This book does not publish secret values. The Dashboard event set for that endpoint must include `crypto.onramp_session.updated` (Onramp) and the Merchant Kit `checkout.session.*` events. Without that secret, Onramp can still be created, but webhook confirmation will abort.
 
-Checkout `checkout.session.*` events are ignored on this webhook. They must not trigger operator inventory transfers.
+The API still **forwards** the retired paths `/api/eoa-usdc-stripe-webhook` and `/api/merchant-kit-stripe-webhook` to the same `stripeBeamioHook` handler. Do **not** add those URLs in the Stripe Dashboard. `https://hooks.conet.network/api/stripeHook` is not a Beamio live hook.
+
+Onramp handlers must ignore `checkout.session.*` for consumer USDC. Those events must not trigger operator inventory transfers or Merchant Kit fulfillment on the Onramp rail.
 
 ## What this page does not cover
 

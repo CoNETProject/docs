@@ -21,7 +21,7 @@ It is not Merchant OS and not a POS terminal. It does not hold merchant program-
 | **Identity** | `@BeamioTag`, profile language / currency, AddressPGP registration for Chat |
 | **Discover** | Featured Brands and Ongoing Coupons from the public latest-cards / coupon APIs (single merchant-visibility gate) |
 | **Issued assets** | Coupons and Business Catalogs: open claim, like / share stats, supply copy |
-| **Programs held** | Membership NFT, program points (`#0`), Reward PT (`#13`) |
+| **Programs held** | Membership NFT, program points (`#0`), Reward PT (`#13`). Paid join / upgrade charges the **locked membership fee only**, shown to two decimal places (for example `CA$0.50`). The protocol still mints **one min-unit** to `#0` so the membership NFT can issue; that dust is not added to the payable amount and displays as `0.00`. |
 | **Messaging** | DePIN Chat, delivery receipts, mailbox presence (listen-pool query; not on-chain `routeOnline`) |
 | **Network tools** | Bounty Board, CoNET mining views, Genesis referral, Referral registry |
 | **Team wallets** | V2 institutional multisig AA (CoNET, optional Base). See [Institutional multisig AA](../institutional-multisig-aa.md). |

@@ -2,7 +2,7 @@
 
 **Maturity: Public application.** Consumer, Merchant OS, and POS entry points are public. This page is the **Beamio product whitepaper**: what the suite is, which surfaces exist today, and how cash rails are placed. It is not a claim that every workflow is complete, independently audited, or covered by a published SLA.
 
-Revision: **2026-08-22**.
+Revision: **2026-08-23**.
 
 Public site: [https://gitbook.conet.network/applications/beamio.html](https://gitbook.conet.network/applications/beamio.html)
 
@@ -95,7 +95,7 @@ Two USDC deposit rails must not be merged:
 | **Coinbase / `walletDeposit`** | CONET-USDC via Treasury LockMint | CoNET settlement after Base lock | [Cash and USDC](beamio/cash-and-usdc.md) |
 | **Buy USDC with card (`eoaUsdcStripe`)** | Stripe Crypto Onramp sends native USDC to the owner **EOA** | **Base** | [Cash and USDC](beamio/cash-and-usdc.md) |
 
-Merchant Kit Stripe (CAD kits → B-Units / Ket) is a third Stripe product and is **not** a consumer USDC deposit rail.
+Merchant Kit Stripe (CAD kits → B-Units / Ket) is a third Stripe product and is **not** a consumer USDC deposit rail. Both Kit Checkout and Consumer Onramp use the same operator account **`StripeBeamio`** and the same live webhook **`https://beamio.app/api/stripeBeamioHook`** (signing secret **`STRIPE_WEBHOOK_SECRET_MERCHANT_KIT`**). Older Dashboard URLs are retired; the API may still forward them to the same handler. Fulfillment remains on separate rails. Consumers who buy USDC with a card receive native Base USDC **directly in the owner EOA**.
 
 ## What exists today
 
