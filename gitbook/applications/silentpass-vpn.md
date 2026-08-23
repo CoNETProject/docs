@@ -26,7 +26,10 @@ Two product surfaces use this model:
 
 Use the VPN surface for device-level capture and the proxy surface for selective routing. Their capture boundaries differ; their Layer Minus dependency is shared.
 
-SilentPass is **not** an L1 consensus overlay. Do not point `SaaS_Sock5` at geth `:8400` or beacon `:4200` and call that wallet-addressed L1 peering. That operator product is [conet-l0d](conet-l0d.md) (Under development).
+SilentPass provides wallet-authorized privacy egress to ordinary Internet
+destinations. It is not an L1 consensus transport and it is not a
+`web3://` application host. For wallet-addressed applications, use
+[`web3://` wallet-addressed applications](web3-url.md).
 
 ## Protocol dependencies
 
@@ -135,5 +138,4 @@ Important limits:
 - [Applications](README.md)
 - [Beamio](beamio.md)
 - [DePIN DCDN / BT](bt-dcdn.md) — under development; a separate bulk-distribution application
-- [L1 overlay daemon (conet-l0d)](conet-l0d.md) — under development; **not** SilentPass egress
 - [Resources](../resources.md) — source and npm index

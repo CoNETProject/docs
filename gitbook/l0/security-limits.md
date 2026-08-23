@@ -19,7 +19,7 @@ select an entry → send one bounded request → receive a bounded response → 
 It can reduce:
 
 - long-lived connection duration;
-- a fixed tunnel fingerprint;
+- a fixed long-session fingerprint;
 - single-connection bidirectional volume statistics;
 - long-term binding to one entry;
 - a continuous network identity at one exit;
@@ -72,9 +72,17 @@ An application can wrap a user-PGP business message to entry A, or use a short h
 
 Current Chat clients may still post a single user-PGP layer (A forwards without decrypting when the key maps to a mailbox). The peel rule is available to any client that wraps.
 
-## Chat SSE is a primary L0 traffic fingerprint
+## Long-lived SSE is a primary L0 traffic fingerprint
 
-DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C** (`command: "mining"`, `listenKind: "chat"`). Mining collectors, UDP listens, and exclusive **L0 occupancy** (`l0_listen`) also keep SSE sessions. After `l0_connect` occupies an L0 SSE, SI pipes opaque AES lines and **409**s a **second `l0_connect`**. Chat / mining gossip on the same node must continue. Idle L0 SSE needs comment keepalives **while idle** so the 60s socket idle timeout does not drop the listen. After occupy, SI must **stop** those comments. Application duplex still puts `duplex_offer` on Chat gossip so it cannot occupy that pipe. Spec: [Duplex overlay](duplex-forward.md).
+DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C**
+(`command: "mining"`, `listenKind: "chat"`). Mining collectors, UDP listeners,
+and exclusive application attachments (`l0_listen`) also keep SSE sessions.
+After `l0_connect` attaches an opaque writer, SI returns **409** to a second
+writer for the same live line. Chat and mining traffic on the same node must
+continue. An idle application receive line needs comment keepalives until it is
+attached; after attachment, SI must stop those comments. Application stream
+negotiation remains encrypted business data and cannot occupy the line by
+itself. See [Persistent application streams](duplex-forward.md).
 
 An ISP or entry C can observe:
 
@@ -319,4 +327,6 @@ Grades describe the **current SI + intended A/B/C client path**, not a future ra
 - [Zero-trust mailbox routing](mailbox-routing.md) — A/B/C roles.
 - [Wallet-addressed peer identity](wallet-address-p2p.md) — key roles and reuse risk.
 - [UDP frame forwarding](udp-forward.md) — AES split and remaining metadata.
-- [Duplex overlay](duplex-forward.md) — overlay AES never on a B-decryptable listen; missing `duplex_accept` keeps P1 gossip
+- [Persistent application streams](duplex-forward.md) — endpoint stream keys
+  never enter a B-decryptable control; missing authenticated accept fails the
+  stream.

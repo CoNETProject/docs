@@ -44,7 +44,9 @@ Fetch-and-Close is an optional short-session mode:
 select an entry → send one bounded request → receive a bounded response → close
 ```
 
-It can reduce long-connection duration, a fixed tunnel fingerprint, single-connection bidirectional volume, long-term entry binding, a continuous exit identity, and the window for monitoring one socket.
+It can reduce long-connection duration, a fixed long-session fingerprint,
+single-connection bidirectional volume, long-term entry binding, a continuous
+exit identity, and the window for monitoring one socket.
 
 It cannot remove the entry-IP set, request time, packet or ciphertext length, frequency, periodic polling, a stable client fingerprint, adjacent-request correlation, a large-download bandwidth curve, or global entry–exit matching.
 

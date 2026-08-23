@@ -153,7 +153,7 @@ The public UI being live does **not** close these whitepaper / spec gates:
 | --- | --- |
 | Isolated 7-host lab + explorer | Deployed; 72-hour warmup started 2026-08-14 |
 | 7×7 `/health` mesh | Heartbeat quorum only; seating green pill only when `seatingQualified === true` |
-| Participant wallets on `/archives` | Seven distinct EOAs; L1 overlay from `archivesOf(1)`. Extra `fd-08` is unofficial |
+| Participant wallets on `/archives` | Seven distinct EOAs; participant set derived from L1 `archivesOf(1)`. Extra `fd-08` is unofficial |
 | Global Archive Routing Registry | Deployed and verified — [routing registry](routing-registry.md) |
 | Laboratory honesty track P12–P25 | Engine + `159/159` tests. P23 keep-deploy **6/7 `LIVE_OK`** + fd-01 409→accept; later fd-06 remap / freeze / clock (not P26). P24 isolated `node.ts` standby gate. **P25 landed:** Certificates + Home **non-green** overlays; seating copy is **lab EIP-712**, never HMAC; green pills stay `seatingQualified === true` only. Current public SPA `index-C8IdTq4H.js` (2026-08-18T10:15:00Z; `explorer:test` 10/10). **Runtime scrape 2026-08-18T23:41Z (~13.8h):** 8/8 seating `QUALIFIED`; quorum 6/8; omit leaf ≠ empty — [Lab honesty track](lab-honesty-track.md) |
 | 30-day qualification | Not qualified (`100` rotations / `30` re-homes / `100` takeovers still at `0`; clock started `2026-08-18T09:53:58.092Z`; `pilotQualified=false`; clock ≠ qualification) |

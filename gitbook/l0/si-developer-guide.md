@@ -62,7 +62,13 @@ Do not mix encryption targets.
 
 Encrypt to the **recipient’s user PGP**. SI only sees the OpenPGP key ID and routes to that key’s mailbox.
 
-Typical use: Chat text, typed application JSON, `udp_subscribe`, and application `duplex_offer` (each of the last two contains an AES key; SI forwards `duplex_offer` as Chat gossip and does **not** parse it). Sender delivery receipts use this inner armor, then wrap it as [mailbox work](#3-mailbox-work-envelope-mailbox-b-decrypts) with `NoPush: true`.
+Typical use: Chat text, typed application JSON, `udp_subscribe`, and
+application stream offers. UDP subscriptions and stream offers may carry
+endpoint encryption material, so SI forwards their user-PGP armor without
+parsing the application object. Sender delivery receipts use this inner armor,
+then wrap it as
+[mailbox work](#3-mailbox-work-envelope-mailbox-b-decrypts) with
+`NoPush: true`.
 
 ```text
 application object
@@ -520,9 +526,9 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 - [ ] Chat listen includes `listenKind: "chat"` and uses **C ≠ B**
 - [ ] `connect_timeout` starts after `fetch`; `listening` requires `res.ok` + body
 - [ ] SI hop-sign uses a UTF-8 armor string (peel plaintext / `pgpArmorToUtf8String`); hop-sign or C→B failure is a fast 404
-- [ ] Send / ACK / presence / UDP / application duplex gossip do not default-dial mailbox B
+- [ ] Send / ACK / presence / UDP / application stream offers do not default-dial mailbox B
 - [ ] EIP-191 `signMessage` covers the exact `message` string SI will verify
-- [ ] Overlay AES / UDP `Securitykey` never appears on a B-decryptable listen or relay
+- [ ] Application stream keys / UDP `Securitykey` never appear on a B-decryptable listen or relay
 - [ ] Failures do not log private keys, full PGP private armor, or `Securitykey`
 - [ ] HTTP 200 / SSE Connected is not treated as application delivery
 - [ ] Presence uses `wallet_online_query`, not `searchKey.routeOnline`
@@ -538,14 +544,14 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 - [Wallet-addressed peer identity](wallet-address-p2p.md)
 - [HTTP transport](http-mimicry.md)
 - [UDP frame forwarding](udp-forward.md)
-- [Duplex overlay](duplex-forward.md) — application JSON on Chat gossip; **not** an SI command row
+- [Persistent application streams](duplex-forward.md) — portable application semantics over L0 attachment primitives
 - [Security limits](security-limits.md)
 - [DePIN Chat product page](../applications/depin-chat.md)
 - [Resources](../resources.md)
 
 ## Long-connection transport lifecycle
 
-For an overlay byte stream, keep the mailbox listen SSE and the occupied
+For a persistent application byte stream, keep the mailbox listen SSE and the attached
 `l0_connect` TCP as separate objects. A client may use a temporary listen
 wallet/PGP identity for one attachment. Any `pipeHandle` is a random,
 hop-local opaque value; it must not be derived from an EOA, port, IP, or route
@@ -567,6 +573,6 @@ The fields `wallet`, `connector`, `sessionId`, and `session_id` are forbidden.
 If an entry detects that a downstream SSE is gone before keep-alive is
 committed, it returns a transport error such as `410 Gone`. Once keep-alive is
 committed, it closes the corresponding TCP with FIN/RST. The sender stops
-writing packets and starts a bounded, backoff-controlled new attachment.
+writing bytes and starts a bounded, backoff-controlled new attachment.
 Neither the transport error nor the opaque handle is a user-visible gossip
 message.

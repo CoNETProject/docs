@@ -1,356 +1,225 @@
-# Duplex overlay (L0 occupancy pipe + application JSON)
+# Persistent application streams
 
-Duplex is two layers:
+**Evidence level: Implemented capability.** Layer Minus provides the encrypted
+forwarding and exclusive attachment primitives used by persistent application
+streams. [`web3://`](web3-application-protocol.md) defines the portable
+application contract. Linux implements that contract with
+[`conet-l0d`](../developers/conet-l0d.md).
 
-1. **L0 (SI)** — exclusive occupancy pipe: `l0_listen` (or `mining` + `listenKind: "l0"`) plus `l0_connect`. After the first connect occupies an idle L0 SSE, SI writes **HTTP 200 keep-alive** on the occupy TCP (must **not** `socket.end()`), **stops idle comment keepalives** on that SSE, pipes remaining TCP bytes onto that SSE, and marks the channel occupied. A **second `l0_connect`** to that wallet is **409**. User-PGP Chat / mining gossip on the same node **must continue** (do not 409 those). Idle L0 SSE has no mining epoch heartbeat; SI must write SSE comment keepalives **only while idle** and clear the 60s socket idle timeout.
-2. **Application (conet-l0d)** — `duplex_offer` / `duplex_accept` / `duplex_reject` / `duplex_frame`. Offer stays **user-PGP Chat gossip** so it cannot occupy the exclusive L0 listen. During socket bootstrap, accept is also signed user-PGP control addressed to the Initiator's temporary identity. Once both occupied pipes are ready, stream frames are **AES-256-GCM blobs** on those pipes.
+This page explains the boundary between those layers. It does not define a new
+SI command family.
 
-SI does **not** implement `duplex_*` commands and does **not** maintain a duplex pool. Do **not** add `duplexForward.ts` or SI `duplex_*` cases. Do **not** document a live SI command named `p2p_stream_*` or `listenKind: "l1p2p"`. Do **not** send `command: "mining"` with `listenKind: "duplex"`.
+## Layer boundary
 
-Public site: [https://gitbook.conet.network/l0/duplex-forward.html](https://gitbook.conet.network/l0/duplex-forward.html)
+| Layer | Responsibility |
+|---|---|
+| **Layer Minus / SI** | Route encrypted control data and attach one opaque writer to one waiting receive line |
+| **`web3://` application protocol** | Exact target and logical-port selection, authenticated offer/accept, frame ordering, close, and errors |
+| **Runtime** | Map a local socket to one application session and enforce queue, timeout, and reconnect bounds |
+| **Origin service** | Read and write its native TCP byte protocol without knowing the L0 route |
 
-**conet-l0d** is the first product that uses this composition for overlay `geth` / `beacon` IPv4.
+The implemented SI attachment primitives are `l0_listen` and `l0_connect`.
+An application may also use the compatibility form `command: "mining"` with
+`listenKind: "l0"`. These are L0 transport controls, not browser-facing
+`web3://` methods.
 
-**Current transport revision:** 2026-08-22 — per-socket temporary routes and
-listen SSEs are ready-gated before control exchange; `firstChunk` /
-`responseChunk` bootstrap occurs before either paused application socket is
-resumed.
+SI does **not** implement `duplex_offer`, `duplex_accept`, `duplex_reject`, or
+application frame objects. Those objects remain encrypted application data.
+Do not add `p2p_stream_*`, `listenKind: "duplex"`, or
+`listenKind: "l1p2p"` as SI commands.
 
-> **2026-08-20 protocol revision — supersedes the deterministic-session teardown
-> text below.** New implementations must use a fresh random `pipe_handle` per
-> pipe incarnation, temporary listen wallet/PGP identities, and hop-local SI
-> handles. Do not derive a session value from wallets, ports, IPs, or route
-> keys. Do not emit `l0_pipe_end` or `l0_listen_released` on an SSE. The
-> normative teardown rules are in the section “Opaque attachment and teardown”
-> below; the older deterministic-session examples are historical and are not
-> compatible requirements.
-
-## Opaque attachment and teardown (current)
-
-The endpoint creates a temporary listen identity for this attachment and a
-random 32-byte `pipe_handle`. The handle is shared only inside the encrypted
-endpoint-to-endpoint handshake. Mailbox and entry SI components see only their
-own local waiting-pool entry and local socket lifecycle. They must not correlate
-handles between hops, reveal wallet/connector identities, or receive the
-end-to-end AES key.
-
-The only `l0_pipe_end` object accepted by `conet-l0d` is a line on the already
-occupied `l0_connect` TCP:
-
-```json
-{
-  "type": "l0_pipe_end",
-  "pipe_handle": "<64 lowercase hex>",
-  "reason": "transport_closed"
-}
-```
-
-`wallet`, `connector`, `sessionId`, and `session_id` are forbidden. The line is
-accepted only when its handle equals the handle bound to that TCP. Missing,
-malformed, or mismatched handles are ignored/rejected. SSE input never parses
-this object and there is no SSE-side same-name release event.
-
-If SI detects that the downstream SSE disappeared before HTTP is committed, it
-returns `410 Gone` with `error: "l0_peer_disconnected"` (or an equivalent
-non-success transport response). After a keep-alive response is committed, a
-second HTTP response is invalid, so SI closes the current TCP with FIN/RST.
-The sender must inspect the `l0_connect` response head, stop its packet loop on
-`410` or EOF, and reconnect only after clearing the dead pipe generation.
-Reconnect uses a
-bounded retry/backoff and occupancy limits; a listener cannot use an application
-message to make another healthy sender emit packets.
-
-The Rust implementation generates the handle with `duplex::new_pipe_handle()`
-and validates it in `pipe::run_occupied_pipe`. `client::apply_inbound_armor`
-does not process teardown objects from SSE. This is a transport safety rule,
-not an application gossip event.
-
-## Why two own L0 listens (not a guest SSE)
-
-HTTP SSE is server → listener only. One occupied pipe is **one direction**. Duplex therefore uses **two unidirectional occupied pairs**:
+## Stream lifecycle
 
 ```text
-I’s W_I L0 SSE  ←  R’s l0_connect (first PGP occupy, then AES)
-R’s W_R L0 SSE  ←  I’s l0_connect (then AES)
+local client socket
+  → parse exact web3:// target and logical port
+  → create a fresh application session
+  → sign and encrypt an offer to the target user PGP
+  → submit through entry A
+  → target host validates the offer and configured port
+  → target opens its configured local origin
+  → both endpoints attach opaque L0 lines through entries C/D
+  → authenticated accept
+  → ordered encrypted bytes in both directions
+  → explicit close, timeout, or bounded reconnect
 ```
 
-A client must not attach a second listen for someone else's routing EOA on their mailbox B. Each end **owns** its L0 listen wallet.
+Each accepted local socket is a separate session. A runtime must not reuse
+identity, queue, upstream-socket, close state, or attachment handles merely
+because two sockets use the same wallet and port.
 
-| Name | Meaning | SI |
-| --- | --- | --- |
-| Long-lived channel Chat listen | Per overlay port `[[l0.channels]]` routing EOA. Receives **`duplex_offer` only** | Existing `mining` + `listenKind: "chat"` |
-| Exclusive L0 listen | Idle until the first `l0_connect`. Then occupied (white mark); SI stops parsing | `l0_listen` or `mining` + `listenKind: "l0"`. Separate pool from Chat / mining / UDP |
-| Guest listen on peer B | Forbidden | Would need a second socket on the peer wallet |
+An incoming offer is **attach-only**. The host must first match:
 
-**conet-l0d crate MVP** uses the already-registered per-port channel EOA as `W_I` / `W_R` (same EOA may hold Chat SSE **and** `l0_listen` in different pools). The wire still names `listenWallet` / `listenUserPgp` so a later cut can mint a fresh EOA without changing SI.
+- the exact destination wallet or exact tag result;
+- a configured logical port;
+- an expected, fresh session; and
+- local origin policy.
 
-Idle L0 may receive a **copy** of user-PGP gossip (offers) without occupying. The Chat / mining pool **always** gets that gossip — do not deliver only to idle L0 (if that SSE dies, the initiator never sees `duplex_accept`). After occupy, a second **`l0_connect`** is 409. Never write JSON gossip onto an occupied raw-AES SSE, and never APNs / `saveLocal` onto that SSE. A replacement `l0_listen` while occupied is also 409 **if the occupy inbound TCP and listen SSE are still live** (do not tear down a live pipe). If inbound is destroyed or the SSE is stale, SI must `dropL0Listen` and accept the replacement so a restarted client is not stuck on 409 until mailbox B is pkill'd.
+An unmatched, replayed, stale, or ambiguous offer must not allocate a line or
+open an arbitrary local socket.
 
-## What it is
+## Why two attached lines
 
-Each duplex session uses **two keys**. Do not mix them.
-
-| Key | Who holds it | Purpose |
-| --- | --- | --- |
-| Overlay e2e AES-256-GCM | **Both l0d (or app) ends only** | Seal application JSON (`duplex_accept` / `duplex_reject` / `duplex_frame`). Mailbox **B must not** hold it |
-| Chat listen `Securitykey` | Mailbox B + the Chat client | **Chat/mining SSE last hop only**. Never put overlay AES on a B-decryptable `l0_listen` / `l0_connect` |
-
-| Actor | Responsibility |
-| --- | --- |
-| **Initiator** | Creates a fresh temporary listen wallet/PGP identity, a random opaque `pipe_handle`, and the overlay AES key. The encrypted endpoint handshake carries these values; none is derived from the public wallet or port |
-| **Responder** | Uses only a temporary listen identity pre-allocated by an explicit `mainWallet:port` new-line request, then accepts or rejects on the occupied TCP. It never allocates a line merely because an offer arrived |
-| **Mailbox B** | Decrypts `l0_listen` / `l0_connect` (route PGP). After occupy, **pipes** remaining TCP as SSE `data:` lines and stops parsing. Must not learn the overlay AES key |
-| **Entries A / C** | Existing A/B/C posts and long SSE; SI-to-SI remains HTTP on port 80 |
-
-Each request uses a healthy entry **different from B**. Occupancy of connect is by **`targetWallet` after decrypt**, not by B route key ID (do not 409 every B-route packet when one L0 listen is occupied — Chat / mining on the same node must continue).
-
-## Encryption and route matrix
-
-| Operation | Contains overlay AES key? | Encrypt to | Transport |
-| --- | --- | --- | --- |
-| `l0_listen` / `mining` + `listenKind: "l0"` | **No** | Own mailbox **B route PGP** | Long SSE via entry **C ≠ B**. Handshake `{ ok, kind:"l0", wallet, nodeWallet }` |
-| `l0_connect` | **No** | **Target** mailbox **B route PGP** | First JSON `{ "data": armor }` on TCP. Idle → occupy, write HTTP **200** keep-alive (no `end()`), then extra `\n` + AES blobs. Second connect → **409**. Connector installs `pipe_tx` only after that 200. |
-| `duplex_offer` | **Yes** | Peer **long-lived user PGP** | Entry A ≠ B. Ordinary Chat gossip so the peer's existing Chat SSE can see it |
-| `duplex_accept` | **Yes** (echo) | AES on occupied `W_I` pipe | First AES blob after R occupies I’s L0 SSE |
-| `duplex_reject` | No | AES on occupied `W_I` pipe | Occupying with reject is intended |
-| Overlay IPv4 (`duplex_frame`) | AES outer only | Occupied peer L0 pipe | `payload` = standard base64 of raw `L0D1\|\|IPv4` (**not** a second AES, **not** PGP) |
-
-The key rule is strict: overlay AES must **never** appear in a B-decryptable listen or `l0_connect` command. SI never parses `command: "duplex_offer"`.
-
-After occupy, SI must **not** `response200Html` (that ends inbound TCP). Extra bytes after Content-Length are unshifted by `getDataPOST` and piped as SSE lines.
-
-### Offer matching is attach-only
-
-Temporary line creation is a control-plane operation owned by the explicit
-`mainWallet:port` new-line request. The responder must first find a
-pre-registered session by exact opaque `pipe_handle` or temporary
-`listenWallet`. A `mainWallet:port` match alone is insufficient. Replayed,
-stale, or ambiguous offers are rejected without allocating a wallet, creating
-a `DuplexSession`, or issuing another `l0_connect`. This keeps one local socket
-handle mapped to one duplex line and avoids SI `409 Conflict` loops.
-
-## Capability probe (application, not HTTP 404)
-
-SI **404** is not the duplex probe (usually no idle listen). SI **409 occupied** on **`l0_connect`** means that L0 listen already has a pipe. SI **409** on Chat gossip after occupy is a bug.
-
-| Peer behaviour | Initiator |
-| --- | --- |
-| App never parses offer (old crate) | No accept, no reject. Keep **P1 gossip** |
-| App parses offer and cannot attach | `l0_connect` + AES `duplex_reject` on `W_I` → P1 immediately |
-| App parses offer and agrees | AES `duplex_accept` on `W_I`; initiator occupies `W_R` → AES `duplex_frame` |
-
-HTTP 2xx on `duplex_offer` is **not** proof that the peer attached. An SSE handshake is transport, not duplex ready.
-
-## Historical deterministic flow (retired; reference only)
-
-The following section is retained only to explain older lab traces. It is not a
-current implementation requirement and must not be copied into new clients.
-
-## How it worked
+An SSE receive line is server-to-listener. Full duplex therefore uses two
+independently attached directions:
 
 ```text
-Both ends: long-lived Chat listen (channel EOA) — receives duplex_offer
-Both ends: exclusive l0_listen on session wallet (crate MVP: channel EOA)
-
-Initiator I (own_eoa < peer_eoa):
-  1. sessionId = keccak256(utf8("l0d-duplex-v1|" || min(eoa_I,eoa_R) || "|" || max(...) || "|" || port_be16))
-  2. generate 32-byte AES-256-GCM key (memory only)
-  3. duplex_offer { Securitykey, listenWallet: W_I, listenUserPgp } → R long-lived user PGP → POST A ≠ B_R
-
-If R never answers → overlay stays P1 gossip.
-
-If R does not support this session:
-  l0_connect target=W_I; first AES blob = duplex_reject
-  I keeps P1 gossip
-
-If R accepts:
-  store overlay key; keep l0_listen W_R
-  l0_connect target=W_I; first AES blob = duplex_accept { Securitykey echo, listenWallet: W_R }
-  I sees accept on occupied W_I SSE → peer_attached; remembers W_R
-  I l0_connect occupies W_R (no required first app JSON)
-
-Data (both directions) — two occupied L0 pipes:
-  I → R: AES( duplex_frame JSON ) on I’s l0_connect TCP to W_R
-  R → I: AES( duplex_frame JSON ) on R’s l0_connect TCP to W_I
-  duplex_frame.payload = standard base64( L0D1 || IPv4 )
-
-conet-l0d sends AES duplex_frame only when it has the overlay key AND peer_attached AND an occupied pipe_tx AND not rejected.
-Missing pipe keeps P1 gossip until the pipe is rebuilt — not forever after a transient occupy failure.
+endpoint A receive line  ←  endpoint B writer
+endpoint B receive line  ←  endpoint A writer
 ```
 
-Initiator election for a given overlay port: `own_eoa < peer_eoa` (lowercase `0x` hex). Both ends compute the same `sessionId`.
+Each endpoint owns its receive identity. A client must not create a receive
+line under another application's wallet or attach directly to mailbox B.
+Control and receive traffic follow the same entry-to-mailbox routing boundary
+as other conforming L0 applications.
 
-### Pipe durability (normative)
+## SI attachment behavior
 
-| Layer | Rule |
-| --- | --- |
-| Entry `socketForward` | Clear **client→C** `sourceSocket` 60s idle **and** do not 60s-kill **C→B** long pipes (SSE / occupied L0). See [Peel, hop-sig, and listen timeouts](peel-hop-listen.md). |
-| SI idle `l0_listen` | SSE comment keepalive (~15s, `\r\n\r\n`) + `setTimeout(0)` on the listen socket. **Occupied** L0 must **clear** that timer and never write comments (AES `data:` keeps the socket). Occupied inbound + SSE use a **180s inactivity watchdog** above the conet-l0d ping cadence; a timeout releases the occupy and destroys both sockets. |
-| SI occupy HTTP | After attaching the inbound `data` handler, write HTTP 200 keep-alive headers. Never `response200Html` (it `end()`s the TCP). |
-| conet-l0d | Install outbound `pipe_tx` only after occupy HTTP 200. For a configured duplex session, TUN frames before 200 are suppressed, not sent through P1 fallback and not installed on a dead pipe. |
-| conet-l0d | After exclusive `l0_listen` SSE reconnects successfully, **rebuild** outbound `l0_connect` for duplex sessions that already have `peer_attached`. Do **not** only clear `pipe_tx` and stay on P1. |
-| conet-l0d | If `l0_connect` / occupy fails (e.g. peer listen not idle yet), **retry** with a short delay while `peer_attached` remains true. |
+| Event | Required behavior |
+|---|---|
+| Idle receive line | Keep the SSE usable without application data |
+| First valid `l0_connect` | Attach the writer and keep the HTTP connection open |
+| Successful attachment | Return HTTP `200` transport readiness; continue carrying opaque bytes |
+| Second writer for the same live line | Return `409 Conflict` |
+| Receive line disappeared before attachment | Return a non-success transport result such as `410 Gone` |
+| Attached line closes or becomes stale | Release only that line and its local resources |
+| Replacement after the old line is dead | Accept a fresh line instead of preserving a zombie occupancy |
 
-A one-time session EOA must be `regiestChatRoute` on mailbox B **before** its L0 listen is useful. Until the daemon registers ephemeral wallets itself, the crate reuses the registered channel EOA.
+Chat, mining, presence, acknowledgements, and UDP use separate pools. Occupying
+an application stream must not return `409` for unrelated Chat or mining
+traffic.
 
-## Canonical application fields
+Once attached, SI treats application bytes as opaque. It must not:
 
-`duplex_offer` remains signed Chat gossip (user PGP):
+- decrypt the endpoint-to-endpoint stream key;
+- parse the origin application's byte protocol;
+- save active stream frames as offline Chat messages;
+- send Chat push notifications for stream frames; or
+- move a failed stream onto another application transport and report success.
 
-```text
-signMessage = personal_sign(message)
-literal = base64(UTF8(JSON.stringify({ message, signMessage })))
-armored = OpenPGP_encrypt(literal, target user PGP)
-HTTP POST { "data": armored }
-```
+## Identity and encryption
 
-`duplex_offer` (encrypt to peer **long-lived** user PGP):
+| Material | Visible to | Purpose |
+|---|---|---|
+| Long-lived target EOA | Client and host | Stable application identity |
+| Target user PGP | Client and host | Encrypt the application offer |
+| Mailbox route PGP | L0 routing controls | Reach the target mailbox |
+| Temporary session identity | The two endpoints and required route registration | Isolate one stream incarnation |
+| End-to-end stream key | The two endpoints only | Protect accept, reject, control, and data frames |
+| Hop-local attachment handle | One local attachment path | Release the correct line without cross-hop correlation |
 
-```json
-{
-  "command": "duplex_offer",
-  "walletAddress": "<initiator EOA>",
-  "peerWallet": "<responder routing EOA>",
-  "listenWallet": "<initiator session listen EOA>",
-  "listenUserPgp": "<armored OpenPGP public cert for listenWallet>",
-  "sessionId": "<64 hex, no 0x>",
-  "algorithm": "aes-256-gcm",
-  "Securitykey": "<standard base64 of 32 bytes>",
-  "timestamp": 1710000000
-}
-```
+The end-to-end stream key must never appear in a command encrypted to mailbox
+B's route key. Business negotiation is encrypted to the target **user PGP**;
+mailbox controls are encrypted to the **route PGP**.
 
-`duplex_accept` / `duplex_reject` / `duplex_frame` after occupy are **not** OpenPGP. Outer wire is standard base64 of `nonce(12) || AES-GCM(utf8(JSON)) || tag(16)`. Occupied-pipe AES `duplex_accept` may omit `listenUserPgp` (empty string); the initiator already has the overlay key from the offer. Chat-gossip `duplex_accept` still includes the armored listen cert. SSE AES `data:` frames complete on `\r\n\r\n` only so an idle comment `\n\n` cannot truncate a half-received blob.
+Fresh session identities and random opaque attachment handles prevent one
+socket incarnation from being confused with another. Do not derive a handle
+from public wallets, ports, IP addresses, or route keys.
 
-`duplex_accept` (must echo `Securitykey`):
+## Socket bootstrap
 
-```json
-{
-  "command": "duplex_accept",
-  "walletAddress": "<responder EOA>",
-  "listenWallet": "<responder session listen EOA>",
-  "listenUserPgp": "<Chat: armored OpenPGP public cert. Occupied-pipe AES accept may be empty>",
-  "sessionId": "<64 hex, no 0x>",
-  "algorithm": "aes-256-gcm",
-  "Securitykey": "<same 32-byte key as the offer>",
-  "timestamp": 1710000000
-}
-```
+For `--clientDuplex`, the accepted local TCP socket is the session boundary.
+The client may include the first local bytes in the authenticated offer. A
+`--proxyDuplex` host opens only the upstream configured for that logical port,
+forwards the initial bytes, and may return the first upstream bytes with the
+accept.
 
-`duplex_reject` (must not contain `Securitykey`):
+Only after authentication and acceptance may either paused application socket
+resume. This ordering prevents:
 
-```json
-{
-  "command": "duplex_reject",
-  "walletAddress": "<responder EOA>",
-  "sessionId": "<64 hex, no 0x>",
-  "reason": "unsupported",
-  "timestamp": 1710000000
-}
-```
+- bytes reaching the wrong session;
+- an unmatched offer opening an origin socket;
+- a response racing ahead of accept; and
+- pre-accept data being attached to a dead line.
 
-`duplex_frame`:
+## Readiness and failure semantics
 
-```json
-{
-  "type": "duplex_frame",
-  "sessionId": "<64 hex>",
-  "payload": "<standard base64 of L0D1||IPv4>"
-}
-```
+The following signals are not interchangeable:
 
-SI occupy notice (not application JSON; ignore on the client):
+| Signal | Meaning |
+|---|---|
+| Entry HTTP `2xx` for an encrypted offer | An entry accepted transport work |
+| Receive SSE handshake | A receive path exists |
+| `l0_connect` HTTP `200` | One opaque writer is attached |
+| Authenticated application accept | The remote runtime accepted this exact session |
+| Origin response bytes | The configured local service processed stream data |
 
-```json
-{ "type": "l0_occupied", "wallet": "<listen EOA>", "connector": "<connector EOA>" }
-```
+A runtime must report the stream ready only after the authenticated application
+accept. An HTTP `404`, `409`, timeout, EOF, or missing accept is a failed stream,
+not an empty successful response.
 
-### Pipe teardown (current)
+Reconnect must be bounded and generation-aware:
 
-The deterministic-session teardown is retired. Each pipe incarnation uses a
-temporary listen identity and a fresh random opaque `pipe_handle`. It is never
-derived from wallet, connector, port, IP, or route data.
+1. clear the dead writer and old attachment state;
+2. create a fresh session incarnation where required;
+3. wait for a valid replacement receive line;
+4. retry with bounded backoff; and
+5. stop when policy, expiry, or retry limits are reached.
 
-There is no SSE-side `l0_pipe_end` or `l0_listen_released` event. The only
-accepted control line is on the occupied inbound TCP already bound to the same
-handle:
+Old bytes and handles must never be written into the replacement session.
 
-```json
-{
-  "type": "l0_pipe_end",
-  "pipe_handle": "<64 lowercase hex>",
-  "reason": "transport_closed"
-}
-```
+## Backpressure and limits
 
-`wallet`, `connector`, `sessionId`, and `session_id` are forbidden. Missing,
-malformed, or mismatched handles are rejected. The Rust client validates this
-in `run_occupied_pipe`; SSE ingestion deliberately does not parse the object.
+Every implementation must bound:
 
-If an entry detects that the downstream SSE has disappeared before keep-alive
-is committed, it returns `410 Gone` or an equivalent transport error. After
-keep-alive, it closes the current TCP with FIN/RST. The sender stops its packet
-loop and reconnects only through bounded retry/backoff. SI may propagate the
-failure internally with local opaque handles, but never exposes cross-hop
-correlation or the AES key.
+- concurrent sessions per wallet and per logical port;
+- queued bytes and frame count per direction;
+- initial-offer and response-chunk size;
+- idle and total handshake time;
+- reconnect attempts and retry age; and
+- local-origin connect and read timeouts.
 
-### Occupied-pipe liveness timeout
+`socket.write() === false` or its runtime equivalent means backpressure, not
+successful delivery and not necessarily a closed socket. Pause reads, retain
+only a bounded queue, resume on drain, and close on overflow or drain timeout.
 
-The sender owns the liveness obligation: it must send application data within
-each 120-second window. When there is no IPv4 frame, the crate sends an
-encrypted `duplex_ping` application blob every 60 seconds. The listener
-counts inbound bytes, so any valid application blob satisfies the window.
+A receive-only SSE can remain healthy after its request body has ended.
+`readableEnded` alone is therefore not proof that the line is stale. Use
+write failure, close/error events, and bounded liveness policy.
 
-If the exclusive L0 listener receives no bytes for 180 seconds, SI closes its
-SSE and releases the occupied writer. The peer observes EOF and stops using
-that pipe incarnation. An `end` on the occupied inbound TCP is also an
-immediate teardown signal. After its own listen SSE has ended and a replacement
-SSE is established, a bidirectional client may issue a new `l0_connect` with a
-fresh `pipe_handle`. It must not reuse stale `pipe_tx` state. Normal Chat SSE
-is excluded and retains mailbox heartbeat semantics.
+## Platform implementations
 
-## Frame format and runtime bounds
+| Platform | Persistent-stream implementation |
+|---|---|
+| Linux server | `conet-l0d --proxyDuplex <host:port>` |
+| Linux client | `conet-l0d --clientDuplex web3://<wallet-or-exact-tag>:<port>` |
+| Windows / macOS | Browser extension, browser client, or native runtime implementing the same `web3://` contract |
+| Android / iOS | Web or native client implementing the same contract |
+| Browser | Client-side target resolution, signing, encryption, response verification, and stream adaptation |
 
-| Item | Current rule |
-| --- | --- |
-| Overlay AES key | 32 bytes; standard base64 inside `duplex_offer` and echoed in `duplex_accept` |
-| Data-plane payload | `base64(L0D1 \|\| IPv4)` inside `duplex_frame`; **one** AES layer around the JSON |
-| Occupied pipe | Same TCP as `l0_connect` HTTP POST; extra lines after the first `{ "data" }` JSON |
-| Capability miss | No answer **or** `duplex_reject` **or** no occupied pipe → keep P1 gossip. Not an SI HTTP 404 |
-| L0 pool | `l0ListenPool` — **not** Chat / mining / UDP. Max 256. Idle gossip does not occupy |
-| Chat / mining | Unchanged. Same EOA may hold Chat SSE and `l0_listen`; Chat is excluded from the L0 timeout |
+The application protocol is portable. `conet-l0d` is the Linux runtime, not a
+requirement for every client platform.
 
-## Socket-scoped bootstrap
+## Security boundary
 
-For `--clientDuplex`, each local TCP accept event is the unique session
-handle. The client reads the initial application bytes and places them in
-`duplex_offer.firstChunk` before creating that line's temporary wallet/PGP.
-The proxy allocates a line only after an explicit `mainWallet:port` match to
-its configured `--proxyDuplex` port. It opens the configured upstream TCP
-client, forwards `firstChunk`, and returns the first upstream bytes as
-`duplex_accept.responseChunk`. Later bytes reuse the same opaque
-`pipe_handle`; unmatched offers cannot allocate temporary lines.
+When endpoint keys remain secure and routing follows the entry/mailbox model:
 
-A receive-only SSE socket can remain writable after its request body has ended. SI therefore does not classify `readableEnded` alone as stale. Peer `'end'` on a mining or Chat SSE must not drop those pools; an `end` on the occupied L0 inbound TCP is different and releases that L0 pipe. Do **not** inject mining epoch gossip onto an occupied L0 SSE. Do **not** share chat APNs / wall-clock expire with occupied L0.
+- intermediary nodes carry ciphertext rather than origin plaintext;
+- mailbox B does not receive the endpoint stream key;
+- the local origin accepts connections only from its trusted host adapter; and
+- application identity remains the verified wallet rather than a public
+  origin address.
 
-## Guarantees and non-guarantees
-
-If `duplex_offer` is encrypted to the peer user key, Chat listen omits the overlay AES key, and `l0_listen` / `l0_connect` omit it too, mailbox B can route and occupy without learning overlay plaintext or the AES key.
-
-After occupy, SI pipes opaque lines. It does not provide raw TCP semantics, congestion control, or proof that geth consumed a datagram. SI HTTP 200 on Chat gossip means the entry accepted armor, not that the peer app attached. SI HTTP 200 on occupy TCP means the connector may write the first AES blob. SI 409 on `l0_connect` means that listen is already taken. Bytes arriving after an occupied peer SSE is released are discarded; they are never saved offline or rerouted to Chat/mining gossip.
-
-It also does not hide a client's IP from its entry, defeat a global timing observer, or implement padding. Those are listed as upgrades in [security limits](security-limits.md).
+This does not hide a client IP from its selected entry, defeat a global timing
+observer, provide padding, or make a compromised endpoint safe. See
+[Security limits and threat grades](security-limits.md).
 
 ## Implementation anchors
 
-- Overlay AES + `L0D1` + offer / accept / reject / frame + occupied pipe: `src/conet-l0d/src/l0/{aes,frame,duplex,client,pipe,listen}.rs`
-- SI exclusive pool: `src/CoNET-SI/src/util/l0Exclusive.ts` (`l0_listen` / `l0_connect`)
-- Do not add `src/CoNET-SI/src/util/duplexForward.ts`
-- Operator / crate: [Applications — conet-l0d](../applications/conet-l0d.md), [Developers — conet-l0d](../developers/conet-l0d.md)
+- Linux application runtime:
+  `src/conet-l0d/src/l0/{duplex,client,pipe,listen}.rs`
+- SI exclusive attachment pool:
+  `src/CoNET-SI/src/util/l0Exclusive.ts`
+- Portable application contract:
+  [`web3://` Application Protocol](web3-application-protocol.md)
+- Linux operator guide:
+  [Developers — `conet-l0d`](../developers/conet-l0d.md)
 
 ## Related
 
-- [UDP frame forwarding](udp-forward.md) — SI **does** implement `udp_*` (separate pools). Occupied L0 is a different exclusive pipe
+- [`web3://` Application Protocol](web3-application-protocol.md)
+- [How to use Layer Minus](using-l0.md)
 - [Zero-trust mailbox routing](mailbox-routing.md)
-- [SI developer guide](si-developer-guide.md) — `l0_listen` / `l0_connect` rows; **no** `duplex_*` command row
-- [Security limits](security-limits.md)
+- [SI developer guide](si-developer-guide.md)
+- [UDP frame forwarding](udp-forward.md)
+- [Security limits and threat grades](security-limits.md)

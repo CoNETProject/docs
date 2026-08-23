@@ -90,7 +90,10 @@ The SI runtime labels long-lived sessions so that unrelated lifecycle policies d
 | UDP server | `udp_server_listen`, or `mining` | `udp_server` | Separate UDP server pool |
 | Exclusive L0 occupancy | `l0_listen` or `mining` | **`l0`** | Separate `l0ListenPool`. First `l0_connect` occupies (HTTP 200 keep-alive; stop idle comment keepalives). Second `l0_connect` is **409**. Replacement `l0_listen` while live occupied is **409**; dead/stale occupy sockets are dropped so a restarted client can re-listen. Chat / mining gossip on the same node continues. Idle gossip does not occupy |
 
-Chat / mining / UDP / L0 exclusive are SI listen namespaces. Application `duplex_*` JSON is **not** an SI command. Offer uses Chat; accept / frames use the occupied L0 pipe. Spec: [Duplex overlay](duplex-forward.md).
+Chat, mining, UDP, and exclusive application attachments are distinct SI
+listen namespaces. Application offers, accepts, and stream frames are **not**
+SI commands. They remain endpoint-encrypted application data. See
+[Persistent application streams](duplex-forward.md).
 
 A completed HTTP request body does not make a receive-only SSE socket stale. SI checks whether the socket remains writable; chat-only timeout or zombie policy must not evict a mining session.
 
@@ -146,5 +149,7 @@ Direct-to-B requests violate the privacy model even if they function. Other prot
 - [Wallet-addressed peer identity](wallet-address-p2p.md) explains the keys used above.
 - [HTTP transport and Fetch-and-Close](http-mimicry.md) explains the wire carrier and short-session option.
 - [UDP frame forwarding](udp-forward.md) applies the same A/B/C model to encrypted application frames.
-- [Duplex overlay](duplex-forward.md) is an **application** composition on Chat gossip + Chat listen; SI has no duplex pool.
+- [Persistent application streams](duplex-forward.md) are an **application**
+  composition over exclusive L0 attachments; SI does not interpret the stream
+  protocol.
 - [DePIN Chat](../applications/depin-chat.md) describes the user-facing messaging product.
