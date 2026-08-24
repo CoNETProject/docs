@@ -32,7 +32,9 @@ developer tracks in the same task.
   implement the same `web3://` locator, caller-signed request, encrypted
   response correlation, and rendering contract in client code.
 - Run geth and Prysm: use [Run an L1 node](l1-node.md). The public P2P path is
-  independent of `web3://`.
+  independent of `web3://`. A laboratory overlay that keeps those same
+  clients and dials remotes as `web3://<wallet>:<port>` is recorded in
+  [L1 overlay lab](conet-l0d-l1-overlay-lab.md).
 - Join DePIN mining: use [Participate in mining](l1-mining.md).
 - Move an ERC-20 into CoNET: use
   [Treasury ERC-20 ingress](l1-erc20-bridge.md).

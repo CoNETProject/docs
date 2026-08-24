@@ -14,6 +14,12 @@ This is the public, permissionless L1 joining path. It is separate from:
 - the `ValidatorDepositRedeem` application ledger; and
 - application protocols such as `web3://`.
 
+A laboratory destination — unmodified geth / Prysm peering through
+`conet-l0d` by **wallet locator** instead of public `IP:port` — is
+evaluated in
+[L1 overlay lab — wallet-addressed geth / Prysm](conet-l0d-l1-overlay-lab.md).
+Do not use that lab as the production bootstrap list.
+
 ## 1. What you are joining
 
 | Role | Permission | Purpose |
@@ -290,6 +296,7 @@ private keys, the mnemonic, keystore passwords, JWT, or validator RPC.
 - [Participate in mining](l1-mining.md)
 - [L1 decentralization](../l1/decentralization.md)
 - [`web3://` application protocol](../applications/web3-url.md)
+- [L1 overlay lab — wallet-addressed geth / Prysm](conet-l0d-l1-overlay-lab.md)
 
 ## Next
 

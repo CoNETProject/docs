@@ -16,9 +16,9 @@ Crate design: [whitepaper](https://github.com/CoNET-project/CoNET-L0D/tree/main/
 
 | Role | Command/config | Use |
 |---|---|---|
-| Request/response server | `--proxy HOST:PORT` / `[[l0.proxies]]` | Publish a bounded local request/response service |
-| Persistent-stream server | `--proxyDuplex HOST:PORT` / `[[l0.proxy_duplex]]` | Publish a persistent bidirectional TCP service |
-| Persistent-stream client | `--clientDuplex web3://HOST:PORT` / `l0.client_duplex` | Expose one remote per logical port through `127.0.0.1` |
+| Persistent-stream server (L1 overlay hub primary) | `--proxyDuplex HOST:PORT` / `[[l0.proxy_duplex]]` | Publish a persistent bidirectional TCP service |
+| Persistent-stream client (L1 overlay spoke primary) | `--clientDuplex web3://HOST:PORT` / `l0.client_duplex` | Expose remotes through `127.0.0.1`; the same logical port may map to several remotes |
+| Request/response server | `--proxy HOST:PORT` / `[[l0.proxies]]` | Publish a bounded local request/response service (not the L1 geth/beacon primary path) |
 | Signed Web gateway | `gateway` + `[gateway]` | Map signed GET/HEAD requests to a loopback HTTP origin |
 
 Linux servers and Linux clients can use this binary. Windows, macOS, Android,
@@ -76,7 +76,7 @@ conet-l0d start \
 ```
 
 `--proxy` and `--proxyDuplex` are repeatable. `--clientDuplex` is repeatable.
-Each logical port maps to exactly one remote.
+The same logical port may map to several remotes.
 
 ## Locator
 
@@ -100,7 +100,7 @@ or `results[0]`.
 ## Base configuration
 
 Copy `config/conet-l0d.example.toml` and keep L0 disabled until the real
-wallet identities, key files, and existing entry hosts are configured:
+wallet identities and key files are configured:
 
 ```toml
 state_path = "/run/conet-l0d/state.json"
@@ -113,13 +113,43 @@ enabled = false
 rpc = "https://rpc1.conet.network"
 address_pgp = "0x684b0ac760cEE9c9b85de36d69746420648Cf9e2"
 route_register_url = "https://beamio.app/api/regiestChatRoute"
-entries = []
-listen_entries = []
+si_pool_from_contract = true
+# Optional overrides only when si_pool_from_contract = false:
+# entries = []
+# listen_entries = []
 ```
 
-Entry values come from the existing Guardian node list. Do not invent a
-domain. Outbound application delivery uses an entry distinct from destination
-mailbox B; mailbox receive uses another healthy entry distinct from B.
+## SI entry discovery (GuardianNodesInfoV6)
+
+Default discovery does **not** depend on a static TOML `entries` /
+`listen_entries` list.
+
+With `si_pool_from_contract = true` (default), startup pages
+GuardianNodesInfoV6 (`0xBC6b53065b5647261396d002bDBA0d3396E0722f`) via
+`l0.rpc` (`rpc1` or `publicrpc`) using `getAllNodes` — the same path as the
+client UI / SilentPass: load all nodes → local pool → periodic refresh.
+
+When listen / POST / an `l0_connect` pipe needs an SI entry:
+
+1. **Random**-pick a candidate from the pool.
+2. Soft-qualify with a short TCP `:80` probe to `http://{domain}.conet.network`.
+3. Hand the URL back to the caller; on failure (including SI `pool_full`) cool
+   the host down and pick another.
+
+Do not invent a domain. Outbound application delivery uses an entry distinct
+from destination mailbox B; mailbox receive uses another healthy entry
+distinct from B. Static `entries` / `listen_entries` remain only as an
+explicit override when `si_pool_from_contract = false`. Gateway mode still
+uses its own `listen_entries` / `post_entries` (independent of the overlay
+SI pool).
+
+Live occupancy commands are **`l0_listen`** and **`l0_connect`** only
+(`listenKind: "l0"`). Do **not** send the retired `command: "mining"` +
+`listenKind: "l0"` variant. Chat offers still use `mining` +
+`listenKind: "chat"` (**proxy hubs** need this for inbound `duplex_offer`;
+pure `--clientDuplex` spokes no longer open a static Chat SSE). Never send
+`mining` + `listenKind: "duplex"`, and never treat SI `duplex_*` /
+`p2p_stream_*` / `listenKind: "l1p2p"` as current SI.
 
 ## Server profile
 
@@ -166,15 +196,32 @@ client_duplex = [
 ]
 ```
 
-Each logical port maps to exactly one remote. Use two entries for two
-services (`:8400` and `:4200`); do not list two remotes on the same port.
+The same logical port may map to several remotes. Use two entries for two
+hubs on `:8400`, or `:8400` and `:4200` for two services. The same
+`(host, PORT)` listed twice is rejected.
 
 The Linux runtime binds each line on `127.0.0.1`. The preferred listener is
 the logical port. If that port is already occupied, the runtime walks
 `port + 10000`, `port + 20000`, and so on. An optional `@LOCAL` suffix is a
 Linux bind pin only — it is not part of the public `web3://` locator
-contract. Read the startup log or `status` and configure the local
-application with the actual endpoint.
+contract. Prefer the protocol form `web3://0x…:8400`. Use `@18400` only when
+the local application must hard-code a loopback port. Read the startup log
+or `status` and configure the local application with the actual endpoint.
+
+`@LOCAL` does **not** change the offer. `web3://0x66dC…:8400@18400` still
+offers remote service `8400`. If this host also publishes `--proxyDuplex`
+on `8400`, inbound offers to **this** billing wallet use the proxy origin.
+Outbound client sessions to **another** wallet's `8400` must not attach
+that proxy drain. A current Linux implementation still keys
+`maybe_start_proxy_drain` by the logical port integer; that is a runtime
+defect, not a reason to put `@18400` into the public URI.
+
+One host may be **both** a client and a published wallet. Outbound
+`client_duplex` lists only the wallets that host must join. Inbound
+`proxy_duplex` publishes the local origin so **any** conforming client can
+dial this host's billing EOA. The host does not add those callers to
+`client_duplex` and does not dial them back. Laboratory evidence:
+[L1 overlay lab](conet-l0d-l1-overlay-lab.md).
 
 ## Wallet and key roles
 
@@ -279,7 +326,7 @@ Check evidence at each layer:
 |---|---|
 | Configuration | `check-config` succeeds |
 | Identity | exact EOA/tag and AddressPGP route are visible |
-| Entry path | configured entry accepts the encrypted request |
+| Entry path | SI pool (or override list) returns a healthy entry that accepts the encrypted request |
 | Session | offer and accept refer to the expected wallet, port, and session |
 | Data | frame counters continue in both directions |
 | Origin | configured local service accepts the upstream connection |
@@ -287,11 +334,17 @@ Check evidence at each layer:
 
 A running process or entry HTTP `200` alone is not an end-to-end test.
 
+Laboratory evidence that unmodified geth / Prysm can peer through this
+runtime by **wallet locator** (not public `IP:port`) is recorded in
+[L1 overlay lab — wallet-addressed geth / Prysm](conet-l0d-l1-overlay-lab.md).
+That page is a lab review, not the public L1 join path.
+
 ## Failure order
 
 1. Validate the exact locator and wallet identity.
 2. Confirm the routing and mailbox PGP records.
-3. Confirm the configured entries are existing, healthy Guardians.
+3. Confirm the SI pool refreshed from GuardianNodesInfoV6 (or that static
+   override entries are existing, healthy Guardians when the pool is off).
 4. Confirm the local client endpoint or server origin is listening.
 5. Match offer, accept, and session IDs.
 6. Confirm encrypted frames flow both ways.
@@ -305,3 +358,4 @@ Do not convert a timeout or routing failure into a successful empty result.
 - [`web3://` Application Protocol contract](../l0/web3-application-protocol.md)
 - [L0 development](l0.md)
 - [How to use Layer Minus](../l0/using-l0.md)
+- [L1 overlay lab — wallet-addressed geth / Prysm](conet-l0d-l1-overlay-lab.md)

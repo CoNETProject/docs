@@ -58,6 +58,13 @@ An incoming offer is **attach-only**. The host must first match:
 An unmatched, replayed, stale, or ambiguous offer must not allocate a line or
 open an arbitrary local socket.
 
+When the same process is also a client of another wallet's identical
+logical port, inbound and outbound lines stay separate. Only an offer
+addressed to **this** host's billing wallet plus that port may open the
+`--proxyDuplex` origin. An outbound `web3://<other>:8400` session keeps
+the same port number as remote metadata and must not drain the local
+origin. See [URI grammar](web3-application-protocol.md#2-uri-grammar).
+
 ## Why two attached lines
 
 An SSE receive line is server-to-listener. Full duplex therefore uses two
@@ -214,6 +221,8 @@ observer, provide padding, or make a compromised endpoint safe. See
   [`web3://` Application Protocol](web3-application-protocol.md)
 - Linux operator guide:
   [Developers — `conet-l0d`](../developers/conet-l0d.md)
+- Laboratory geth / Prysm overlay:
+  [L1 overlay lab](../developers/conet-l0d-l1-overlay-lab.md)
 
 ## Related
 
