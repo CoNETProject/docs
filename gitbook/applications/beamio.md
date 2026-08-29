@@ -2,7 +2,7 @@
 
 **Maturity: Public application.** Consumer, Merchant OS, and POS entry points are public. This page is the **Beamio product whitepaper**: what the suite is, which surfaces exist today, and how cash rails are placed. It is not a claim that every workflow is complete, independently audited, or covered by a published SLA.
 
-Revision: **2026-08-23**.
+Revision: **2026-08-29**.
 
 Public site: [https://gitbook.conet.network/applications/beamio.html](https://gitbook.conet.network/applications/beamio.html)
 
@@ -32,6 +32,20 @@ Beamio is not a fourth protocol tier. It coordinates application state across Co
 The active POS product is the **POS PWA loaded by native WebView shells**. Retired native iOS and Android POS business interfaces are not the current product implementation.
 
 A related **Alliance** client exists as another Beamio-family surface. It is not a fourth merchant or POS product.
+
+## Public distribution
+
+The Beamio public homepage at [https://beamio.app/](https://beamio.app/) presents the three active application surfaces and their current distribution channels.
+
+| Product | Apple | Google Play | Direct Android package | Web |
+| --- | --- | --- | --- | --- |
+| **Consumer** | [App Store](https://apps.apple.com/us/app/beamio-smart-local-pass/id6755375110) | [Google Play](https://play.google.com/store/apps/details?id=com.beamio.app) | [Beamio Android APK](https://beamio.app/beamio-android.apk) | [Consumer PWA](https://beamio.app/app/) |
+| **POS** | [App Store](https://apps.apple.com/ca/app/beamio-softpos/id6763462151) | [Google Play](https://play.google.com/store/apps/details?id=com.beamio.pos) | [Beamio POS Android APK](https://beamio.app/beamio-softpos.apk) | [POS PWA](https://pos.beamio.app/) |
+| **Merchant OS** | Browser application; no native-store package is required | Browser application; no native-store package is required | Not applicable | [Merchant OS](https://biz.beamio.app/) |
+
+The native Consumer and POS packages are WebView shells around their corresponding active PWAs. They provide native integration and Embedded OTA delivery; they do not create a separate native business implementation.
+
+Share and install links on `https://beamio.app/app-download` open **Consumer only**. They never open BeamioPOS. If Consumer is not installed, the landing stays in the browser or the Consumer App Store. POS uses its own custom scheme (`beamiopos://`) and Associated Domains on `pos.beamio.app`.
 
 ## Protocol dependencies
 
@@ -83,9 +97,9 @@ The following capabilities are live on the public surfaces. Detail and limits li
 | Domain | Consumer | Merchant OS | POS |
 | --- | --- | --- | --- |
 | Identity | `@BeamioTag`, EOA, optional Smart Wallet | Owner EOA, staff, pending terminal authorization | Terminal EOA as lower-level admin |
-| Programs | Hold membership / points, Discover brands | Create and publish program cards, membership, reward rules | Issue membership, top-up, charge |
+| Programs | Hold membership NFT (`tokenId ∈ [100, 1e11)`), program points (`#0`), Discover brands | Create and publish program cards; base membership plus Add-tier higher paid tiers | Issue membership NFT (not leftover `#0`), top-up, charge |
 | Commerce | Claim coupons and catalogs, pay | Issue coupons and catalogs, review transactions | Charge, top-up, claim, redeem, burn |
-| Cash | Coinbase → CONET-USDC; Stripe Onramp → Base USDC to EOA | Treasury / USDC views; Fuel packs as B-Units | Uses program points and membership; does not replace consumer deposit rails |
+| Cash | Stripe Onramp → Base USDC to EOA; Coinbase `walletDeposit` → CONET-USDC (separate Add Cash). Home Fund **Receive via QR** and **Receive from a wallet** are P2P sends to the owner EOA on Base, not deposit rails. | Treasury / USDC views; Fuel packs as B-Units | Uses program points and membership; does not replace consumer deposit rails |
 | Messaging | DePIN Chat | Chat plus POS permission inbox | Sends POS permission envelopes; not a general Messages product |
 
 Two USDC deposit rails must not be merged:
@@ -93,9 +107,18 @@ Two USDC deposit rails must not be merged:
 | Rail | User-visible result | Chain | See |
 | --- | --- | --- | --- |
 | **Coinbase / `walletDeposit`** | CONET-USDC via Treasury LockMint | CoNET settlement after Base lock | [Cash and USDC](beamio/cash-and-usdc.md) |
-| **Buy USDC with card (`eoaUsdcStripe`)** | Stripe Crypto Onramp sends native USDC to the owner **EOA** | **Base** | [Cash and USDC](beamio/cash-and-usdc.md) |
+| **Buy USDC with card (`eoaUsdcStripe`)** | Stripe Crypto Onramp sends native USDC to the owner **EOA**. Consumer Home CTA is **Fund Wallet** (same rail). | **Base** | [Cash and USDC](beamio/cash-and-usdc.md) |
 
 Merchant Kit Stripe (CAD kits → B-Units / Ket) is a third Stripe product and is **not** a consumer USDC deposit rail. Both Kit Checkout and Consumer Onramp use the same operator account **`StripeBeamio`** and the same live webhook **`https://beamio.app/api/stripeBeamioHook`** (signing secret **`STRIPE_WEBHOOK_SECRET_MERCHANT_KIT`**). Older Dashboard URLs are retired; the API may still forward them to the same handler. Fulfillment remains on separate rails. Consumers who buy USDC with a card receive native Base USDC **directly in the owner EOA**.
+
+For Beamio issued-NFT social exchange, canonical CoNET-USDC is
+[`0x5209865D404aA5646eDe5B91CD4218909eA72eDA`](https://mainnet.conet.network/token/0x5209865D404aA5646eDe5B91CD4218909eA72eDA)
+(6 decimals). The user's AA burns Reward PT `#13`; the merchant card escrow
+pays the reward to the user's EOA. This is not a direct USDC transfer to the
+AA. The sole active CoNET Treasury is TreasuryBridgeV3 at
+[`0xa208982212978550594A7FEEB70a61665d129003`](https://mainnet.conet.network/address/0xa208982212978550594A7FEEB70a61665d129003).
+The legacy USDC factory address `0xfD0D7B0706AaB5E4351bcED37bC3C77ed6813907`
+is deprecated.
 
 ## What exists today
 

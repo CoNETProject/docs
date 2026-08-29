@@ -4,7 +4,7 @@
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-08-23**.
+Revision: **2026-08-28**.
 
 ## Product role
 
@@ -24,13 +24,19 @@ This chapter is the whitepaper source for deposit semantics. Merchant Fuel Packs
 
 Treasury (sole active): **TreasuryBridgeV3** `0xa208982212978550594A7FEEB70a61665d129003`.
 
+Canonical CoNET-USDC for CoNET L1 application settlement is
+[`0x5209865D404aA5646eDe5B91CD4218909eA72eDA`](https://mainnet.conet.network/token/0x5209865D404aA5646eDe5B91CD4218909eA72eDA)
+(6 decimals). The legacy USDC factory address
+`0xfD0D7B0706AaB5E4351bcED37bC3C77ed6813907` is deprecated and must not be
+used in new application modules or accounting.
+
 Base USDC: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`.
 
 Base RPC for these reads: `https://base-rpc.conet.network`. Beamio does **not** submit the Onramp USDC transfer.
 
 ## Coinbase / Treasury (`walletDeposit`)
 
-Consumer Wallet / Home keep **Coinbase** as the existing add-cash path.
+Coinbase `walletDeposit` is still the CONET-USDC LockMint path. Home **Fund Wallet** no longer uses a Coinbase row for that rail: the middle card is **Receive via QR** (peer-to-peer EIP-681 to the owner EOA on Base). That QR is **not** a third deposit rail and must not share fulfillment with `walletDeposit` or `eoaUsdcStripe`. The third Fund row (**Receive from a wallet**) asks the native shell which catalog apps are installed (MetaMask, Coinbase Wallet, OKX, TokenPocket, Phantom), then opens the **PWA-built** deep link so that app can send Base USDC to the same EOA. In a **desktop browser**, the same row uses the injected provider: it must `eth_sendTransaction` a Base USDC `transfer` to the owner EOA (after connect + switch/add Base). A connect-or-switch-only path does not open the extension send UI. Neither the deep link nor the injected transfer is a third deposit rail. Coinbase Onramp remains a separate Add Cash entry when the client opens `WALLET_USDC_DEPOSIT_WORKFLOW = 'walletDeposit'`.
 
 1. User completes Coinbase / x402 settle.
 2. Master occupies the **Base** settle pool for the lock step.
@@ -40,7 +46,7 @@ This rail is unchanged by the Stripe Onramp product. Clients must keep `WALLET_U
 
 ## Buy USDC with card (`eoaUsdcStripe`)
 
-Consumer path: **Home / Wallet → Buy USDC with card**. Stripe **Crypto Onramp** sends native USDC on Base to the owner **EOA**. Beamio does **not** accept card cash and then `USDC.transfer` from an operator settle wallet.
+Consumer path: **Home → Fund Wallet** (Stripe Crypto Onramp; same rail as **Buy USDC with card**). Stripe **Crypto Onramp** sends native USDC on Base to the owner **EOA**. Beamio does **not** accept card cash and then `USDC.transfer` from an operator settle wallet.
 
 ```text
 Consumer PWA
@@ -111,6 +117,9 @@ Onramp handlers must ignore `checkout.session.*` for consumer USDC. Those events
 
 - Merchant Fuel Pack checkout (B-Units merchandising).
 - POS Charge / Top-up (program points + B-Unit fees). See [POS terminal](pos.md).
+- Issued-NFT social exchange: burning `#13` is paid from merchant card
+  `escrowUsdc6` in canonical CoNET-USDC to the user's EOA, not directly to the
+  user's AA. See [Merchant OS](merchant-os.md).
 - Cross-chain Treasury mechanics beyond naming the V3 proxy. See [Decentralized cross-chain Treasury](../../l1/cross-chain-treasury.md).
 
 ## Trust boundary
