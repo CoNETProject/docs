@@ -42,6 +42,10 @@ test -f _book/index.html
 mkdir -p _book/l1/network
 cp -a l1/network/genesis.json l1/network/genesis.ssz l1/network/config.yml l1/network/SHA256SUMS _book/l1/network/
 test -s _book/l1/network/genesis.ssz
+# Theme default favicon is not the CoNET mark; copy after HonKit (npm run build already does this).
+node copyConetFavicon.cjs
+test -s _book/favicon.ico
+test -s _book/gitbook/images/favicon.ico
 rm -f _book/package.json _book/package-lock.json
 
 echo "==> Ensure remote web root"
@@ -152,8 +156,11 @@ SMOKE_PATHS=(
 	"/l2/routing-registry.html"
 	"/l2/cross-chain-assets.html"
 	"/l2/explorer.html"
+	"/favicon.ico"
+	"/gitbook/images/favicon.ico"
 	"/applications/"
 	"/applications/silentpass-vpn.html"
+	"/applications/depin-chat.html"
 	"/applications/web3-url.html"
 	"/applications/miner-orderbook-dex.html"
 	"/use-cases/decentralized-sns.html"

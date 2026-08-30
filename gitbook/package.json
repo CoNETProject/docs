@@ -4,7 +4,7 @@
   "private": true,
   "description": "Self-hosted CoNET GitBook (HonKit) — Applications / L0 / L1 / L2 / Developers",
   "scripts": {
-    "build": "honkit build",
+    "build": "honkit build && node copyConetFavicon.cjs",
     "serve": "honkit serve"
   },
   "devDependencies": {
