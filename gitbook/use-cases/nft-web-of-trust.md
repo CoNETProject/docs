@@ -22,7 +22,7 @@ This is the “new economy” proposed here: value may arise from attributable c
 
 - CoNET L1 is the production chain on which wallet signatures, contracts, assets, and settlement anchors can be recorded.
 - [Beamio](../applications/beamio.md) documents wallet identity through EOA/AA accounts and `@BeamioTag`, plus wallet-attributable social-stat primitives.
-- [DePIN Chat](../applications/depin-chat.md) is used by current Beamio surfaces for encrypted wallet messaging and typed business envelopes.
+- [CoNET Chat](../applications/depin-chat.md) is used by current Beamio surfaces for encrypted wallet messaging and typed business envelopes.
 - [Assets on L1](../l1/assets.md) documents conet-USDC and other current asset roles.
 
 These components can identify parties, carry signed messages, and anchor state. They do not by themselves constitute a complete creator-rights or provenance product.
@@ -150,5 +150,5 @@ A product should not describe this model as live until it can demonstrate:
 - [L2 asset, storage, and trade tips](../l2/tip-classes.md)  
 - [L2 economics](../l2/economics.md)  
 - [Assets on L1](../l1/assets.md)  
-- [Beamio](../applications/beamio.md) · [DePIN Chat](../applications/depin-chat.md)  
+- [Beamio](../applications/beamio.md) · [CoNET Chat](../applications/depin-chat.md)  
 - Whitepaper copyright and sales-journal design — [CoNET-DLE whitepaper](https://github.com/CoNET-project/CoNET-DLE/blob/main/src/whitepaper/Decentralization%20Cluster%20multi-chain.md) §4.8–§4.10

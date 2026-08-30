@@ -29,8 +29,8 @@ It is not Merchant OS. It does not create program cards or edit Programs metadat
 | **Membership** | Selector shows **base membership (index 0)** plus each higher paid tier. The terminal sends the locked `membershipFeeFiat6` and must not invent a price. Issue / upgrade charges **fee only** (two-decimal display). The membership NFT is `tokenId ∈ [100, 1e11)` on the customer Smart Wallet (AA). Leftover `#0` after the fee is **program points**, not the membership NFT. Cashiers must not add `0.000001` card credit onto the keypad amount. |
 | **Check Balance** | Reads membership and balances for the scanned / entered customer. |
 | **Claim / Redeem / Burn** | Issued NFT claim, redeem-code consume, POS coupon burn. |
-| **Authorization** | New terminals send `beamio_pos_terminal_permission_v1` over DePIN Chat to the merchant EOA. Merchant OS shows **Pending terminal authorization**, not a Messages bubble. |
-| **Chat to users** | POS may send ordinary one-to-one DePIN Chat to a customer EOA. That path **must not** set mailbox `NoPush` (same as Consumer / Merchant OS Messages). Delivery receipts still use `NoPush: true`. See [DePIN Chat](../depin-chat.md). |
+| **Authorization** | New terminals send `beamio_pos_terminal_permission_v1` over CoNET Chat to the merchant EOA. Merchant OS shows **Pending terminal authorization**, not a Messages bubble. |
+| **Chat to users** | POS may send ordinary one-to-one CoNET Chat to a customer EOA. That path **must not** set mailbox `NoPush` (same as Consumer / Merchant OS Messages). Delivery receipts still use `NoPush: true`. See [CoNET Chat](../depin-chat.md). |
 
 ### Fees (B-Units)
 
@@ -76,4 +76,4 @@ iOS POS must **not** register the Consumer custom scheme `beamio://` or Associat
 - [Beamio](../beamio.md)
 - [Consumer PWA](consumer.md)
 - [Merchant OS](merchant-os.md)
-- [DePIN Chat](../depin-chat.md)
+- [CoNET Chat](../depin-chat.md)

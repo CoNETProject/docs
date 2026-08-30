@@ -78,6 +78,10 @@ conet-l0d start \
 `--proxy` and `--proxyDuplex` are repeatable. `--clientDuplex` is repeatable.
 The same logical port may map to several remotes.
 
+`--debugSI` (optional SI URL, domain, or route key id) pins exclusive/temp
+mailbox B for laboratory isolation. Without the flag, mailbox B is a random
+on-chain SI. Entry A/C stays random and must not equal B.
+
 ## Locator
 
 The application endpoint grammar is:
@@ -267,9 +271,11 @@ The implemented sequence is:
 5. Send a signed `duplex_offer`, optionally with the first application bytes.
 6. The remote server validates billing identity, target, and logical port.
 7. The remote server opens exactly one configured upstream socket.
-8. The remote response returns in `duplex_accept`.
-9. Both sides occupy the accepted line and carry ordered encrypted frames.
-10. Close or retry that line independently.
+8. `duplex_accept` is mailbox work to the initiator temp mailbox (inner user PGP, no `NoPush`). SI copies it onto idle `l0_listen` by `userPgpKeyId`.
+9. The initiator occupies the responder mailbox; only then the responder reverse-occupies. Occupying the initiator SSE first drops the accept.
+10. If the proxy temporary line fails, the hub posts `duplex_reject` to the client L0d request listen and does not retry that wallet. The client application reconnects with a new offer.
+11. Both sides carry ordered encrypted frames on the occupied pipes.
+12. Close or retry that line independently.
 
 Registration HTTP `200` is queue admission only. AddressPGP visibility and
 the receive session must be ready before application bytes are treated as

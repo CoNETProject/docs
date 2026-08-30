@@ -23,6 +23,12 @@ All assets below are associated with CoNET L1, **`chainId 224422`**.
 
 The Treasury controls explicit cross-chain route and canonical-asset policy. A foreign ERC-20 does not become canonical merely because it has been wrapped or assigned matching metadata. See [Decentralized cross-chain Treasury](cross-chain-treasury.md).
 
+CoNET-USDC uses 6 decimals. Issued-NFT social exchange payouts must use this
+canonical token; the legacy USDC factory address
+`0xfD0D7B0706AaB5E4351bcED37bC3C77ed6813907` is deprecated. In that exchange,
+the user's AA burns Reward PT `#13`, while the merchant card escrow pays the
+canonical USDC reward to the user's EOA.
+
 **ConetGB1155 is deprecated.** It is a legacy accounting track and must not be used as the canonical GB wallet balance, transfer asset, or default integration target. New integrations should use the GBToken ERC-20 contract and 9-decimal precision.
 
 ## Endpoint note

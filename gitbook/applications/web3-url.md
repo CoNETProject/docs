@@ -23,6 +23,19 @@ routing and mailbox delivery; the application protocol supplies the URI,
 caller-signed request or stream, correlated encrypted response, and error
 semantics.
 
+The layers have distinct responsibilities:
+
+1. **CoNET L0** is the decentralized cloud resource plane: network forwarding,
+   ciphertext storage, service-hosting adapters, and contributed CPU/GPU
+   capacity.
+2. **Layer Minus** is the privacy communication protocol that composes those
+   L0 resources into encrypted, wallet-addressed routes.
+3. **CoNET L1 and CoNET-DLE L2** can use Layer Minus for privacy-routed peer
+   and application-led mining gossip.
+4. **`web3://`** is the private application-server surface on the same
+   infrastructure. It addresses a Web, API, AI, or TCP service by wallet or
+   exact tag and authenticates the caller.
+
 ```text
 web3://0x<wallet>/<resource>
 web3://<exact-tag>.web3/<resource>

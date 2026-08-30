@@ -29,6 +29,12 @@ network. Do not use it as CoNET L1 truth.
 | ChatIndexRegistry | `0x1511Caa71081C84d8a591490D1b83879088EED72` |
 | GBToken | `0xC3EF02DaE632b4C10abB66e07d92a387c10838D8` |
 
+Canonical CoNET-USDC for CoNET L1 application settlement:
+[`0x5209865D404aA5646eDe5B91CD4218909eA72eDA`](https://mainnet.conet.network/token/0x5209865D404aA5646eDe5B91CD4218909eA72eDA)
+(6 decimals). The sole active Treasury is TreasuryBridgeV3 at the address
+above; legacy USDC factory addresses and older Treasury addresses are
+deprecated.
+
 Verify current code and state on the active RPC before relying on a historical
 deployment note.
 
@@ -44,6 +50,7 @@ deployment note.
 | Run an L1 node | [Run an L1 node](developers/l1-node.md) |
 | Participate in mining | [L1 mining](developers/l1-mining.md) |
 | Build against DLE specifications | [L2 development](developers/l2.md) |
+| Read the CoNET Chat product thesis | [CoNET Chat](applications/depin-chat.md) |
 
 ## Source repositories
 
@@ -60,7 +67,7 @@ deployment note.
 |---|---|
 | L0 encrypted entry/mailbox forwarding | Implemented |
 | L1 chain, RPC, Explorer, validators, and assets | Public network |
-| Chat delivery, receipt, presence, and encrypted-history components | Integrated capability |
+| CoNET Chat delivery, receipt, presence, and encrypted-history components | Integrated capability |
 | `web3://` locator, Linux runtime, caller-signed gateway, and early browser client | Under development |
 | CoNET-DLE specifications and lab explorer | Draft / lab evidence, not a production L2 launch |
 

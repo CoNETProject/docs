@@ -1,188 +1,424 @@
-# CoNET DePIN Chat
+# CoNET Chat
 
-**Maturity: Integrated capability.** DePIN Chat is implemented inside Beamio consumer, merchant, and POS flows. It is not presented here as a feature-complete replacement for mainstream messaging platforms.
+**Wallet-addressed, zero-trust communication infrastructure built on CoNET L0.**
 
-Public site: [https://gitbook.conet.network/applications/depin-chat.html](https://gitbook.conet.network/applications/depin-chat.html)
+**Maturity:** Integrated capability. Beamio Consumer, Merchant OS, and POS already use this infrastructure. It is not a finished public messenger with groups, channels, or calls.
 
-## Product role
+> **Protect the relationship, not only the message.**
 
-DePIN Chat is an **application composition** of Layer Minus. L0 only forwards OpenPGP envelopes by wallet / key ID; see [How to use Layer Minus](../l0/using-l0.md). Wire samples: [SI developer guide](../l0/si-developer-guide.md) and [Chat developer guide](../l0/chat-developer-guide.md). This product turns that forwarding path into:
+Encryption can protect what people say.
 
-- wallet-addressed one-to-one messages;
-- typed application envelopes, such as POS terminal authorization;
-- delivery state, transient presence, and encrypted cross-device history.
+But communication privacy is larger than message content.
 
-The messaging identity is an **EOA with AddressPGP material**, not an AA Smart Wallet, phone number, or platform account. `@BeamioTag` is a discovery aid; clients must resolve an exact tag and use the resulting EOA rather than selecting the first prefix-search result.
+Who you communicate with, how frequently you communicate, how relationships form, and how those relationships persist over time can reveal a social graph that is more sensitive than any individual message.
 
-DePIN Chat is a messaging and application-control plane. It does not currently claim the group, channel, voice, video, moderation, or contact-graph maturity of a general social messenger.
+**CoNET Chat is designed around a stronger privacy principle: the relationship itself should be protected.**
+
+Instead of placing users, contacts, conversations, and readable history inside one centralized messaging database, CoNET Chat uses wallet identities, zero-trust P2P communication, encrypted decentralized storage, and user-controlled cryptographic recovery.
+
+The goal is not simply to encrypt chat.
+
+**The goal is to prevent the user's social relationships from becoming the property of a messaging platform.**
+
+---
+
+## The social graph is the most sensitive layer
+
+A message tells someone what you said.
+
+A social graph can reveal **who matters to you**.
+
+Over time, communication relationships can expose families, friends, business partners, customers, communities, organizations, financial relationships, and patterns of coordination.
+
+This makes communication metadata fundamentally different from ordinary application data.
+
+A centralized messaging provider may encrypt message content while still maintaining a powerful relationship graph:
+
+- **Who talks to whom**
+- **How often**
+- **For how long**
+- **Which relationships form clusters**
+- **Which identities connect otherwise separate communities**
+
+Protecting message plaintext alone does not eliminate this concentration of knowledge.
+
+CoNET Chat therefore treats the user's social relationships as a primary privacy boundary.
+
+> **Messages are private. Relationships should be private too.**
+
+---
+
+## From encrypted messages to private relationships
+
+Traditional messaging architecture tends to concentrate several kinds of information in the same operator:
+
+```text
+Identity
+   ↓
+Contact graph
+   ↓
+Message routing
+   ↓
+Conversation metadata
+   ↓
+History
+   ↓
+Platform database
+```
+
+Even when message bodies are end-to-end encrypted, the platform may still occupy a privileged position from which communication relationships can be reconstructed.
+
+CoNET Chat takes a different architectural direction:
+
+```text
+Wallet identity
+   ↓
+Zero-trust CoNET L0 / Layer Minus
+   ↓
+Encrypted communication
+   ↓
+Fragmented encrypted history
+   ↓
+Wallet-controlled recovery
+```
+
+The infrastructure is designed to perform its transport and storage functions without requiring one centralized service to own the complete communication relationship.
+
+This is the central privacy objective of CoNET Chat:
+
+### No single messaging platform should own your social graph.
+
+---
+
+## Your wallet is your communication identity
+
+CoNET Chat does not begin with a platform-owned username, phone-number directory, email account, or centralized social account.
+
+It begins with the wallet.
+
+**Wallet → Wallet**
+
+The wallet address becomes the communication identity.
+
+This changes an important relationship between the user and the communication system.
+
+| Conventional platform | CoNET Chat |
+|---|---|
+| The platform creates your identity and then records your relationships. | The user already owns the identity, and the communication infrastructure serves that identity. |
+
+The social relationship no longer needs to originate inside a platform-owned account database.
+
+---
+
+## Zero-trust communication infrastructure
+
+CoNET Chat is built on CoNET L0 and Layer Minus.
+
+L0 provides decentralized network resources for forwarding and storage. Layer Minus uses those resources for wallet-addressed private communication.
+
+A communication path can separate infrastructure roles:
+
+```text
+Sender Wallet
+   ↓
+Entry
+   ↓
+Mailbox
+   ↓
+Entry
+   ↓
+Recipient Wallet
+```
+
+Application messages are encrypted before traversing this infrastructure.
+
+Infrastructure nodes can perform routing, forwarding, mailbox, and storage functions without needing the recipient's private key or application-message plaintext.
+
+This is why CoNET Chat is better understood as **communication infrastructure**, rather than another messaging service.
+
+---
+
+## Decentralized history without a centralized social database
+
+Conversation history creates another major privacy problem.
+
+If one provider stores every user's complete history, that provider does not merely hold messages.
+
+It holds a long-term record of relationships.
+
+CoNET Chat separates encrypted history from the centralized messaging-platform model.
+
+Conversation records can be encrypted and fragmented across decentralized storage infrastructure.
+
+The recovery path conceptually becomes:
+
+```text
+Encrypted fragments
+   *
+Encrypted index
+   *
+Wallet-controlled cryptographic authority
+   ↓
+Recovered history
+```
+
+The decentralized cloud stores ciphertext.
+
+The user's cryptographic authority controls recovery.
+
+This means historical communication does not need to exist as a readable centralized database controlled by the messaging provider.
+
+And that matters because protecting history is also about protecting the relationships encoded inside that history.
+
+---
+
+## The private key restores more than messages
+
+When a user restores CoNET Chat history, the system is not merely reconstructing text.
+
+It is reconstructing the user's own communication context.
+
+The cryptographic authority associated with the wallet is required to recover encrypted historical state.
+
+Without that authority, decentralized storage providers should see encrypted material rather than a readable conversation archive.
+
+This creates a fundamentally different ownership model:
+
+- **Infrastructure stores encrypted fragments.**
+- **The wallet controls reconstruction.**
+- **The user retains authority over communication history.**
+
+The objective is to make social relationships cryptographically recoverable by the user without making them centrally readable by the infrastructure provider.
+
+---
+
+## CoNET Chat is infrastructure, not a social silo
+
+CoNET Chat is not intended to become another platform that owns users, contacts, and communities.
+
+It is intended to provide the private communication layer beneath applications.
+
+The same infrastructure can support:
+
+- **Wallet ↔ Wallet**
+- **Customer ↔ Merchant**
+- **Merchant ↔ POS**
+- **User ↔ AI Agent**
+- **Application ↔ Application**
+- **Human ↔ Machine**
+
+A wallet application can use it.
+
+A commerce application can use it.
+
+A decentralized social application can use it.
+
+An AI agent can use it.
+
+A third-party developer can use it through the CoNET Chat SDK.
+
+The application may change.
+
+The communication relationship remains controlled by wallet identities rather than by a centralized social platform.
+
+---
+
+## Developer-ready infrastructure
+
+CoNET Chat is available to developers through:
+
+`@conet.project/chat-sdk`
+
+The SDK provides reusable infrastructure for wallet-addressed communication, cryptographic operations, mailbox interaction, encrypted messages, delivery state, encrypted history, and recovery.
+
+This allows developers to add private communication without first building a centralized user-and-relationship database as the foundation of their application.
+
+The architectural goal is simple:
+
+**Give applications communication infrastructure without giving a platform ownership of the user's social graph.**
+
+Wire-level how-to: [CoNET Chat developer guide](../l0/chat-developer-guide.md) and [L0 development](../developers/l0.md).
+
+---
+
+## Already integrated into Beamio
+
+CoNET Chat infrastructure is already used across Beamio product environments.
+
+| Surface | Role |
+|---|---|
+| **Beamio Consumer** | Wallet-to-wallet communication, presence, delivery state, offline messages, and encrypted-history recovery |
+| **Beamio Merchant OS** | Merchant communication, encrypted delivery, message listening, and application-level authorization workflows |
+| **Beamio POS** | Wallet communication and typed authorization messages between POS terminals and merchant systems |
+
+This also demonstrates that CoNET Chat is broader than human text messaging.
+
+The same private communication infrastructure can carry machine-readable application messages.
+
+---
+
+## Privacy boundary
+
+CoNET Chat should not claim that communication metadata disappears completely.
+
+Zero trust does not mean zero metadata.
+
+Individual infrastructure participants may still observe limited information required to perform their role, such as connections, timing, traffic volume, encrypted-message arrival, or routing state.
+
+Endpoint compromise can also expose information available to that endpoint.
+
+The architectural objective is therefore more precise:
+
+**Avoid concentrating identity, relationship, routing, message content, and readable history inside one trusted messaging provider.**
+
+Role separation, encrypted payloads, decentralized infrastructure, fragmented encrypted history, and wallet-controlled recovery reduce the amount of relationship information that any single infrastructure participant needs to possess.
+
+---
+
+## Protect what people say. Protect who people know.
+
+For decades, online communication has treated the social graph as an asset belonging to the platform.
+
+CoNET Chat takes the opposite position.
+
+- **Your identity belongs to your wallet.**
+- **Your messages belong to you.**
+- **Your history belongs to you.**
+- **Your relationships belong to you.**
+
+CoNET Chat is designed to make the social relationship itself one of the most protected forms of private information in the communication stack.
+
+**Wallet-addressed. Zero-trust. Relationship-private.**
+
+Built on CoNET L0.
+
+---
 
 ## Protocol dependencies
 
-| Dependency | Application use |
-| --- | --- |
-| **AddressPGP on CoNET L1** | Associates an EOA with a user PGP public key and a mailbox route key |
-| **EIP-191 signatures** | Authenticates the sender’s outer message envelope and mailbox control commands |
-| [Layer Minus mailbox routing](../l0/mailbox-routing.md) | Sends through entry **A**, stores at mailbox **B**, and listens through entry **C**, with `A ≠ B` and `C ≠ B` |
-| **User PGP keys** | Encrypt business messages to recipients and delivery receipts back to senders |
-| **Route PGP keys** | Encrypt mailbox-control commands such as listen, presence query, and mailbox delivery ACK |
-| **CoNET-SI mailbox state** | Stores ciphertext, maintains live listen pools, forwards SSE data, and applies delivery ACKs |
-| **Encrypted IPFS fragments + ChatIndexRegistry** | Provides a recoverable encrypted-history track whose head pointer is recorded by [`ChatIndexRegistry`](https://mainnet.conet.network/address/0x1511Caa71081C84d8a591490D1b83879088EED72) on CoNET L1 |
-| **Client Worker and local database** | Decrypts, verifies, merges, and renders messages without placing private keys in relay nodes |
+The relationship-privacy objective is implemented on existing L0 contracts. Those contracts do not disappear because the product thesis is stronger.
 
-## How protocol capability becomes messaging
+| Dependency | Chat use |
+|---|---|
+| **AddressPGP on CoNET L1** | Registers user PGP, route PGP, and mailbox binding |
+| **Layer Minus `/post`** | Carries encrypted application envelopes and listen commands |
+| **A/B/C mailbox routing** | Sender uses entry **A**; recipient listens through entry **C**; mailbox **B** is never the client HTTP target |
+| **EIP-191 sender signature** | Authenticates the outer envelope |
+| **Recipient user PGP** | Encrypts application plaintext |
+| **Mailbox route PGP** | Encrypts listen, mailbox ACK, and presence query |
+| **ChatIndexRegistry + IPFS fragments** | Encrypted recoverable history; the chain stores only a pointer |
 
-### A / B / C delivery path
+Chat is therefore an application of L0, not a separate messaging network.
 
-```text
-Sender S
-  │  sign the application text
-  │  encrypt the business envelope to recipient R's user PGP
-  │  HTTP POST /post to entry A  (HTTPS optional; body is already user-PGP ciphertext)
-  ▼
-Entry A  ─────────►  mailbox B
-                     │  stores ciphertext before best-effort live forwarding
-                     │
-Recipient R          │
-  │  encrypt listen command to B's route PGP
-  │  open SSE through entry C
-  └─────────────────►  C forwards the listen to B
+---
 
-Only R's user key decrypts the business message.
-```
-
-The client must not send or listen by directly dialing mailbox B. Entry health, mailbox delivery, application ingestion, and user-visible delivery are separate states.
-
-### User PGP and route PGP are not interchangeable
-
-| Payload | Encryption target | Reason |
-| --- | --- | --- |
-| Ordinary chat or typed business message | Recipient **user PGP** | Only the recipient application should read business plaintext |
-| `beamio_chat_delivery_receipt_v1` | Inner: original sender **user PGP**. Outer: sender mailbox **B route PGP** as mailbox work `{ data, NoPush: true }` | The sender application reads the receipt. HTTP stays `{ data }` only. `NoPush` skips APNs on the sender mailbox. |
-| Listen command | Mailbox B **route PGP** | B must read the control command and attach the SSE listener |
-| `wallet_online_query` | Contact mailbox B **route PGP** | B answers from its own live listen pool |
-| `gossip_delivery_ack` | Recipient mailbox B **route PGP** | B removes the matching offline item and cancels pending notification work |
-
-Encrypting a business message to a route key would let the mailbox read it. Encrypting a mailbox-control command to a user key would prevent the mailbox from processing it.
-
-### Delivery acknowledgements
-
-After the recipient has verified and ingested an ordinary message, the client emits two independent acknowledgements:
-
-1. **Mailbox ACK** — `gossip_delivery_ack`, encrypted to B’s route PGP. It identifies the stored ciphertext by hash and lets B remove the offline copy or stop an outstanding notification timer.
-2. **Sender receipt** — `beamio_chat_delivery_receipt_v1`, encrypted to the sender’s user PGP, then wrapped as mailbox work `{ data, NoPush: true }` to the sender’s mailbox B. HTTP to the entry is still only `{ data }`. It updates the sender’s existing message to **Delivered** without a badge.
-
-Neither acknowledgement should become a visible chat bubble. **Delivered** means the recipient application ingested the message and emitted the receipt; it is not a human read receipt.
-
-### Presence and `listenKind`
-
-The recipient listen is a **long-lived HTTP/SSE**. An ISP or entry C can see duration, reconnects, heartbeats, push cadence, and online hours even though message bodies stay encrypted. That fingerprint is inherent to Realtime Mode. A Privacy Poll Mode (randomized short polls, batch fetch, dummy traffic) is **not implemented**. Long-term user OpenPGP wrapping also does **not** provide forward secrecy for stored ciphertext. See [L0 security limits](../l0/security-limits.md).
-
-Chat clients establish the mailbox SSE with:
+## Delivery path
 
 ```text
-command: "mining"
-listenKind: "chat"
+Sender wallet
+    → encrypt to recipient user PGP
+    → POST { "data" } through healthy entry A
+    → mailbox B stores ciphertext
+Recipient wallet
+    → encrypt listen to B route PGP
+    → SSE through healthy entry C
+    → decrypt locally
+    → mailbox ACK to B
+    → optional sender receipt to sender user PGP
 ```
 
-Layer Minus mining clients omit `listenKind` and remain in the mining class. This distinction prevents chat-session lifecycle rules from being applied to mining listeners.
+Normative routing: [Zero-trust mailbox routing](../l0/mailbox-routing.md).
 
-A wrap-to-C listen that peels on C and then fails hop-sign must return a fast **404**. A hung SSE until the client `connect_timeout` means mailbox B was never dialed. See [Peel, hop-sig, and listen timeouts](../l0/peel-hop-listen.md).
+Chat clients must send `listenKind: "chat"` on mailbox listen. Mining collectors omit that field. The two streams share SI `command: "mining"` but must not share eviction policy.
 
-Presence is a mailbox observation:
+---
 
-- the querying client sends `wallet_online_query` to the contact’s mailbox route key through an independent entry;
-- B checks whether that wallet has a non-stale live listener;
-- only a valid `ok: true` response updates the UI;
-- a timeout or failed query preserves the last trusted value.
+## Delivery receipts and offline storage
 
-Presence is **not** written to AddressPGP and must not be inferred from a historical chain `routeOnline` field.
+Mailbox first stores ciphertext, then attempts live SSE.
 
-### History recovery
+A recipient that accepts a message should emit two receipts:
 
-The application maintains two distinct tracks:
+1. **Mailbox ACK** — encrypted to **B route PGP**, so B can delete offline ciphertext.
+2. **Sender receipt** — encrypted to the **sender user PGP**, so the sender UI can mark `delivered`.
 
-| Track | Purpose |
-| --- | --- |
-| **Local UI conversations** | Immediate rendering on the current device |
-| **Encrypted recovery track** | AES-GCM encrypted message fragments plus an encrypted index on IPFS, with the current index hash referenced by ChatIndexRegistry |
+Sender receipts use mailbox-work wrap `{ data, NoPush: true }` so they do not generate extra push notifications. HTTP `/post` still carries only `{ "data" }`.
 
-The recovery key is derived from the user’s EOA signing authority. Relays and IPFS do not receive plaintext history keys.
+## Native push badge and `NoPush`
 
-On recovery, the client reads the pointer, decrypts the available index and fragments, creates any missing peer conversations, and merges messages by stable identifiers. Network, RPC, IPFS, or decryption failure must not be treated as an authoritative empty history and must not erase the last trusted local state.
+`NoPush` is a **mailbox-work** instruction inside ciphertext encrypted to **B route PGP**. It is not an HTTP JSON field.
+
+| Traffic | Mailbox work `NoPush` | Native badge |
+|---|---|---|
+| Ordinary Chat / Merchant Messages / POS one-to-one Chat | **Omit** | Offline recipient may receive a native badge after `saveLocal` |
+| Sender `beamio_chat_delivery_receipt_v1` | **`true`** | Must not generate an extra push |
+| POS terminal-authorization envelope | Product-defined; Merchant OS still puts it on Staff pending, not Messages | Do not treat it as a Messages bubble |
+
+HTTP `/post` remains `{ "data": "<armor>" }` only. Clients that need `NoPush` wrap the inner user-PGP armor as `{ data: innerArmor, NoPush: true }`, encrypt that object to mailbox **B route PGP**, and POST the outer armor.
+
+L0 duplex mailbox work must omit Chat/APNs `NoPush`. See [Persistent application streams](../l0/duplex-forward.md).
+
+---
+
+## Presence
+
+Online state is **mailbox listen-pool state**, not an on-chain `routeOnline` flag.
+
+A contact query uses `wallet_online_query`, encrypted to that contact’s mailbox route PGP and submitted through an entry that is not B. Failed queries must not overwrite a previously trusted online/offline value.
+
+---
+
+## History recovery
+
+Local UI chat lists are device state. Cross-device recovery uses:
+
+1. RPC `getPointer(eoa)` on ChatIndexRegistry (`0x1511Caa71081C84d8a591490D1b83879088EED72`);
+2. encrypted index and fragments from IPFS;
+3. keys derived from the wallet’s cryptographic authority.
+
+A restore that finds no local conversations must still create missing sessions from recovered history. An empty local list is not proof that the user never communicated.
+
+That is how history recovery reconstructs **communication context**, not only message text.
+
+---
 
 ## What exists today
 
-Beamio integrations:
+- Wallet-to-wallet encrypted messages in Beamio Consumer
+- Merchant listening and POS authorization envelopes
+- Dual receipts, mailbox ACK, and best-effort offline flush
+- Encrypted-history append and recover on the Consumer path
+- Published SDK: `@conet.project/chat-sdk`
 
-| Surface | Current use |
-| --- | --- |
-| **Consumer PWA** | One-to-one Messages, mailbox presence, delivery state, and encrypted-history recovery |
-| **Merchant OS** | Chat listener and POS terminal-authorization inbox |
-| **POS PWA** | Sends `beamio_pos_terminal_permission_v1` to the merchant EOA |
+## What remains under development
 
-Typed message handling:
+- Broader client coverage beyond the current Beamio surfaces
+- Stronger metadata resistance than current entry/mailbox observation
+- Groups, channels, and calls — not claimed here
 
-| Message type | Application result |
-| --- | --- |
-| Ordinary chat | Added to the relevant Messages conversation |
-| `beamio_pos_terminal_permission_v1` | Added to Merchant OS **Pending terminal authorization**, not Messages |
-| `beamio_chat_delivery_receipt_v1` | Updates an existing sender message to **Delivered**, without adding unread state |
+---
 
-Source availability differs by client. Consumer, Merchant OS, and Alliance are public SilentPassUI branches. POS PWA remains a live product without a standalone public repository identified.
+## Trust boundary
 
-| Component | Public repository | npm |
-| --- | --- | --- |
-| **Chat SDK** — Worker, gossip, and encrypted history | [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-sdk) | [`@conet.project/chat-sdk`](https://www.npmjs.com/package/@conet.project/chat-sdk) |
-| **Consumer PWA** | [CoNET-project/SilentPassUI](https://github.com/CoNET-project/SilentPassUI/tree/cashtree) branch `cashtree` | — |
-| **Merchant OS** | [CoNET-project/SilentPassUI](https://github.com/CoNET-project/SilentPassUI/tree/cashtrees) branch `cashtrees` | — |
-| **POS PWA** | Live endpoints only; no standalone public repository identified | — |
-| **Alliance client** | [CoNET-project/SilentPassUI](https://github.com/CoNET-project/SilentPassUI/tree/Alliance) branch `Alliance` | — |
-| **Mailbox node / SI** | [CoNET-project/CoNET-SI](https://github.com/CoNET-project/CoNET-SI) | [`@conet.project/mvp-si`](https://www.npmjs.com/package/@conet.project/mvp-si) |
-| **API relay** — route registration and history-pointer settlement | [settleonbase/x402sdk](https://github.com/settleonbase/x402sdk) | [`@settle402/sdk`](https://www.npmjs.com/package/@settle402/sdk) |
+| Participant | Can see | Must not see |
+|---|---|---|
+| Entry A / C | Encrypted payload, timing, size, connection | Application plaintext, recipient private key |
+| Mailbox B | Ciphertext, listen-pool membership, ACK hashes | Application plaintext, user PGP private key |
+| IPFS / fragment store | Encrypted fragments and encrypted index | Readable history without wallet authority |
+| Beamio API | Gas-sponsored writes such as ChatIndexRegistry pointer updates | Private keys, plaintext history |
+| Recipient wallet | Decrypted application objects after local verification | Other users’ private keys |
 
-These implementation surfaces establish integration, not a claim that every mailbox is continuously available or that all clients expose the same feature set.
+Zero trust does not mean zero metadata. The design goal is to avoid putting identity, relationship, routing, content, and readable history in one trusted messaging provider.
 
-## What remains in development
-
-- Continue reliability testing for offline storage, reconnect, duplicate delivery, notification timing, and mailbox failover.
-- Improve key-registration, key-rotation, recovery, and device-migration UX.
-- Expand interoperability tests across Consumer, Merchant OS, POS, Alliance, SDK, and SI versions.
-- Publish independent reviews of message-envelope validation, OpenPGP handling, history-key derivation, and local key storage.
-- Add broader messaging features only with explicit protocol and metadata boundaries; do not infer groups, channels, calls, or moderation from the one-to-one transport.
-- Measure and document metadata leakage, latency, retention behavior, and practical mailbox availability.
-
-## Trust and security boundary
-
-| Boundary | What remains visible or trusted |
-| --- | --- |
-| **Entry A / C** | Sees the connecting client IP, timing, volume, and the OpenPGP recipient **key ID** needed to look up B; forwards ciphertext over HTTP; does not read business plaintext; can delay or drop traffic |
-| **Mailbox B** | Sees route ownership, ciphertext arrival, listener state, and timing; decrypts route-control commands but not user-PGP business plaintext |
-| **Recipient device and user key** | Can decrypt message plaintext and history; compromise of the device or private key exposes that data |
-| **Sender signature** | Authenticates the claimed sender when verification succeeds; clients must reject malformed or invalid envelopes |
-| **Push-notification path** | Signals that offline data may exist; it must not require business plaintext in the mailbox notification payload |
-| **IPFS and chain history pointer** | Store ciphertext and a public pointer, not plaintext; traffic and update timing remain observable |
-
-Additional limits:
-
-- Wallet identity is pseudonymous and public-chain activity may be correlated. Reusing the Chat EOA for payments or social identity strengthens that graph.
-- Historical Chat armor encrypted to the long-term user PGP key is not forward-secret if that key is later compromised.
-- A global observer capable of correlating entry and mailbox traffic is outside this design’s confidentiality claim.
-- Presence is transient and can be stale; it is not a durable promise that a person is reading.
-- Delivery receipt proves application ingestion, not human attention.
-- Losing the EOA recovery authority can make encrypted history unrecoverable.
-- Availability depends on entries, the selected mailbox, RPC access, and client key state even when ciphertext confidentiality remains intact.
+---
 
 ## Related
 
-- [Beamio](beamio.md)
-- [Institutional multisig AA](institutional-multisig-aa.md) — same wallet identity plane; task truth remains on-chain
-- [Use case: decentralized SNS](../use-cases/decentralized-sns.md)
-- [Applications](README.md)
-- [SI developer guide](../l0/si-developer-guide.md)
-- [Chat developer guide](../l0/chat-developer-guide.md)
-- [L0 security limits](../l0/security-limits.md)
+- [CoNET Chat developer guide](../l0/chat-developer-guide.md)
+- [L0 development](../developers/l0.md)
+- [How to use Layer Minus](../l0/using-l0.md)
 - [Zero-trust mailbox routing](../l0/mailbox-routing.md)
-- [Wallet-address P2P](../l0/wallet-address-p2p.md)
-- [UDP forward](../l0/udp-forward.md)
-- [SilentPass VPN](silentpass-vpn.md)
-- [Resources](../resources.md)
+- [Security limits](../l0/security-limits.md)
+- [Beamio](beamio.md)
+- [Decentralized SNS](../use-cases/decentralized-sns.md)
+- [Wallet-addressed applications](web3-url.md)

@@ -10,8 +10,8 @@ multiple applications:
 | **L2 — CoNET-DLE** | Parallel application-ledger classes with explicit archive, finality, and settlement rules | [L2 overview](l2/README.md) · [DLE explorer](l2/explorer.md) |
 
 Applications use only the layers they need. [SilentPass](applications/silentpass-vpn.md)
-provides privacy egress, [DePIN Chat](applications/depin-chat.md) provides
-private messaging, and [Beamio](applications/beamio.md) provides consumer,
+provides privacy egress, [CoNET Chat](applications/depin-chat.md) provides
+relationship-private wallet communication, and [Beamio](applications/beamio.md) provides consumer,
 merchant, and POS workflows.
 
 ## Wallet-addressed applications

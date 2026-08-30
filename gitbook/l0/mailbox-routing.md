@@ -32,11 +32,11 @@ For the intended route, `A ≠ B` and `C ≠ B`. A and C may be different entrie
 
 ### Mailbox work envelope (B decrypts a delivery instruction)
 
-If mailbox **B** must act on a delivery (today: skip APNs / offline push), the client wraps the inner user-PGP armor in a **mailbox work** packet encrypted to **B’s route PGP**. HTTP to the entry remains `{ "data": "<mailBoxNodeOpenPGP armor>" }`. Only B decrypts the work JSON and sees `NoPush`. Entry A sees only armor and the outer key ID.
+HTTP to the entry remains `{ "data": "<mailBoxNodeOpenPGP armor>" }`. Only B decrypts the work JSON.
 
 ```text
 inner user-PGP armor
-  → JSON { data: innerArmor, NoPush: true }
+  → JSON { data: innerArmor }
   → OpenPGP encrypt to mailbox B route PGP
   → optional wrap to this entry
   → POST { data } to A ≠ B
@@ -46,10 +46,20 @@ inner user-PGP armor
 | --- | --- | --- |
 | HTTP (entry / SI→SI) | **Only** `{ data: armor }` | — |
 | Optional entry wrap | Inner armor | That **entry** route PGP |
-| Mailbox work | `{ data: innerArmor, NoPush: true }` | **Mailbox B** route PGP |
-| Business | Chat / sender receipt | Recipient **user PGP** |
+| Mailbox work | `{ data: innerArmor }` only | **Mailbox B** route PGP |
+| Business | Chat / `duplex_accept` / stream offer | Recipient **user PGP** |
 
-Missing B’s route public key is a **failure**. Do not fall back to an HTTP sibling field. Ordinary Chat and POS permission messages **must not** set `NoPush`. `gossip_delivery_ack` is a signed route command, not mailbox work. Sender receipts `beamio_chat_delivery_receipt_v1` use this wrap so B stores and may SSE-forward without a badge.
+Do **not** put `NoPush` on mailbox work used for L0 streams. `NoPush` is Chat/APNs “skip native badge.” If present, older SI treated it as Chat `skipPush` and could skip the idle `l0_listen` pool, then `getRoute` the inner user PGP as if it were a Guardian route key. Temporary duplex user PGP is **not** in AddressPGP, so that path logs `can not find router` and drops the packet.
+
+**Required B behavior after unwrapping mailbox work:**
+
+1. Read the inner armor’s encryption key ID (user PGP, 16-hex, case-insensitive).
+2. Look up **this process** `l0ListenByPgp` / idle `l0ListenPool`. If an idle `l0_listen` advertised that `userPgpKeyId`, write the inner armor onto that SSE. Do **not** occupy. Return HTTP 200.
+3. Only if no idle L0 match: `getRoute` for Chat liveness / other SI forward.
+
+`duplex_accept` is mailbox work + user PGP, **not** an SI command. `l0_listen` / `l0_connect` are signed commands.
+
+Missing B’s route public key is a **failure**. Do not fall back to an HTTP sibling field. `gossip_delivery_ack` is a signed route command, not mailbox work. Chat sender receipts that still use historical `NoPush` are Chat-only; `conet-l0d` duplex does not send `NoPush`.
 
 Wire samples: [SI developer guide — mailbox work](si-developer-guide.md#3-mailbox-work-envelope-mailbox-b-decrypts).
 
@@ -110,7 +120,7 @@ Layer Minus exposes several milestones. They are not interchangeable:
 | Mailbox `gossip_delivery_ack` | The recipient client accepted the identified armor and acknowledged it to B | The sender has seen a receipt |
 | Sender delivery receipt | The recipient application reported the message delivered | Human reading or response |
 
-Chat clients send the mailbox acknowledgement and a sender-facing receipt after successful application ingestion. Until acknowledgement, B may retain the encrypted offline copy and use its configured offline-notification policy.
+Chat clients send the mailbox acknowledgement and a sender-facing receipt after successful application ingestion. Until acknowledgement, B may retain the encrypted offline copy. On durable chat `saveLocal` (unless mailbox-work `NoPush` / `skipPush`), B enqueues native push when the recipient has a registered `pushDevice`—whether or not an SSE listen is currently online.
 
 Presence is local to the destination mailbox. A signed `wallet_online_query`, encrypted to B's route key and sent through C, asks whether the target has a non-stale listen session in B's pool. The historical on-chain `routeOnline` field is not current presence truth.
 
@@ -144,7 +154,7 @@ Direct-to-B requests violate the privacy model even if they function. Other prot
 
 - [How to use Layer Minus](using-l0.md) explains how applications combine this forwarding path.
 - [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) is the field lesson for wrap-to-C listen (peel crash, hung SSE, `forward <clientIP>`).
-- [SI developer guide](si-developer-guide.md) and [Chat developer guide](chat-developer-guide.md) have TypeScript samples for `/post`, listen, and receipts.
+- [SI developer guide](si-developer-guide.md) and [CoNET Chat developer guide](chat-developer-guide.md) have TypeScript samples for `/post`, listen, and receipts.
 - [Security limits](security-limits.md) covers collusion, replay, and threat grades.
 - [Wallet-addressed peer identity](wallet-address-p2p.md) explains the keys used above.
 - [HTTP transport and Fetch-and-Close](http-mimicry.md) explains the wire carrier and short-session option.
@@ -152,4 +162,4 @@ Direct-to-B requests violate the privacy model even if they function. Other prot
 - [Persistent application streams](duplex-forward.md) are an **application**
   composition over exclusive L0 attachments; SI does not interpret the stream
   protocol.
-- [DePIN Chat](../applications/depin-chat.md) describes the user-facing messaging product.
+- [CoNET Chat](../applications/depin-chat.md) describes the relationship-private Chat product on this path.

@@ -52,7 +52,7 @@ Share and install links on `https://beamio.app/app-download` open **Consumer onl
 | Dependency | Beamio use |
 | --- | --- |
 | **CoNET L1 (`chainId` 224422)** | Wallet and account state, merchant program state, consumer Smart Wallets, institutional V2 accounts, assets, identity records, and application registries |
-| **L0 / Layer Minus** | DePIN Chat, POS terminal-authorization messages, routed mailbox delivery, and optional UDP frame forwarding |
+| **L0 / Layer Minus** | CoNET Chat, POS terminal-authorization messages, routed mailbox delivery, and optional UDP frame forwarding |
 | **EOA + `@BeamioTag` identity** | Human-readable discovery anchored to a wallet; the EOA also owns the PGP material used by messaging |
 | **Cluster / Master relay** | Prechecks application write requests and submits approved gas-sponsored transactions; it is not the source of a user’s private key |
 | **Local application storage** | Holds client state and, depending on the product, self-custody wallet material or session state |
@@ -64,7 +64,7 @@ Merchant program cards and new consumer Smart Wallet accounts belong on CoNET L1
 
 ### Consumer
 
-The Consumer PWA derives a signing wallet from device-local recovery material, reads account state from the relevant chain, and uses application relays for gas-sponsored writes. The same EOA can register an AddressPGP identity for DePIN Chat. Smart Wallet state is on-chain; the interface and recoverable local cache are application concerns.
+The Consumer PWA derives a signing wallet from device-local recovery material, reads account state from the relevant chain, and uses application relays for gas-sponsored writes. The same EOA can register an AddressPGP identity for CoNET Chat. Smart Wallet state is on-chain; the interface and recoverable local cache are application concerns.
 
 ### Merchant
 
@@ -72,7 +72,7 @@ Merchant OS maps an owner EOA and authorized staff relationships to program-mana
 
 ### POS
 
-A POS terminal is its own wallet and operates as an authorized lower-level merchant administrator. It signs terminal operations through the POS PWA, while the Cluster / Master path performs validation and gas relay. Terminal authorization itself can be delivered as a typed DePIN Chat message to Merchant OS.
+A POS terminal is its own wallet and operates as an authorized lower-level merchant administrator. It signs terminal operations through the POS PWA, while the Cluster / Master path performs validation and gas relay. Terminal authorization itself can be delivered as a typed CoNET Chat message to Merchant OS.
 
 The application therefore combines:
 
@@ -100,7 +100,7 @@ The following capabilities are live on the public surfaces. Detail and limits li
 | Programs | Hold membership NFT (`tokenId ∈ [100, 1e11)`), program points (`#0`), Discover brands | Create and publish program cards; base membership plus Add-tier higher paid tiers | Issue membership NFT (not leftover `#0`), top-up, charge |
 | Commerce | Claim coupons and catalogs, pay | Issue coupons and catalogs, review transactions | Charge, top-up, claim, redeem, burn |
 | Cash | Stripe Onramp → Base USDC to EOA; Coinbase `walletDeposit` → CONET-USDC (separate Add Cash). Home Fund **Receive via QR** and **Receive from a wallet** are P2P sends to the owner EOA on Base, not deposit rails. | Treasury / USDC views; Fuel packs as B-Units | Uses program points and membership; does not replace consumer deposit rails |
-| Messaging | DePIN Chat | Chat plus POS permission inbox | Sends POS permission envelopes; not a general Messages product |
+| Messaging | CoNET Chat | Chat plus POS permission inbox | Sends POS permission envelopes; not a general Messages product |
 
 Two USDC deposit rails must not be merged:
 
@@ -115,7 +115,9 @@ For Beamio issued-NFT social exchange, canonical CoNET-USDC is
 [`0x5209865D404aA5646eDe5B91CD4218909eA72eDA`](https://mainnet.conet.network/token/0x5209865D404aA5646eDe5B91CD4218909eA72eDA)
 (6 decimals). The user's AA burns Reward PT `#13`; the merchant card escrow
 pays the reward to the user's EOA. This is not a direct USDC transfer to the
-AA. The sole active CoNET Treasury is TreasuryBridgeV3 at
+AA. **Discover same-store Top-up** is a different rail: this card’s `#13`
+converts to this card’s `#0` on the user’s AA and does **not** use USDC
+escrow. The sole active CoNET Treasury is TreasuryBridgeV3 at
 [`0xa208982212978550594A7FEEB70a61665d129003`](https://mainnet.conet.network/address/0xa208982212978550594A7FEEB70a61665d129003).
 The legacy USDC factory address `0xfD0D7B0706AaB5E4351bcED37bC3C77ed6813907`
 is deprecated.
@@ -144,7 +146,7 @@ Source availability differs by surface.
 | **Alliance client** | [CoNET-project/SilentPassUI](https://github.com/CoNET-project/SilentPassUI/tree/Alliance) branch `Alliance` | — |
 | **API / Cluster / Master / Paymaster relay** | [settleonbase/x402sdk](https://github.com/settleonbase/x402sdk) | [`@settle402/sdk`](https://www.npmjs.com/package/@settle402/sdk) |
 | **Marketing homepage** | [beamio-APP/homepage](https://github.com/beamio-APP/homepage) | — |
-| **DePIN Chat SDK** | [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-sdk) | [`@conet.project/chat-sdk`](https://www.npmjs.com/package/@conet.project/chat-sdk) |
+| **CoNET Chat SDK** | [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-sdk) | [`@conet.project/chat-sdk`](https://www.npmjs.com/package/@conet.project/chat-sdk) |
 | **Mailbox / SI** | [CoNET-project/CoNET-SI](https://github.com/CoNET-project/CoNET-SI) | [`@conet.project/mvp-si`](https://www.npmjs.com/package/@conet.project/mvp-si) |
 | **This documentation** | [CoNETProject/docs](https://github.com/CoNETProject/docs) | — |
 
@@ -182,7 +184,7 @@ Beamio is self-custody software with supporting relays and application services;
 - [Cash and USDC](beamio/cash-and-usdc.md)
 - [Applications](README.md)
 - [SilentPass VPN](silentpass-vpn.md) — privacy access on the same L0 substrate
-- [DePIN Chat](depin-chat.md) — wallet messaging and terminal authorization
+- [CoNET Chat](depin-chat.md) — relationship-private wallet communication and terminal authorization
 - [Institutional multisig AA](institutional-multisig-aa.md) — V2 team Smart Wallet capability
 - [Zero-trust mailbox routing](../l0/mailbox-routing.md)
 - [UDP forward](../l0/udp-forward.md)

@@ -65,8 +65,8 @@ Consider a paid social post:
 
 The broader stack supports very different products, but a product need not
 depend on every layer. [SilentPass](applications/silentpass-vpn.md) focuses
-on network access, [DePIN Chat](applications/depin-chat.md) on private
-messaging, [Beamio](applications/beamio.md) on wallet and merchant workflows,
+on network access, [CoNET Chat](applications/depin-chat.md) on
+relationship-private wallet communication, [Beamio](applications/beamio.md) on wallet and merchant workflows,
 and [`web3://`](applications/web3-url.md) on wallet-addressed application
 access.
 
@@ -111,7 +111,7 @@ The comparison below is architectural, not a throughput or anonymity benchmark.
 | Why is L0 a permissionless cloud, and why trust no node? | [Permissionless cloud and zero-trust applications](l0/permissionless-cloud.md) |
 | What is the `web3://` Application Protocol? | [`web3://` Application Protocol](l0/web3-application-protocol.md) |
 | How can Linux publish or open a `web3://` service? | [`conet-l0d` Linux runtime](developers/conet-l0d.md) |
-| How do I write an SI or Chat client? | [L0 development](developers/l0.md), [SI developer guide](l0/si-developer-guide.md), [Chat developer guide](l0/chat-developer-guide.md) |
+| How do I write an SI or Chat client? | [L0 development](developers/l0.md), [SI developer guide](l0/si-developer-guide.md), [CoNET Chat developer guide](l0/chat-developer-guide.md) |
 | How do I run a geth + Prysm node (public join today)? | [Run an L1 node](developers/l1-node.md) |
 | How do I participate in DePIN mining? | [Participate in mining](developers/l1-mining.md) |
 | What does L0 actually protect? | [Security limits and threat grades](l0/security-limits.md) |

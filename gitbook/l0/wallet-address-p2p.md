@@ -43,7 +43,7 @@ wallet address
   └─ route key ID ──────── selected mailbox B
 ```
 
-Current Beamio Chat and POS-permission traffic often use **one** EOA for AddressPGP, listen, and envelope `from`. That is the simple default. It is **not** required.
+Current CoNET Chat and POS-permission traffic often use **one** EOA for AddressPGP, listen, and envelope `from`. That is the simple default. It is **not** required.
 
 Human-readable tags are an application lookup aid, not the protocol identity. When an application resolves `@BeamioTag`, it must select an exact account match or use an explicit wallet hint. Prefix-search `results[0]` is not authoritative.
 

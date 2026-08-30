@@ -10,7 +10,7 @@
 | --- | --- |
 | Cloud model and zero-trust composition | [Permissionless cloud and zero-trust applications](permissionless-cloud.md) |
 | Client against CoNET-SI | [SI developer guide](si-developer-guide.md) |
-| Chat envelopes, listen, receipts | [Chat developer guide](chat-developer-guide.md) |
+| Chat envelopes, listen, receipts | [CoNET Chat developer guide](chat-developer-guide.md) |
 | Wrap-to-C listen timeouts | [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) |
 | All developer tracks (L0 / L1 mining / ERC-20 / L2) | [Developers](../developers/README.md) |
 
@@ -118,7 +118,7 @@ key management, and acknowledgement behavior.
 | --- | --- |
 | **AddressPGP** | L1 user-key and route-key bindings |
 | **CoNET-SI** | Native HTTP/HTTPS entry, SI-to-SI forwarding, mailbox storage, SSE pools, presence, acknowledgements, and UDP relay |
-| **Beamio Chat SDK** | User-PGP message encryption and `listenKind: "chat"` mailbox listening through entry C |
+| **CoNET Chat SDK** | User-PGP message encryption and `listenKind: "chat"` mailbox listening through entry C |
 | **CoNET-DL / LayerMinus workers** | Mining listens, signed gossip verification, and optional reporting to the accounting plane |
 
 ## Next
@@ -141,7 +141,7 @@ User-facing products are documented under [Applications](../applications/README.
 including [`web3://`](../applications/web3-url.md),
 [SilentPass](../applications/silentpass-vpn.md),
 [Beamio](../applications/beamio.md), and
-[DePIN Chat](../applications/depin-chat.md). Linux `web3://` operators use the
+[CoNET Chat](../applications/depin-chat.md). Linux `web3://` operators use the
 [`conet-l0d` developer guide](../developers/conet-l0d.md); interoperable
 clients and host adapters follow the
 [`web3://` protocol contract](web3-application-protocol.md).

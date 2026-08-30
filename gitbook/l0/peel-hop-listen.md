@@ -94,4 +94,4 @@ Walk [mailbox routing](mailbox-routing.md) and the [Chat diagnosis list](chat-de
 - [Zero-trust mailbox routing](mailbox-routing.md)
 - [X-CoNET-Hop-Sigs v1](hop-sigs.md)
 - [SI developer guide](si-developer-guide.md)
-- [Chat developer guide](chat-developer-guide.md)
+- [CoNET Chat developer guide](chat-developer-guide.md)

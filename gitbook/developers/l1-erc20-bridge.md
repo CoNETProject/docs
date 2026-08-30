@@ -82,6 +82,21 @@ Application wallets (for example Beamio) submit the user-authorized source lock 
 
 After a successful destination execution, balances live on the **CoNET** ERC-20 (`conet-USDC` or the route’s configured token). Do not display the Base contract as the CoNET balance.
 
+## Beamio social exchange settlement
+
+Beamio issued-NFT social exchange uses the same canonical CoNET-USDC asset.
+For `socialExchange.kind = "usdc"`, the user's signed claim burns Reward PT
+`#13` from the user's AA, debits the merchant card's `escrowUsdc6`, and pays
+the canonical CoNET-USDC reward to the user's **EOA**. It is not an AA payout.
+
+Use the six-decimal token
+[`0x5209865D404aA5646eDe5B91CD4218909eA72eDA`](https://mainnet.conet.network/token/0x5209865D404aA5646eDe5B91CD4218909eA72eDA)
+and the sole active TreasuryBridgeV3 proxy
+[`0xa208982212978550594A7FEEB70a61665d129003`](https://mainnet.conet.network/address/0xa208982212978550594A7FEEB70a61665d129003).
+The former USDC factory address
+`0xfD0D7B0706AaB5E4351bcED37bC3C77ed6813907` is deprecated. Burn, escrow
+debit, and payout are one atomic operation; any failed leg reverts the claim.
+
 ## Admit a new ERC-20 (policy, not a send)
 
 “Bridge any ERC-20 to CoNET” is **not** a supported operation until all of the following exist:

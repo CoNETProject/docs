@@ -24,7 +24,7 @@ None of these properties should be presented as complete until the rights model,
 
 - CoNET L1 provides wallet signatures, contracts, and current assets, including conet-USDC as documented in [Assets on L1](../l1/assets.md).
 - [Beamio](../applications/beamio.md) provides wallet identity, `@BeamioTag`, social-stat primitives, and gas-relayed transaction patterns.
-- [DePIN Chat](../applications/depin-chat.md) provides deployed wallet messaging, receipts, presence, and encrypted history that can support creator/fan communication.
+- [CoNET Chat](../applications/depin-chat.md) provides deployed wallet messaging, receipts, presence, and encrypted history that can support creator/fan communication.
 - L0 [mailbox routing](../l0/mailbox-routing.md) defines a zero-trust delivery path in which intermediate nodes do not read business plaintext.
 
 These capabilities do not amount to a video platform, transcoding service, rights registry, auction market, or decentralized CDN.
@@ -227,7 +227,7 @@ A real implementation should publish evidence for:
 - [L2 design thesis](../l2/design-thesis.md)  
 - [L2 economics](../l2/economics.md)  
 - [Assets on L1](../l1/assets.md)  
-- [DePIN Chat](../applications/depin-chat.md)  
+- [CoNET Chat](../applications/depin-chat.md)  
 - [BT download (DCDN)](../applications/bt-dcdn.md) — under development  
 - [Beamio](../applications/beamio.md)  
 - [HTTP mimicry](../l0/http-mimicry.md) · [Mailbox routing](../l0/mailbox-routing.md)  

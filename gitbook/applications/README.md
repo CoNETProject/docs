@@ -23,9 +23,10 @@ Maturity is not an audit, uptime, or anonymity guarantee.
 | Application | Product role | Maturity | Start here |
 |---|---|---|---|
 | **`web3://` wallet-addressed applications** | Cross-platform application protocol using L0 infrastructure | Under development | [`web3://`](web3-url.md) |
+| **Web3 Browser + Wallet** | Native shell + local PWA: browse/publish `web3://`, SI subset, L2 on-demand | Under development | [Web3 Browser](web3-browser.md) |
 | **SilentPass** | Wallet-authorized privacy access to ordinary Internet services | Public application | [SilentPass](silentpass-vpn.md) |
 | **Beamio** | Consumer wallet, Merchant OS, POS, Cash and USDC | Public application | [Beamio](beamio.md) |
-| **DePIN Chat** | Wallet-addressed messages, delivery receipts, presence, and encrypted history | Integrated capability | [DePIN Chat](depin-chat.md) |
+| **CoNET Chat** | Wallet-addressed, relationship-private communication: receipts, presence, and encrypted-history recovery | Integrated capability | [CoNET Chat](depin-chat.md) |
 | **Institutional multisig AA** | Team-controlled Smart Wallet with on-chain tasks and threshold votes | Integrated capability | [Institutional multisig AA](institutional-multisig-aa.md) |
 | **Miner-matched order-book exchange** | Proposed non-custodial ERC-20 order book | Under development | [Miner-matched exchange](miner-orderbook-dex.md) |
 | **DePIN DCDN / BT** | Planned encrypted bulk-content distribution | Under development | [DePIN DCDN / BT](bt-dcdn.md) |

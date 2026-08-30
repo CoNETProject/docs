@@ -30,7 +30,7 @@ This capability is intended for team treasury and policy control. It is not a ba
 | **Cluster / Master / Paymaster relay** | Prechecks signed requests, submits them, and sponsors gas for supported actions |
 | **Factory manager index** | `accountsOfManager(eoa)` lets co-managers discover accounts they do not own |
 | **Application daemon and local store** | Periodically reads pending and recent tasks for the active manager and selected chain |
-| **DePIN Chat, optionally** | Can notify or deep-link to a task, but is not authoritative task state |
+| **CoNET Chat, optionally** | Can notify or deep-link to a task, but is not authoritative task state |
 
 ## V1 and V2 are separate product rails
 
@@ -112,7 +112,7 @@ Published sources:
 | --- | --- | --- |
 | **Consumer institutional UI** | [CoNET-project/SilentPassUI](https://github.com/CoNET-project/SilentPassUI) | — |
 | **Cluster / Master relays** | [settleonbase/x402sdk](https://github.com/settleonbase/x402sdk) | [`@settle402/sdk`](https://www.npmjs.com/package/@settle402/sdk) |
-| **DePIN Chat integration** | [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-sdk) | [`@conet.project/chat-sdk`](https://www.npmjs.com/package/@conet.project/chat-sdk) |
+| **CoNET Chat integration** | [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-sdk) | [`@conet.project/chat-sdk`](https://www.npmjs.com/package/@conet.project/chat-sdk) |
 
 The engineering workspace retains the CoNET V2 verification input at `deployments/conet-BeamioAccountInstitutionalV2-verify-buildinfo.json`. The current `src/BeamioAccount/` tree is not cited here as a complete reproducible V2 source tree. The verified Explorer source and deployment input establish code provenance; they do not constitute an independent audit of the Factory, generated accounts, upgrade authority, signature domain, or relay.
 
@@ -139,13 +139,13 @@ The engineering workspace retains the CoNET V2 verification input at `deployment
 | **Local task cache** | Improves discovery and UX but is not authoritative. Failed reads must preserve prior trusted data rather than invent an empty task list. |
 | **Cross-chain deployment** | Same address is only a deterministic deployment property. No balances, votes, reservations, policies, or task outcomes are shared across chains. |
 
-DePIN Chat can reference a task, but only the selected chain’s V2 account state determines whether the task exists and what it can do.
+CoNET Chat can reference a task, but only the selected chain’s V2 account state determines whether the task exists and what it can do.
 
 ## Related
 
 - [Beamio](beamio.md)
 - [Applications](README.md)
-- [DePIN Chat](depin-chat.md)
+- [CoNET Chat](depin-chat.md)
 - [Assets on L1](../l1/assets.md)
 - [Resources](../resources.md)
 - Implementation anchors in the Beamio monorepo: `deployments/conet-BeamioAccountInstitutionalV2-verify-buildinfo.json`, `src/SilentPassUI/src/pages/Wallet/AaMultisigPage.tsx`, `src/SilentPassUI/src/utils/aaInstitutionalV2PendingDaemon.ts`, and `src/x402sdk/src/aaInstitutionalV2Multisig.ts`

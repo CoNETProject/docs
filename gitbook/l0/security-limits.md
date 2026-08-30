@@ -74,7 +74,7 @@ Current Chat clients may still post a single user-PGP layer (A forwards without 
 
 ## Long-lived SSE is a primary L0 traffic fingerprint
 
-DePIN Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C**
+CoNET Chat’s recipient opens a long-lived HTTP/SSE listen through entry **C**
 (`command: "mining"`, `listenKind: "chat"`). Mining collectors, UDP listeners,
 and exclusive application attachments (`l0_listen`) also keep SSE sessions.
 After `l0_connect` attaches an opaque writer, SI returns **409** to a second
@@ -317,7 +317,7 @@ Grades describe the **current SI + intended A/B/C client path**, not a future ra
 - Key-ID forward and `checkSign`: [CoNET-SI `localNodeCommand.ts`](https://github.com/CoNET-project/CoNET-SI/blob/main/src/util/localNodeCommand.ts)
 - Mailbox append store: `saveLocal` in [CoNET-SI `util.ts`](https://github.com/CoNET-project/CoNET-SI/blob/main/src/util/util.ts)
 - UDP bounds: [CoNET-SI `udpForward.ts`](https://github.com/CoNET-project/CoNET-SI/blob/main/src/util/udpForward.ts)
-- Chat listen composition: [DePIN Chat](../applications/depin-chat.md)
+- Chat listen composition: [CoNET Chat](../applications/depin-chat.md)
 
 ## Next
 

@@ -61,6 +61,10 @@ User-visible “points / Reward PT” is **`tokenId = 13`**.
 
 Top-up `#13` percentages use **actual payment** only. Promotion bonus `#0` is not part of that base.
 
+**Same-store `#13` → `#0`:** Consumer Discover Top-up may convert this card’s Reward PT into this card’s program credit. That path does **not** require USDC escrow or `convertReward13ToPointsRatioE6`.
+
+**Atomic multi-source Top-up (fail-closed):** When Smart Pay includes same-store and/or third-party `#13` legs, Cluster/Master runs `topupWithReward13Container` in one Relayer AA `executeBatch`: peer `peerRedeem13ForContainerTopup` (exact `quoteUsdcWithdrawForFiat6(burn13)` CONET-USDC to the **target merchant card**, after escrow **and** ERC20 balance checks) → container mint `#0` → optional cash EIP-3009 + `mintPointsForProtocolUsdcSettlement`. Any peer that cannot fully pay the quoted USDC causes the **entire** top-up to revert (no silent cap, no “burn `#13` without USDC”). Cash-only top-up (no `#13` legs) keeps `purchasingCard` / `postBuyCardPoints`. Issued-NFT social exchange (`#13` → CONET-USDC to the user’s **EOA**) remains a **separate** escrow rail and must not be used as the atomic container peer path.
+
 **Charge `#13`:** POS settle burns `#0` (`burnPointsByAdmin`). Beacon **V19+** runs the same UpdateLib mint as a real `#0` transfer (`amountFiat6 × chargeRewardRatioE6 / 1e6` → actor `#13`, plus referrer if configured). Pre-V19 burn-only Charges minted no `#13`. Master `enqueueRecordChargeReferrerReward` stays a no-op.
 
 **`getRewardRule(2)` is not Top-up Reward PT.** Historical Social Promotion slot `2` may still exist on old cards as a fixed `actorMint13` / `refMint13` row. Product truth for Top-up / Referrer Top-up is **E6 ratio storage** and same-cycle mint (`recordTopupCumulativeStat`). Master must not enqueue a second `#13` mint from slot `2`. Social Save must deactivate slot `2` so it cannot dual-mint.
@@ -71,8 +75,8 @@ Top-up `#13` percentages use **actual payment** only. Promotion bonus `#0` is no
 | --- | --- |
 | **Coupons** | Issue, share, open-claim inventory, social stats |
 | **Business Catalogs** | Catalog items, 4:3 preview, optional video / image hero (no item-icon in the editor preview) |
-| **Staff / Terminals** | Linked POS terminals; **Pending terminal authorization** from typed DePIN Chat (`beamio_pos_terminal_permission_v1`) — not a Messages thread |
-| **Messages** | Ordinary Merchant OS chat omits mailbox `NoPush` (offline peer may get a native badge). Delivery receipts use `NoPush: true`. Same rule as Consumer; see [DePIN Chat](../depin-chat.md). |
+| **Staff / Terminals** | Linked POS terminals; **Pending terminal authorization** from typed CoNET Chat (`beamio_pos_terminal_permission_v1`) — not a Messages thread |
+| **Messages** | Ordinary Merchant OS chat omits mailbox `NoPush` (offline peer may get a native badge). Delivery receipts use `NoPush: true`. Same rule as Consumer; see [CoNET Chat](../depin-chat.md). |
 | **Transactions** | Indexer ledger. B-Unit service fees are a **separate indexer row**; the UI merges them into Charge / Top-up / Claim when a parent row exists |
 | **Overview KPI** | Chain-first. A failed RPC must not overwrite the last trusted value with zero |
 | **Wallet USDC** | Overview and Wallets show **one** merchant-owned **USDC** total: Base USDC + canonical CONET-USDC, summed per EOA and Smart Wallet. The UI does not split those chains. Program-card **USDC Reserve / Diff** (card CONET-USDC minus minted `#13`) stays a separate KPI. |
@@ -134,4 +138,4 @@ Snapshot: `deployments/conet-MembershipFeeModules.json`. Blockscout: [mainnet.co
 - [Consumer PWA](consumer.md)
 - [POS terminal](pos.md)
 - [Cash and USDC](cash-and-usdc.md)
-- [DePIN Chat](../depin-chat.md)
+- [CoNET Chat](../depin-chat.md)

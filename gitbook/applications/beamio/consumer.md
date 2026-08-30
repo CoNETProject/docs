@@ -4,7 +4,7 @@
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-08-28**.
+Revision: **2026-08-29**.
 
 ## Product role
 
@@ -19,10 +19,10 @@ It is not Merchant OS and not a POS terminal. It does not hold merchant program-
 | **Wallet** | Self-custody EOA from a local 12-word mnemonic. Cold start derives a global signing key. Missing mnemonic requires Restore (`@BeamioTag` + access password → on-chain recover package). |
 | **Smart Wallet** | Optional AA / Express Pay. **New consumer AA issuance is CoNET only.** Existing Base V1 accounts may remain readable; they are not a new-issuance path. |
 | **Identity** | `@BeamioTag`, profile language / currency, AddressPGP registration for Chat |
-| **Discover** | Featured Brands and Ongoing Coupons from the public latest-cards / coupon APIs (single merchant-visibility gate). Merchant detail **Top Up** (store-credit button and welcome-offer CTA when membership is already valid) opens a multi-step full-screen flow: amount → pay → optional Reward PT cover → confirm. **Smart Pay** may burn `#13` from the user’s **AA** and pay canonical CONET-USDC to the **EOA**, then cash-buy `#0` store credits for the remainder. Paid **Join / Upgrade** still uses the locked membership-fee path, not this Top Up flow. |
+| **Discover** | Featured Brands and Ongoing Coupons from the public latest-cards / coupon APIs (single merchant-visibility gate). Merchant detail **Top Up** (store-credit button and welcome-offer CTA when membership is already valid) opens a multi-step full-screen flow: amount → pay → optional Reward PT cover → confirm. **Smart Pay** builds an **atomic multi-source** container: same-store `#13` → `#0` on the user’s **AA** (no USDC escrow), optional third-party `#13` → quoted CONET-USDC paid to the **target merchant card** (requires that peer’s escrow **and** ERC20 CONET-USDC balance; no silent partial redeem), plus optional cash EIP-3009. All `#13` legs and optional cash run in **one** Relayer AA `executeBatch` (all-or-nothing). Cash-only (no Reward PT legs) still uses the ordinary store-credit buy path. Paid **Join / Upgrade** still uses the locked membership-fee path, not this Top Up flow. |
 | **Issued assets** | Coupons and Business Catalogs: open claim, like / share stats, supply copy |
 | **Programs held** | Membership NFT (`tokenId ∈ [100, 1e11)`), program points (`#0`), Reward PT (`#13`). Paid join / upgrade charges the **locked membership fee only**, shown to two decimal places (for example `CA$0.50`). A leftover `#0` min-unit may appear as `0.00` program points so `mintPointsByAdmin` is non-zero; it is **not** the membership NFT and is not added to the payable amount. |
-| **Messaging** | DePIN Chat (ordinary sends **omit** mailbox `NoPush` so offline peers can get a native badge), delivery receipts (`NoPush: true`), mailbox presence (listen-pool query; not on-chain `routeOnline`) |
+| **Messaging** | CoNET Chat (ordinary sends **omit** mailbox `NoPush` so offline peers can get a native badge), delivery receipts (`NoPush: true`), mailbox presence (listen-pool query; not on-chain `routeOnline`) |
 | **Network tools** | Bounty Board, CoNET mining views, Genesis referral, Referral registry |
 | **Team wallets** | V2 institutional multisig AA (CoNET, optional Base). See [Institutional multisig AA](../institutional-multisig-aa.md). |
 | **Fuel** | Fuel Packs shown as **price + total B-Units** only (no Paid / Free split in merchandising) |
@@ -74,5 +74,5 @@ The client should pass the **EOA** (`keyID`), not the AA address. If an AA addre
 - [Merchant OS](merchant-os.md)
 - [POS terminal](pos.md)
 - [Cash and USDC](cash-and-usdc.md)
-- [DePIN Chat](../depin-chat.md)
+- [CoNET Chat](../depin-chat.md)
 - [Institutional multisig AA](../institutional-multisig-aa.md)

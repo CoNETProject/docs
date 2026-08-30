@@ -6,7 +6,7 @@ Public site: [https://gitbook.conet.network/l0/si-developer-guide.html](https://
 
 CoNET-SI is the Layer Minus **service node**. It accepts OpenPGP armor on `POST /post`, reads the recipient **key ID**, and either forwards the armor or decrypts **once** when the key is local. It does not implement Chat, VPN, payments, or history. Those are [application compositions](using-l0.md).
 
-Use this page to build a client against SI. Developer-track index: [L0 development](../developers/l0.md). For a Chat product on top of the same plane, continue with the [Chat developer guide](chat-developer-guide.md).
+Use this page to build a client against SI. Developer-track index: [L0 development](../developers/l0.md). For a Chat product on top of the same plane, continue with the [CoNET Chat developer guide](chat-developer-guide.md).
 
 ## What you are calling
 
@@ -97,28 +97,36 @@ command object  (includes walletAddress)
 
 ### 3. Mailbox work envelope (mailbox B decrypts)
 
-Use this when mailbox **B** must act on a delivery (today: skip APNs / offline push). Encrypt a JSON work packet to **B’s route PGP**. HTTP to the **entry** is still only `{ data }`.
+Wrap inner **user-PGP** armor in JSON encrypted to **B’s route PGP**. HTTP to the **entry** is still only `{ data }`.
 
 ```json
-{ "data": "<inner OpenPGP armor>", "NoPush": true }
+{ "data": "<inner OpenPGP armor>" }
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `data` | Inner OpenPGP armor, usually encrypted to the recipient **user PGP** |
-| `NoPush` | Optional `true`. B stores the inner armor (`saveLocal`) and may SSE-forward it, but **must not** queue APNs / native badge |
+| `data` | Inner OpenPGP armor encrypted to the recipient **user PGP** |
+| `NoPush` | **Do not send** for L0 / `conet-l0d` duplex. Historical Chat field meaning “skip APNs.” If set, SI must still try the idle `l0_listen` pool **before** AddressPGP `getRoute` |
 
 ```text
 inner user-PGP armor
-  → JSON { data: innerArmor, NoPush: true }
+  → JSON { data: innerArmor }
   → OpenPGP encrypt to mailbox B route public key   → <mailBoxNodeOpenPGP armor>
   → optional wrap of that armor to this entry route key
   → POST { data: <mailBoxNodeOpenPGP armor> } to entry A ≠ B
 ```
 
-Entry A peels (if wrapped) and forwards `{ data }` to B. Only B decrypts the work packet and sees `NoPush`. Do **not** put `NoPush` on the HTTP JSON. If the client lacks B’s route public key, fail — do not fall back to a sibling HTTP field.
+**B after decrypting mailbox work (normative):**
 
-Ordinary Chat / POS permission messages **must not** set `NoPush`. `gossip_delivery_ack` is a signed SI command (family 2), not mailbox work.
+1. Inner PKESK key ID is a **user** key, not a Guardian route key.
+2. Match idle `l0ListenPool` via `l0ListenByPgp` (indexed from `l0_listen.userPgpKeyId`). Hit → copy armor onto that SSE; HTTP 200; **stop**. No `getRoute`.
+3. Miss → then Chat liveness / `getRoute` to another SI.
+
+Temporary duplex wallets are **not** on AddressPGP. `getRoute` first is a protocol bug (`can not find router`).
+
+Entry A peels (if wrapped) and forwards `{ data }` to B. Do **not** put `NoPush` on the HTTP JSON. If the client lacks B’s route public key, fail — do not fall back to a sibling HTTP field.
+
+`gossip_delivery_ack` is a signed SI command (family 2), not mailbox work. `duplex_accept` **is** mailbox work (this family).
 
 ## Live command catalog
 
@@ -132,7 +140,7 @@ Source: CoNET-SI `localNodeCommandSocket`. Encrypt the command family to **route
 | `wallet_online_query` | Contact’s mailbox **B** route PGP | Entry **C ≠ B** | Presence. Fields: `walletAddress` (signer), `targetWallet`, `timestamp` (±600s). Success: `{ ok: true, wallet, online, listenAgeMs, nodeWallet }`. Do **not** use chain `routeOnline` |
 | `udp_subscribe` | UDP server **user** PGP | Entry **A ≠ B** | Contains `Securitykey`. SI rejects encryption to B (`encrypt_to_udp_server_user_pgp`) |
 | `udp_listen` / `udp_server_listen` / `udp_relay` / `udp_uplink` / `udp_unlisten` | **B** route PGP | Entry ≠ B | No `Securitykey`. See [UDP frame forwarding](udp-forward.md) |
-| `l0_listen` or `mining` + `listenKind: "l0"` | Own mailbox **B** route PGP | Long SSE via **C ≠ B** | Exclusive occupancy pipe. **No** overlay `Securitykey`. Handshake `{ ok, kind:"l0", wallet, nodeWallet }`. Idle L0 may receive user-PGP gossip without occupying. Separate from Chat / mining / UDP. Same EOA may also hold Chat SSE. Replacement while **live** occupied → **409**; if inbound TCP or SSE is already dead/stale, drop and accept (client restart) |
+| `l0_listen` or `mining` + `listenKind: "l0"` | Own mailbox **B** route PGP | Long SSE via **C ≠ B** | Exclusive occupancy pipe. **No** overlay `Securitykey`. Field `userPgpKeyId` (encryption subkey, 16-hex) **must** be stored in `l0ListenByPgp` so later mailbox work can match this SSE. Handshake `{ ok, kind:"l0", wallet, nodeWallet }`. Idle L0 may receive user-PGP gossip without occupying. Temporary wallets are not AddressPGP; do not index only via `getWalletFromKeyID`. Separate from Chat / mining / UDP. Replacement while **live** occupied → **409** |
 | `l0_connect` | **Target** mailbox **B** route PGP | Entry ≠ B; keep TCP | First occupy of idle `targetWallet` L0 SSE: write `{ type:"l0_occupied" }` on SSE, **clear idle comment keepalive**, write **HTTP 200 keep-alive** on the occupy TCP (do not `end()`), pipe remaining TCP as SSE `data:` lines, SI stops parsing that socket. Second `l0_connect` → **409**. User-PGP Chat/mining gossip on the same node must **not** 409. Idle L0 needs SSE comment keepalive (no mining epoch); occupied L0 must not write comments. Occupancy is by `targetWallet` after decrypt, not by B route key ID. On teardown while occupied: write `{ type:"l0_pipe_end" }` + `\n` on inbound TCP, optional `{ type:"l0_listen_released" }` on listen SSE, then drop pool entry ([duplex-forward](duplex-forward.md)) |
 | `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` | Egress node route PGP | Product-specific | Paid proxy; not a Chat path |
 
@@ -145,7 +153,7 @@ When SI forwards to another SI it may append `X-CoNET-Hop-Sigs` (base64 JSON, ma
 After a **local** decrypt:
 
 - if the plaintext is still OpenPGP **for the same node**, SI treats it as an attack, emits socket `end`, and **does not peel again**;
-- if the plaintext is mailbox work JSON `{ data, NoPush? }` (not a signed `{ message, signMessage }`), SI unwraps the inner armor and delivers it locally; `NoPush: true` skips APNs;
+- if the plaintext is mailbox work JSON `{ data }` (not a signed `{ message, signMessage }`), SI unwraps the inner armor and **first** matches idle `l0_listen` by inner user-PGP key ID; only then Chat/`getRoute`. Do not treat `NoPush` as “skip L0 pool”;
 - if the inner key ID is another node, SI forwards the **inner UTF-8 armor string** when hop-sig count can still grow (cap 3); SI→SI HTTP is still only `{ data }`. Prefer the peel plaintext when it already has `BEGIN PGP MESSAGE`. Coerce with `pgpArmorToUtf8String` before hop-sig `n` / `h`. Do **not** pass an OpenPGP.js 6 `Message.armor()` stream / thenable (minified class `h`) into `Buffer.byteLength`;
 - hop-sign failure, non-UTF-8 armor, or C→B TCP timeout (~8s) is a **404** (or socket `end`). A log-only `uncaughtException` must still close the client socket. Do not leave the SSE open until the client’s ~12s `connect_timeout` — B was never dialed. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md);
 - more than 3 hop signatures, or a count that cannot take another hop, is an all-node flood: `end`, no forward;
@@ -385,7 +393,7 @@ export async function openChatListen(opts: {
 
 Read `res.body` as a byte stream. First frames are often a handshake or mining-shaped `{ status, epoch, … }` liveness listing. Those are **not** user-PGP business messages. A browser console line `[Gossip] Unknown format: {status, epoch…}` or a Worker `heartbeat` log is that listing. It proves the SSE is alive. It does **not** prove B forwarded user-PGP armor on that socket.
 
-Do **not** skip the first SSE frame unconditionally. Handshake and listing frames must be classified as liveness; a following `{ data: "<PGP armor>" }` (including an offline flush on reconnect) is business and must be decrypted. B stores inbound armor first (`saveLocal`), then best-effort SSE. B does not expire a healthy writable chat listen by wall-clock age. Keep the SSE open; reconnect on idle / drop with another random **C ≠ B**. Production clients use a `setTimeout` chain, not `setInterval`.
+Do **not** skip the first SSE frame unconditionally. Handshake and listing frames must be classified as liveness; a following `{ data: "<PGP armor>" }` (including an offline flush on reconnect) is business and must be decrypted. B stores inbound armor first (`saveLocal`), then best-effort SSE. On every durable chat save without `NoPush` / `skipPush`, B enqueues native push if the recipient has a registered `pushDevice` (SSE online or offline); Beamio API no-ops when none. Keep the SSE open; reconnect on idle / drop with another random **C ≠ B**. Production clients use a `setTimeout` chain, not `setInterval`.
 
 Client listen contract (chat-sdk / SilentPassUI `gossip-core.ts`):
 
@@ -500,7 +508,7 @@ export async function postUserArmorToEntries(
 }
 ```
 
-Chat wraps an EIP-191 envelope **before** this encrypt step. See the [Chat developer guide](chat-developer-guide.md).
+Chat wraps an EIP-191 envelope **before** this encrypt step. See the [CoNET Chat developer guide](chat-developer-guide.md).
 
 ## Optional outer wrap (one extra hop)
 
@@ -537,7 +545,7 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 
 - [L0 development](../developers/l0.md)
 - [How to use Layer Minus](using-l0.md)
-- [Chat developer guide](chat-developer-guide.md)
+- [CoNET Chat developer guide](chat-developer-guide.md)
 - [Zero-trust mailbox routing](mailbox-routing.md)
 - [Peel, hop-sig, and listen timeouts](peel-hop-listen.md)
 - [X-CoNET-Hop-Sigs v1](hop-sigs.md)
@@ -546,7 +554,7 @@ Node samples above use `Buffer`. In browsers use `btoa` / `atob` or a UTF-8 help
 - [UDP frame forwarding](udp-forward.md)
 - [Persistent application streams](duplex-forward.md) — portable application semantics over L0 attachment primitives
 - [Security limits](security-limits.md)
-- [DePIN Chat product page](../applications/depin-chat.md)
+- [CoNET Chat product page](../applications/depin-chat.md)
 - [Resources](../resources.md)
 
 ## Long-connection transport lifecycle

@@ -1,10 +1,12 @@
-# Chat developer guide
+# CoNET Chat developer guide
 
-**Evidence level: Implemented capability.** This page is a developer how-to for a Chat **application** on Layer Minus. The envelopes, commands, and APIs match current Beamio / chat-sdk clients. It is not a claim that Chat is a finished replacement for mainstream messengers.
+**Evidence level: Implemented capability.** This page is a developer how-to for **CoNET Chat** on Layer Minus. The envelopes, commands, and APIs match current Beamio / chat-sdk clients. It is not a claim that Chat is a finished replacement for mainstream messengers.
+
+CoNET Chat is relationship-private communication infrastructure: wallet identity, zero-trust mailbox routing, encrypted application envelopes, and wallet-controlled encrypted history. Use it to add wallet-addressed communication **without** first building a centralized user-and-relationship database. Product thesis, Beamio integration, and maturity limits live on [CoNET Chat](../applications/depin-chat.md).
 
 Public site: [https://gitbook.conet.network/l0/chat-developer-guide.html](https://gitbook.conet.network/l0/chat-developer-guide.html)
 
-L0 only forwards OpenPGP by wallet / key ID. Chat is an **application composition**: user-PGP business envelopes, mailbox listen, dual receipts, presence, and an optional encrypted history track. Product maturity and UX limits live on [DePIN Chat](../applications/depin-chat.md). SI primitives and reusable helpers live on the [SI developer guide](si-developer-guide.md). Developer-track index: [L0 development](../developers/l0.md).
+L0 only forwards OpenPGP by wallet / key ID. Chat is an **application composition**: user-PGP business envelopes, mailbox listen, dual receipts, presence, and an optional encrypted history track. SI primitives and reusable helpers live on the [SI developer guide](si-developer-guide.md). Developer-track index: [L0 development](../developers/l0.md).
 
 Public packages: [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-sdk) · [`@conet.project/chat-sdk`](https://www.npmjs.com/package/@conet.project/chat-sdk). Reference clients: SilentPassUI [`cashtree`](https://github.com/CoNET-project/SilentPassUI/tree/cashtree) (consumer) and [`cashtrees`](https://github.com/CoNET-project/SilentPassUI/tree/cashtrees) (merchant).
 
@@ -15,7 +17,7 @@ Public packages: [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-
 | Register user PGP + mailbox | — | `POST https://beamio.app/api/regiestChatRoute`, then confirm with AddressPGP `searchKey` |
 | Send a message | Recipient **EOA user PGP** | `POST /post` to healthy entries **A ≠ B** |
 | Listen | Own mailbox **B route PGP** | SSE via entry **C ≠ B**, `command: "mining"` + `listenKind: "chat"` |
-| After inbound ingest | (1) **B route PGP** ACK · (2) sender user PGP receipt, then mailbox-work wrap `NoPush` to sender mailbox B | ACK and receipt both via entries ≠ B; HTTP still `{ data }` only |
+| After inbound ingest | (1) **B route PGP** ACK · (2) sender user PGP receipt, then mailbox-work wrap `NoPush` to sender mailbox B | ACK and receipt both via entries ≠ B; HTTP still `{ data }` only. `NoPush` is **Chat/APNs only**. L0 duplex mailbox work must omit it; see [duplex-forward](duplex-forward.md) |
 | Presence (green dot) | Contact mailbox **B route PGP** | `wallet_online_query` via **C ≠ B** |
 | Optional recover history | — | Encrypted IPFS fragments + `ChatIndexRegistry` head pointer |
 
@@ -56,14 +58,17 @@ Live `sendMessage` signs the **inner application string** (`text`), then OpenPGP
 
 ⑤ POST
    { data: <armor> } → several https://{domain}.conet.network/post  (A ≠ B)
-   HTTP JSON is **only** `{ data }`. For a sender receipt, wrap ④ as mailbox work
+   HTTP JSON is **only** `{ data }`. **Ordinary chat** posts the user-PGP armor
+   directly (no mailbox-work `NoPush`) so an offline recipient can get a native
+   badge. For a **sender receipt** only, wrap ④ as mailbox work
    `{ data: armor, NoPush: true }` encrypted to the **sender mailbox B** route PGP,
-   then POST that outer armor. See [SI mailbox work](si-developer-guide.md#3-mailbox-work-envelope-mailbox-b-decrypts).
+   then POST that outer armor. See [SI mailbox work](si-developer-guide.md#3-mailbox-work-envelope-mailbox-b-decrypts)
+   and [Native push badge and `NoPush`](../applications/depin-chat.md#native-push-badge-and-nopush).
 ```
 
 Inbound: decrypt with the recipient user PGP private key → parse ③ → `ethers.verifyMessage(text, signMessage)` must recover `from` → unwrap nested `text` for typed payloads.
 
-POS terminal authorization nests another object inside ① (`type: "beamio_pos_terminal_permission_v1"`). Merchant OS must unwrap along `text` and put it on **Staff pending**, not Messages. See [DePIN Chat](../applications/depin-chat.md).
+POS terminal authorization nests another object inside ① (`type: "beamio_pos_terminal_permission_v1"`). Merchant OS must unwrap along `text` and put it on **Staff pending**, not Messages. See [CoNET Chat](../applications/depin-chat.md).
 
 ## Sample: send
 
@@ -217,7 +222,7 @@ After decrypt, if the Worker received armor, compute `armorHash = keccak256(utf8
 
 After a **business** message is ingested (verified, not a receipt, not POS-permission-only):
 
-1. **Mailbox ACK** — SI command `gossip_delivery_ack` encrypted to **B route PGP**. Removes offline store and cancels pending APNs. Sample: [SI developer guide](si-developer-guide.md#mailbox-delivery-ack).
+1. **Mailbox ACK** — SI command `gossip_delivery_ack` encrypted to **B route PGP**. Removes the matching offline store. Sample: [SI developer guide](si-developer-guide.md#mailbox-delivery-ack).
 2. **Sender receipt** — ordinary Chat business envelope whose inner type is `beamio_chat_delivery_receipt_v1`, encrypted to the **original sender’s user PGP**, then wrapped as mailbox work `{ data: <user-PGP armor>, NoPush: true }` encrypted to the **sender’s mailbox B route PGP**. HTTP to the entry is still only `{ data }`. SDK: `sendMessage(..., { beamioNoPush: true })` (requires `to.routerArmoredPublicKey`).
 
 ```ts
@@ -250,7 +255,7 @@ Send that object as `pending.text` (JSON string) using the same `sendChatMessage
 
 On the sender: unwrap inbound; if `type === beamio_chat_delivery_receipt_v1`, mark the existing outbound bubble `delivered` by `sendId`. **Do not** append a Messages row. **Do not** increment unread.
 
-Mailbox stores ciphertext first (`saveLocal`), then best-effort SSE. Do not treat SSE `forWard SUCCESS` as “the user has the message.” Offline users get APNs from mailbox policy; ACK cancels that timer.
+Mailbox stores ciphertext first (`saveLocal`), then best-effort SSE. Do not treat SSE `forWard SUCCESS` as “the user has the message.” On every durable chat save (SSE online or offline), CoNET-SI enqueues native push when the recipient EOA has a registered `pushDevice`; Beamio API no-ops if none. `NoPush` / `skipPush` frames never enter that queue. ACK removes offline armor; it does not gate whether push was sent.
 
 ## Presence
 
@@ -325,7 +330,7 @@ Keys are derived in a Worker from an EIP-191 domain over the EOA. Without the EO
 Prefer the SDK Worker over copying OpenPGP onto the UI thread. Host responsibilities the SDK still expects:
 
 - inject `eoa`, user PGP private/public, **own route public key**, and the Guardian node list;
-- never send the EOA private key into a Worker if your product forbids it — current Beamio Chat Worker derives listen/send from material the host already holds; keep secrets out of logs either way;
+- never send the EOA private key into a Worker if your product forbids it — current CoNET Chat Worker derives listen/send from material the host already holds; keep secrets out of logs either way;
 - implement UI ingest: verify (if not already), classify typed payloads, dual receipts, create-session-on-recover;
 - register coupon / tag / merchant data on your own stores; the SDK is the gossip plane.
 
@@ -368,5 +373,5 @@ Walk this order. Do not skip to “the parser is broken.”
 - [Wallet-addressed peer identity](wallet-address-p2p.md)
 - [UDP frame forwarding](udp-forward.md)
 - [Security limits](security-limits.md)
-- [DePIN Chat](../applications/depin-chat.md)
+- [CoNET Chat](../applications/depin-chat.md)
 - [Resources](../resources.md)

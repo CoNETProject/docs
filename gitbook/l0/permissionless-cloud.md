@@ -84,6 +84,28 @@ These are **what developers build**. They are not extra L0 protocols.
 
 Chat, SilentPass, fragment history, and hop **GB** are the current production building blocks. Bulk DCDN, copyright delivery, and a general GPU / AI marketplace remain **application designs** on the same zero-trust cloud. Document them as compositions, not as automatic SI policy.
 
+## Future direction: decentralized AI with separated powers
+
+CoNET's future AI direction is to compose contributed L0 GPU capacity without
+placing the model, the complete raw-data pipeline, and the user-facing agent
+under one operator. The intended separation has three independent roles:
+
+| Role | Responsibility | Privacy boundary |
+| --- | --- | --- |
+| **Model builders** | Build, evaluate, and publish models or verifiable model artifacts | Do not automatically receive complete user prompts or control the acquisition network |
+| **Raw-data acquisition** | Independent contributors collect and attest source data | Fragment and encrypt sensitive inputs so one collector does not become the universal data custodian |
+| **AI agents** | Act for a user, authorize jobs, protect private context, verify outputs, and return encrypted results | Do not silently become the model owner and raw-data authority |
+
+L0 GPU nodes are an untrusted compute plane beneath those roles. Application
+designs should combine encrypted fragmentation, independently controlled keys,
+redundant or verifiable execution, and wallet-authorized `web3://` service
+access. The objective is decentralized AI **above user privacy**, not a
+centralized AI operator reproduced on distributed hardware.
+
+This is a future architecture direction. It is not evidence that a general
+GPU marketplace, training network, raw-data market, or decentralized AI agent
+product is already in production.
+
 ## What this page does not claim
 
 - A listed Guardian is honest.

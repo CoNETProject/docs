@@ -78,7 +78,41 @@ endpoint B receive line  ←  endpoint A writer
 Each endpoint owns its receive identity. A client must not create a receive
 line under another application's wallet or attach directly to mailbox B.
 Control and receive traffic follow the same entry-to-mailbox routing boundary
-as other conforming L0 applications.
+as other conforming L0 applications. POST entry A/C is always a random
+qualified SI (`A ≠ B`, `C ≠ B`). Production picks mailbox B at random from
+the SI pool. `conet-l0d start --debugSI [SI]` pins mailbox B only.
+
+## Duplex handshake (temporary SSE)
+
+One local TCP is one incarnation. SI never parses `duplex_*` JSON.
+
+```text
+1. Initiator: l0_listen (command) on mailbox B for a temporary wallet.
+   Command includes userPgpKeyId. POST via random entry C ≠ B.
+2. duplex_offer: encrypt to the destination's **registered** user PGP;
+   mailbox-work wrap to that destination's **registered** mailbox.
+   JSON announces the initiator temp line (listenWallet, listenUserPgp,
+   listenRoutePgp, listenMailboxWallet).
+3. Responder: own temp l0_listen, then duplex_accept encrypted to initiator
+   listenUserPgp, mailbox-work wrap to initiator listenRoutePgp.
+   POST via random entry A ≠ initiator B.
+4. Mailbox B of the initiator: unwrap work → match idle l0_listen by inner
+   user PGP (not getRoute) → SSE gossip. Initiator decrypts, writes
+   responseChunk, then l0_connect to the responder temp mailbox.
+5. Only after the initiator occupies the responder listen may the responder
+   reverse-occupy the initiator mailbox. Occupying the initiator SSE first
+   turns it into a pipe and **drops** the Chat accept.
+```
+
+A `--proxy` / `proxy_duplex` hub does not retry a failed temporary line. It
+posts one `duplex_reject` (`retryable=true`) to the initiator request listen
+(same wrap as accept). The client L0d closes that TCP; the application must
+open a new connection (new temporary wallet and offer). Do not occupy the
+initiator SSE only to deliver reject.
+
+`l0_connect` is a signed command to the **peer's** mailbox route PGP
+(`targetWallet` = that peer's temp listen wallet). It must not share a race
+with mailbox-work `duplex_accept` on the same idle SSE.
 
 ## SI attachment behavior
 

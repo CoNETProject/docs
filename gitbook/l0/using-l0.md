@@ -8,12 +8,18 @@ Start with the application contract. Do not invent a new SI command or
 plaintext HTTP field when an existing application envelope can compose the
 required behavior.
 
+[CoNET Chat](../applications/depin-chat.md) uses this plane to protect
+**relationships as well as message content**: wallet identity, entry/mailbox
+role separation, encrypted payloads, and wallet-controlled history recovery.
+Do not start a Chat integration by creating a centralized contact-graph
+database as the application’s source of truth.
+
 ## 1. Choose an application profile
 
 | Need | Application profile | Guide |
 |---|---|---|
-| Offline-capable messages | Chat envelope + mailbox delivery | [Chat developer guide](chat-developer-guide.md) |
-| Presence and delivery receipt | Mailbox query and acknowledgement | [Chat developer guide](chat-developer-guide.md) |
+| Offline-capable messages | Chat envelope + mailbox delivery | [CoNET Chat developer guide](chat-developer-guide.md) |
+| Presence and delivery receipt | Mailbox query and acknowledgement | [CoNET Chat developer guide](chat-developer-guide.md) |
 | UDP frames | End-to-end AES frames over mailbox relay | [UDP forwarding](udp-forward.md) |
 | Wallet-addressed Web/API request | `web3://` caller-signed request + correlated encrypted response | [`web3://` Application Protocol](web3-application-protocol.md) |
 | Persistent application stream | `web3://` bidirectional session | [`web3://` Application Protocol](web3-application-protocol.md) |

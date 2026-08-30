@@ -22,7 +22,7 @@ The intended result is a social network in which wallets can exchange attention,
 
 ### Current composable capabilities
 
-- [DePIN Chat](../applications/depin-chat.md) currently provides wallet-to-wallet encrypted messaging, mailbox delivery, presence, receipts, and encrypted history in Beamio.
+- [CoNET Chat](../applications/depin-chat.md) currently provides wallet-to-wallet encrypted messaging, mailbox delivery, presence, receipts, and encrypted history in Beamio. It is relationship-private communication infrastructure, not a public social-feed protocol.
 - [Beamio](../applications/beamio.md) provides EOA/AA wallet identity, `@BeamioTag`, current social-stat primitives, and gas-relayed application writes.
 - CoNET L1 provides signatures, contracts, and assets including conet-USDC as documented in [Assets on L1](../l1/assets.md).
 
@@ -95,7 +95,7 @@ independent feed client                    non-custodial revenue
 
 | Tier | SNS role | Boundary |
 | --- | --- | --- |
-| **L0 Layer Minus** | Encrypted DMs, notifications, and delivery coordination using the [mailbox-routing](../l0/mailbox-routing.md) model. | Current DePIN Chat is not a public social-feed protocol, and metadata exposure is not zero. |
+| **L0 Layer Minus** | Encrypted DMs, notifications, and delivery coordination using the [mailbox-routing](../l0/mailbox-routing.md) model. | Current CoNET Chat is not a public social-feed protocol, and metadata exposure is not zero. |
 | **L1 CoNET** | Wallet identity, `@BeamioTag`, asset contracts, access policy, social-stat anchors, and final settlement. | On-chain attribution does not establish personhood or content truth. |
 | **L2 CoNET-DLE** | Proposed parallel micropayment ledgers for tips, unlocks, boosts, subscriptions, and bounties. | Tip classes and economics are specified; product-specific flows still require implementation and validation. |
 | **Bulk distribution** | Large attachments or video could later use [BT DCDN](../applications/bt-dcdn.md). | BT DCDN is explicitly under development. |
@@ -171,7 +171,7 @@ A product should not call this economy operational until it can demonstrate:
 - Rebuilding a custodial in-app balance for “convenient” creator payouts.
 - Treating a fee as a complete anti-spam system.
 - Selling undisclosed boosts inside an allegedly neutral ranking algorithm.
-- Storing the authoritative social graph only in a proprietary database.
+- Storing the authoritative social graph only in a proprietary database. [CoNET Chat](../applications/depin-chat.md) treats the communication relationship itself as a privacy boundary; a public SNS still must not reconstruct that graph as platform property.
 - Using inflationary rewards as the only incentive while omitting stable-value payment paths.
 - Equating paid access with ownership or copyright transfer.
 - Separating chat identity, social identity, and payment identity without an auditable delegation model.
@@ -182,6 +182,6 @@ A product should not call this economy operational until it can demonstrate:
 - **Previous:** [NFT provenance and Web of Trust](nft-web-of-trust.md)  
 - **Next:** [Long-form creator media](decentralized-youtube.md)  
 - [L2 economics](../l2/economics.md) · [L2 asset, storage, and trade tips](../l2/tip-classes.md)  
-- [DePIN Chat](../applications/depin-chat.md) · [Beamio](../applications/beamio.md)  
+- [CoNET Chat](../applications/depin-chat.md) · [Beamio](../applications/beamio.md)  
 - [Assets on L1](../l1/assets.md)  
 - [BT DCDN](../applications/bt-dcdn.md) — under development
