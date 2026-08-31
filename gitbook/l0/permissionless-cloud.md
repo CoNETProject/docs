@@ -53,7 +53,7 @@ A privacy-first app is **not** “pick one honest node.” It is a **combination
 | Technique | What it does | Live anchors |
 | --- | --- | --- |
 | **Privacy routing** | Sender and listener do not dial mailbox B. Nested PGP can hide the inner key ID from the first hop. Routing and product wallets may be different EOAs. | [Mailbox routing](mailbox-routing.md), [hop-sigs](hop-sigs.md), [split wallets](wallet-address-p2p.md#routing-wallet-versus-sender--recipient-wallets) |
-| **Data fragmentation** | Split ciphertext so no node holds a reconstructable whole. Store fragments by hash. Keep the assembly index encrypted to keys the client (or authorized set) controls. | IPFS `storageFragment` / `getFragment`; Chat history index; copyright / DCDN designs |
+| **Data fragmentation** | Applications should encrypt and fragment sensitive state so that no single storage provider receives enough material to reconstruct the whole. Store fragments by hash. Keep the assembly index encrypted to keys the client (or authorized set) controls. Fragmentation thresholds, redundancy, recovery, deletion, and availability verification remain application-specific. This is **not** an automatic property of all L0 traffic. | IPFS `storageFragment` / `getFragment`; Chat history index; copyright / DCDN designs |
 | **Client-side cryptography** | Encrypt to the recipient **user PGP** (or a session key that B never sees). Sign application objects. Verify compute outputs. | [How to use L0](using-l0.md), [SI developer guide](si-developer-guide.md) |
 | **Other application policy** | Split routing / payment identities, consumed nonces, sealed indexes, multi-node reconstruction, challenge windows | Application-owned. Not an L0 header field |
 
@@ -84,35 +84,122 @@ These are **what developers build**. They are not extra L0 protocols.
 
 Chat, SilentPass, fragment history, and hop **GB** are the current production building blocks. Bulk DCDN, copyright delivery, and a general GPU / AI marketplace remain **application designs** on the same zero-trust cloud. Document them as compositions, not as automatic SI policy.
 
-## Future direction: decentralized AI with separated powers
+## Future direction: privacy-first decentralized AI
 
-CoNET's future AI direction is to compose contributed L0 GPU capacity without
-placing the model, the complete raw-data pipeline, and the user-facing agent
-under one operator. The intended separation has three independent roles:
+**Three independent roles. One open intelligence economy.**
 
-| Role | Responsibility | Privacy boundary |
+Centralized AI combines models, data, and user agents under one platform.
+CoNET separates them across independent wallet-addressed participants—and
+uses private application paths and programmable micropayments to make that
+separation economically sustainable.
+
+Models, data, and AI agents need neither mutual trust nor ownership by the
+same platform. Layer Minus and `web3://` reduce the need for one network
+intermediary to observe the complete user–service relationship. That
+benefit is conditional on operator separation, client-side key control,
+route diversity, limited identifier reuse, and the absence of collusion.
+CoNET-DLE micropayments are designed so value can move among independent
+participants for each measurable contribution. That is why the three-role
+split is not only a technical architecture. It can become an AI production
+relationship that economic incentives keep in place.
+
+Prediction is not intervention. The governance risk becomes more severe
+when the same actor that predicts a user also controls the ranking,
+price, recommendation, or agent action presented to that user. A model
+can be packaged and replaced as a capability. An agent is a continuing
+relationship: it retains context, holds authority, selects services, and
+mediates action over time. See
+[Privacy-first Decentralized AI — Whitepaper §1.3](../applications/privacy-first-ai-whitepaper.md).
+
+| Role | Product line | Privacy and economic boundary |
 | --- | --- | --- |
-| **Model builders** | Build, evaluate, and publish models or verifiable model artifacts | Do not automatically receive complete user prompts or control the acquisition network |
-| **Raw-data acquisition** | Independent contributors collect and attest source data | Fragment and encrypt sensitive inputs so one collector does not become the universal data custodian |
-| **AI agents** | Act for a user, authorize jobs, protect private context, verify outputs, and return encrypted results | Do not silently become the model owner and raw-data authority |
+| **Model builders** | Build intelligence without owning the user. | Publish models or verifiable artifacts. Do not automatically receive complete user prompts or control the data-provider network. |
+| **Data providers** | Contribute data without surrendering control. | Contribute and attest inputs. Fragment and encrypt sensitive material so one collector does not become the universal data custodian. |
+| **AI agents** | Act for users without becoming the platform. | Request work, protect private context, and return results to the user. Do not silently become the model owner and data authority. |
 
-L0 GPU nodes are an untrusted compute plane beneath those roles. Application
-designs should combine encrypted fragmentation, independently controlled keys,
-redundant or verifiable execution, and wallet-authorized `web3://` service
-access. The objective is decentralized AI **above user privacy**, not a
-centralized AI operator reproduced on distributed hardware.
+### Private coordination
 
-This is a future architecture direction. It is not evidence that a general
-GPU marketplace, training network, raw-data market, or decentralized AI agent
-product is already in production.
+**Implementation status.** Layer Minus forwarding is an implemented L0
+capability. `web3://` has implemented v1 components, including wallet
+locators, signed requests, encrypted response correlation, Linux runtime
+support, and early persistent streams. Complete cross-platform handling
+and general public hosting remain under development.
+
+Layer Minus and `web3://` reduce the need for one network intermediary to
+observe the complete user–service relationship.
+
+This benefit is conditional on operator separation, client-side key
+control, route diversity, limited identifier reuse, and the absence of
+collusion. Protocol-role separation alone does not prove legal-entity or
+infrastructure independence.
+
+In the proposed application model, the durable application owner is
+represented by a wallet identity. Layer Minus routing additionally
+depends on OpenPGP identity and mailbox-route bindings; an exact
+`@BeamioTag` may provide an application-facing alias.
+
+L0 GPU nodes remain an untrusted compute plane. Applications should
+encrypt and fragment sensitive state so that no single storage provider
+receives enough material to reconstruct the whole. Fragmentation
+thresholds, redundancy, recovery, deletion, and availability verification
+remain application-specific. Layer Minus provides forwarding and mailbox
+primitives; higher-layer client cryptography is application composition,
+not an automatic property of all L0 traffic.
+
+The full paper defines **contestable intelligence**: independently sourced
+data, contestable model supply, user-controlled agents, and an operational
+evaluation matrix.
+
+### Economic coordination
+
+CoNET-DLE is designed for small, frequent payments among agents, models, data
+providers, and infrastructure operators. Each participant can earn from a
+measurable contribution without controlling the entire AI stack. The
+one-basis-point protocol-value fee is a target for specified classes of
+applicable value movement, not a universal all-in fee for every AI task.
+AI event classes are proposed, not frozen DLE tip classes. Official
+developer documentation still lists DLE as a normative design and
+experimental environment, not a production SDK or a launched L2 service.
+
+**Privacy-preserving settlement requirement.** A future AI payment protocol
+should prove only the service right, amount, and settlement condition
+required for one interaction. It should avoid placing prompts, dataset
+identifiers, long-term agent identity, or the complete service graph on a
+public ledger. This property requires a specified payment-session and
+unlinkability design; it is not provided automatically by wallet payments
+or by DLE. A public-chain micropayment can add metadata rather than hide
+it.
+
+Privacy creates independence. Micropayments make independence sustainable.
+
+The product-facing landing digest is
+[Privacy-first Decentralized AI](../applications/privacy-first-ai.md).
+The full architecture paper is
+[Privacy-first Decentralized AI — Whitepaper](../applications/privacy-first-ai-whitepaper.md).
 
 ## What this page does not claim
 
 - A listed Guardian is honest.
 - Running an unlisted SI automatically appears in `getAllNodes`.
 - Every node offers GPU or WASM.
-- Fragmentation by itself is anonymity.
+- Fragmentation by itself is anonymity, or that all L0 traffic is
+  automatically fragmented so no node holds a reconstructable whole.
+- That `web3://` is a complete production cross-platform handler or
+  general public hosting service.
+- That Layer Minus application identity is only a wallet address.
+- Protocol-role separation proves legal-entity or infrastructure
+  independence, or hides the complete user–service relationship without
+  operator separation and limited identifier reuse.
+- That wallet payments or DLE automatically hide prompts, dataset
+  identifiers, long-term agent identity, or the complete service graph.
+- That the one-basis-point protocol-value fee is a universal all-in fee
+  for every AI task.
+- That listed AI events (inference, licensed data access, verification)
+  are frozen DLE tip classes, or that DLE is a production SDK or a
+  launched L2 service.
 - Decentralized AI is a live CoNET product name.
+- That every predictive analysis is manipulation. Prediction and
+  intervention are distinct stages.
 
 ## Next
 
@@ -120,3 +207,5 @@ product is already in production.
 - [L0 development](../developers/l0.md) — client how-to
 - [Zero-trust mailbox routing](mailbox-routing.md) — A/B/C path
 - [Security limits](security-limits.md) — what the live plane does not protect
+- [Privacy-first Decentralized AI](../applications/privacy-first-ai.md) — landing digest
+- [Privacy-first Decentralized AI — Whitepaper](../applications/privacy-first-ai-whitepaper.md) — full architecture paper

@@ -51,6 +51,7 @@ deployment note.
 | Participate in mining | [L1 mining](developers/l1-mining.md) |
 | Build against DLE specifications | [L2 development](developers/l2.md) |
 | Read the CoNET Chat product thesis | [CoNET Chat](applications/depin-chat.md) |
+| Read the privacy-first decentralized AI direction | [Landing](applications/privacy-first-ai.md) · [Whitepaper](applications/privacy-first-ai-whitepaper.md) |
 
 ## Source repositories
 

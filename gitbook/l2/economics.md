@@ -16,6 +16,8 @@ The target variable protocol fee is **1 basis point** on applicable value moveme
 
 This is protocol revenue. It is not an execution-gas deposit and is not assumed to fund fixed availability capacity.
 
+This 1 bp figure is **not** a universal all-in fee for every AI task. It applies to specified classes of applicable value movement: asset transfers and successful trade settlement. Official DLE economic text states that AI/API use does **not** automatically inherit the NFT-trade 1 bp rule; a dedicated, timelocked fee policy would be required before any percentage protocol fee applies to that class. Inference execution, data access, proof verification, L1 settlement, retries, storage, and availability may carry separate measured costs under future class-specific fee schedules. Candidate AI-market events in the Privacy-first AI paper are **not** presently frozen DLE tip classes.
+
 ## 2. Execution reserve
 
 The execution reserve is a payer-capped canonical conet-USDC balance for objectively attributable work, including:
@@ -52,6 +54,7 @@ Asset-tip principal remains governed by exact-token conservation in the gateway 
 
 The economic model is a target protocol, not a report of current production revenue.
 
+- The 1 bp protocol-value fee is a target for specified value movement, not a universal all-in AI fee.
 - The **100 USDC-equivalent asset-tip ceiling is frozen as a safety bound**.
 - The 10-USDC minimum ingress value remains a pre-production calibration seed.
 - Candidate 1.2× execution and availability coverage targets are not yet economically proven.

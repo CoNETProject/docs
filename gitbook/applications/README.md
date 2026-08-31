@@ -15,6 +15,7 @@ They are not additional network layers.
 | **Public application** | A user-facing build or endpoint is publicly available |
 | **Integrated capability** | Implemented inside another public application |
 | **Under development** | Documented and partially implemented, without a complete production release |
+| **Design direction** | Architecture and economic thesis only; not a shipped application |
 
 Maturity is not an audit, uptime, or anonymity guarantee.
 
@@ -27,6 +28,7 @@ Maturity is not an audit, uptime, or anonymity guarantee.
 | **SilentPass** | Wallet-authorized privacy access to ordinary Internet services | Public application | [SilentPass](silentpass-vpn.md) |
 | **Beamio** | Consumer wallet, Merchant OS, POS, Cash and USDC | Public application | [Beamio](beamio.md) |
 | **CoNET Chat** | Wallet-addressed, relationship-private communication: receipts, presence, and encrypted-history recovery | Integrated capability | [CoNET Chat](depin-chat.md) |
+| **Privacy-first Decentralized AI** | Three independent roles and one open intelligence economy: private paths plus candidate micropayments (not a live AI fee rail) | Design direction | [Landing](privacy-first-ai.md) · [Whitepaper](privacy-first-ai-whitepaper.md) |
 | **Institutional multisig AA** | Team-controlled Smart Wallet with on-chain tasks and threshold votes | Integrated capability | [Institutional multisig AA](institutional-multisig-aa.md) |
 | **Miner-matched order-book exchange** | Proposed non-custodial ERC-20 order book | Under development | [Miner-matched exchange](miner-orderbook-dex.md) |
 | **DePIN DCDN / BT** | Planned encrypted bulk-content distribution | Under development | [DePIN DCDN / BT](bt-dcdn.md) |
@@ -44,6 +46,28 @@ a second application or protocol.
 | **L2 / CoNET-DLE** | Prospective multi-party and high-frequency accounting designs; not a production dependency today |
 | **Application services** | Relaying, indexing, metadata, local encrypted storage, and UI coordination where these are not protocol functions |
 
+**Architecture direction** (not a shipped application):
+[Privacy-first Decentralized AI](privacy-first-ai.md) is the landing digest.
+The [whitepaper](privacy-first-ai-whitepaper.md) explains why models, data,
+and agents can stay independent: Layer Minus and `web3://` reduce the need
+for one network intermediary to observe the complete user–service
+relationship, **conditional** on operator and identifier separation;
+CoNET-DLE is designed so each measurable contribution can be paid without
+one party owning the stack. AI event classes are proposed, not frozen
+DLE tip classes. The one-basis-point protocol-value fee is a target for
+specified value movement, not a universal all-in fee for every AI task.
+Privacy-preserving settlement is a **design
+requirement**, not an automatic property of wallet payments or DLE.
+Prediction is not intervention: the closed loop is more severe when the
+same actor that predicts also controls ranking, price, recommendation,
+or agent action. The paper defines
+contestable intelligence (independently sourced data, contestable model
+supply, user-controlled agents, and an operational evaluation matrix), a
+threat model, governance, and a staged research roadmap. Figure 1 states the
+layer split: L0 private coordination; L1 identity, assets, and final
+settlement; DLE candidate event ledger; limited agent authority; and
+identifier separation. It does not claim a live AI product.
+
 An application can depend on several layers without becoming a new layer.
 
 ## Product boundaries
@@ -53,7 +77,11 @@ An application can depend on several layers without becoming a new layer.
 - SilentPass is privacy egress to an ordinary Internet destination. It is not
   a `web3://` application host and not an L1 consensus path.
 - `web3://` names an application by wallet identity and returns an
-  encrypted, request-correlated application response or a persistent stream.
+  encrypted, request-correlated application response or a persistent
+  stream. Layer Minus routing additionally depends on OpenPGP identity
+  and mailbox-route bindings; an exact `@BeamioTag` may be an alias.
+  v1 components are implemented; complete cross-platform handling and
+  general public hosting remain under development.
 - CoNET-DLE specifications and its lab explorer do not imply a launched
   production L2.
 

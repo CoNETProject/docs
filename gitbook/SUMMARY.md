@@ -11,6 +11,8 @@
     * [POS terminal](applications/beamio/pos.md)
     * [Cash and USDC](applications/beamio/cash-and-usdc.md)
   * [CoNET Chat](applications/depin-chat.md)
+  * [Privacy-first Decentralized AI](applications/privacy-first-ai.md)
+    * [Whitepaper](applications/privacy-first-ai-whitepaper.md)
   * [Institutional multisig AA](applications/institutional-multisig-aa.md)
   * [Miner-matched order-book exchange](applications/miner-orderbook-dex.md)
   * [BT over DePIN DCDN](applications/bt-dcdn.md)
