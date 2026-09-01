@@ -4,7 +4,7 @@
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-08-29**.
+Revision: **2026-08-31**.
 
 ## Product role
 
@@ -63,7 +63,7 @@ Top-up `#13` percentages use **actual payment** only. Promotion bonus `#0` is no
 
 **Same-store `#13` → `#0`:** Consumer Discover Top-up may convert this card’s Reward PT into this card’s program credit. That path does **not** require USDC escrow or `convertReward13ToPointsRatioE6`.
 
-**Atomic multi-source Top-up (fail-closed):** When Smart Pay includes same-store and/or third-party `#13` legs, Cluster/Master runs `topupWithReward13Container` in one Relayer AA `executeBatch`: peer `peerRedeem13ForContainerTopup` (exact `quoteUsdcWithdrawForFiat6(burn13)` CONET-USDC to the **target merchant card**, after escrow **and** ERC20 balance checks) → container mint `#0` → optional cash EIP-3009 + `mintPointsForProtocolUsdcSettlement`. Any peer that cannot fully pay the quoted USDC causes the **entire** top-up to revert (no silent cap, no “burn `#13` without USDC”). Cash-only top-up (no `#13` legs) keeps `purchasingCard` / `postBuyCardPoints`. Issued-NFT social exchange (`#13` → CONET-USDC to the user’s **EOA**) remains a **separate** escrow rail and must not be used as the atomic container peer path.
+**Parallel Smart Pay Top-up:** When Smart Pay includes `#13` legs **and** leftover cash, Consumer UI starts **two** jobs at once: (1) `topupWithReward13Container` with **`cash=0`** — Relayer AA `executeBatch`: peer `peerRedeem13ForContainerTopup` (exact `quoteUsdcWithdrawForFiat6(burn13)` CONET-USDC to the **target merchant card**, after escrow **and** ERC20 balance checks) → container mint `#0`; (2) remaining fiat via **Base USDC treasuryBridge**. The two jobs are **not** one atomic UserOp. Cluster CONET-USDC `balanceOf` reject applies **only** when a request still includes `cash`. Peer legs remain fail-closed inside the container (no silent cap, no “burn `#13` without USDC”). Cash-only top-up (no `#13` legs) keeps `purchasingCard` / `postBuyCardPoints` (and may use Base USDC treasuryBridge). Issued-NFT social exchange (`#13` → CONET-USDC to the user’s **EOA**) remains a **separate** escrow rail and must not be used as the container peer path.
 
 **Charge `#13`:** POS settle burns `#0` (`burnPointsByAdmin`). Beacon **V19+** runs the same UpdateLib mint as a real `#0` transfer (`amountFiat6 × chargeRewardRatioE6 / 1e6` → actor `#13`, plus referrer if configured). Pre-V19 burn-only Charges minted no `#13`. Master `enqueueRecordChargeReferrerReward` stays a no-op.
 
@@ -79,7 +79,7 @@ Top-up `#13` percentages use **actual payment** only. Promotion bonus `#0` is no
 | **Messages** | Ordinary Merchant OS chat omits mailbox `NoPush` (offline peer may get a native badge). Delivery receipts use `NoPush: true`. Same rule as Consumer; see [CoNET Chat](../depin-chat.md). |
 | **Transactions** | Indexer ledger. B-Unit service fees are a **separate indexer row**; the UI merges them into Charge / Top-up / Claim when a parent row exists |
 | **Overview KPI** | Chain-first. A failed RPC must not overwrite the last trusted value with zero |
-| **Wallet USDC** | Overview and Wallets show **one** merchant-owned **USDC** total: Base USDC + canonical CONET-USDC, summed per EOA and Smart Wallet. The UI does not split those chains. Program-card **USDC Reserve / Diff** (card CONET-USDC minus minted `#13`) stays a separate KPI. |
+| **Wallet USDC** | Overview and Wallets show **one** merchant-owned **USDC** total: Base USDC + canonical CONET-USDC, summed per EOA and Smart Wallet. The UI does not split those chains. Program-card **USDC Reserve / Diff** is a separate KPI: **Reserve** = `min(rewardEscrowUsdc6, CONET-USDC.balanceOf(card))`; **Diff** = Reserve − `quoteUsdcWithdrawForFiat6(totalSupply(13))`. Deposit funds the `#13` redeem pool via owner EOA EIP-2612 `permit` (when allowance is insufficient) + `fundSocialExchangeUsdcEscrow`; Master Settle_Conet sponsors CNET gas so the merchant EOA does not need CNET. On-card CONET-USDC that is not in escrow does not count toward Reserve. |
 
 ### Fuel and cash (merchant view)
 
