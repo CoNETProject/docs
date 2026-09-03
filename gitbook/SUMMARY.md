@@ -2,6 +2,7 @@
 
 * [Home](README.md)
 * [System overview](overview.md)
+* [Open source](open-source.md)
 * [L0 — Decentralized Cloud](l0/README.md)
   * [Permissionless cloud and zero-trust applications](l0/permissionless-cloud.md)
   * [Node and client roles](l0/node-roles.md)

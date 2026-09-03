@@ -56,12 +56,19 @@ deployment note.
 
 ## Source repositories
 
+CoNET is developed as open source. The complete, categorized list of public
+infrastructure, protocol, application, contract, SDK, client, and
+documentation repositories is maintained in the
+[Open source repository index](open-source.md).
+
 | Project | Repository |
 |---|---|
 | CoNET SI | [CoNET-project/CoNET-SI](https://github.com/CoNET-project/CoNET-SI) |
 | LayerMinus / mining client | [CoNET-project/CoNET-DL](https://github.com/CoNET-project/CoNET-DL) |
 | Linux `web3://` runtime | [CoNET-project/CoNET-L0D](https://github.com/CoNET-project/CoNET-L0D) |
 | Browser `web3://` client | [CoNET-project/web3Url](https://github.com/CoNET-project/web3Url) |
+| CoNET DLE | [CoNET-project/CoNET-DLE](https://github.com/CoNET-project/CoNET-DLE) |
+| Documentation | [CoNETProject/docs](https://github.com/CoNETProject/docs) |
 
 ## Maturity
 

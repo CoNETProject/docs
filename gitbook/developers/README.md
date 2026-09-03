@@ -67,6 +67,13 @@ itself proof of production availability or an audit.
 Do not use deprecated `https://rpc.conet.network`. Do not invent an SI
 hostname; use existing Guardian domains from the live registry.
 
+## Public source
+
+CoNET infrastructure, protocols, clients, contracts, SDKs, and documentation
+are developed in public repositories. Use the
+[Open source repository index](../open-source.md) to find the source owner for
+each component before opening an issue or submitting a change.
+
 ## Next
 
 1. [L0 development](l0.md)

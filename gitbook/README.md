@@ -15,6 +15,14 @@ combine only the capabilities they need.
 | **L1 — CoNET Blockchain** | EVM state, identity registries, validators, canonical assets, Treasury, and settlement (`chainId` **224422**) | [L1 overview](l1/README.md) · [Run an L1 node](developers/l1-node.md) |
 | **L2 — CoNET-DLE** | Specialized parallel application-ledger classes with explicit archive, finality, availability, and settlement rules | [L2 overview](l2/README.md) · [DLE explorer](l2/explorer.md) |
 
+## Open source
+
+CoNET is developed in public open-source repositories. Protocol,
+infrastructure, client, contract, SDK, and documentation source links are
+collected in the [Open source repository index](open-source.md). Individual
+hosted deployments may also depend on private operator configuration and
+secrets that are not part of the public source.
+
 ```text
 L0 cloud resources
         │
@@ -71,7 +79,8 @@ traffic.
 - L1 operations: [Run an L1 node](developers/l1-node.md),
   [RPC and Explorer](l1/rpc-explorer.md), and
   [decentralization evidence](l1/decentralization.md).
-- Current endpoints, repositories, and evidence: [Resources](resources.md).
+- Public source: [Open source repository index](open-source.md).
+- Current endpoints and evidence: [Resources](resources.md).
 
 ## Status and evidence
 

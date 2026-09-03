@@ -128,6 +128,7 @@ sleep 1
 SMOKE_PATHS=(
 	"/"
 	"/overview.html"
+	"/open-source.html"
 	"/developers/"
 	"/developers/l0.html"
 	"/developers/l1-node.html"

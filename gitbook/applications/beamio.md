@@ -156,6 +156,8 @@ Public endpoints:
 | Base RPC (treasury / USDC / institutional AA) | https://base-rpc.conet.network |
 
 Source availability differs by surface.
+For the cross-project list, see the
+[Open source repository index](../open-source.md).
 
 | Component | Public repository | npm |
 | --- | --- | --- |
