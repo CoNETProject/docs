@@ -119,11 +119,12 @@ mediates action over time. See
 
 ### Private coordination
 
-**Implementation status.** Layer Minus forwarding is an implemented L0
-capability. `web3://` has implemented v1 components, including wallet
-locators, signed requests, encrypted response correlation, Linux runtime
-support, and early persistent streams. Complete cross-platform handling
-and general public hosting remain under development.
+**Implementation status.** Layer Minus forwarding is an **Implemented
+capability** over L0 resources. `web3://` is **Under development**: v1
+components include wallet locators, signed requests, encrypted response
+correlation, Linux runtime support, and early persistent streams. Complete
+cross-platform handling and general public hosting are not production
+references.
 
 Layer Minus and `web3://` reduce the need for one network intermediary to
 observe the complete user–service relationship.

@@ -95,7 +95,7 @@ independent feed client                    non-custodial revenue
 
 | Tier | SNS role | Boundary |
 | --- | --- | --- |
-| **L0 Layer Minus** | Encrypted DMs, notifications, and delivery coordination using the [mailbox-routing](../l0/mailbox-routing.md) model. | Current CoNET Chat is not a public social-feed protocol, and metadata exposure is not zero. |
+| **L0 + Layer Minus** | L0 contributes decentralized resources; Layer Minus provides encrypted DMs, notifications, and delivery coordination using the [mailbox-routing](../l0/mailbox-routing.md) model. | Current CoNET Chat is not a public social-feed protocol, and metadata exposure is not zero. |
 | **L1 CoNET** | Wallet identity, `@BeamioTag`, asset contracts, access policy, social-stat anchors, and final settlement. | On-chain attribution does not establish personhood or content truth. |
 | **L2 CoNET-DLE** | Proposed parallel micropayment ledgers for tips, unlocks, boosts, subscriptions, and bounties. | Tip classes and economics are specified; product-specific flows still require implementation and validation. |
 | **Bulk distribution** | Large attachments or video could later use [BT DCDN](../applications/bt-dcdn.md). | BT DCDN is explicitly under development. |

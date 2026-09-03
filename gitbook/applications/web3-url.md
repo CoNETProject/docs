@@ -1,7 +1,7 @@
 # `web3://` wallet-addressed applications
 
 **Maturity: Under development.** `web3://` is a wallet-addressed application
-protocol built on CoNET Layer Minus. The Linux runtime, signed GET/HEAD
+protocol using Layer Minus over CoNET L0 resources. The Linux runtime, signed GET/HEAD
 gateway, locator parser, persistent application streams, and early
 cross-browser client are implemented. A
 complete cross-platform protocol handler and general public hosting service
@@ -43,15 +43,16 @@ web3://<exact-tag>.web3/<resource>
                  ├─ browser or native client
                  └─ Linux client using conet-l0d
                                 │
-                         Layer Minus (L0)
+                     Layer Minus on CoNET L0
                                 │
                  Linux server using conet-l0d
                                 │
                     local Web/API/TCP origin
 ```
 
-This is an **application protocol that uses L0 infrastructure**. It is not a
-new SI command family and does not turn L0 into a product-specific protocol.
+This is an **application protocol that uses Layer Minus over L0
+infrastructure**. It is not a new SI command family and does not turn L0 into
+a product-specific protocol.
 
 ## Platform choices
 
@@ -184,6 +185,8 @@ in the [Application Protocol contract](../l0/web3-application-protocol.md).
 
 ## Related
 
+- [L0 decentralized cloud](../l0/README.md)
+- [Layer Minus privacy routing](../l0/layer-minus.md)
 - [`web3://` Application Protocol contract](../l0/web3-application-protocol.md)
 - [Linux runtime (`conet-l0d`)](../developers/conet-l0d.md)
 - [How to use Layer Minus](../l0/using-l0.md)

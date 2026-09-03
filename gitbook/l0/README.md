@@ -1,148 +1,123 @@
-# L0 — Layer Minus
+# L0 — Decentralized Cloud
 
-**Evidence level: Implemented capability.** CoNET-SI, LayerMinus workers, and current application integrations implement the protocol surfaces identified below. Availability and client coverage remain deployment-specific.
+**Maturity: Implemented capability.** A permissionless CoNET-SI fleet,
+LayerMinus workers, storage services, and application integrations use L0
+resources today. Resource availability, operator diversity, capacity, and
+client coverage remain deployment-specific.
 
-## Developer docs
+## Resource plane
 
-**Build on Layer Minus:** [L0 development](../developers/l0.md) — SI `POST /post` samples and the Chat module guide.
+L0 is CoNET's decentralized cloud resource plane. Participants can contribute
+measurable infrastructure rather than placing every application behind one
+stable platform origin.
 
-| Task | Page |
-| --- | --- |
-| Cloud model and zero-trust composition | [Permissionless cloud and zero-trust applications](permissionless-cloud.md) |
-| Client against CoNET-SI | [SI developer guide](si-developer-guide.md) |
-| Chat envelopes, listen, receipts | [CoNET Chat developer guide](chat-developer-guide.md) |
-| Wrap-to-C listen timeouts | [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) |
-| All developer tracks (L0 / L1 mining / ERC-20 / L2) | [Developers](../developers/README.md) |
+| Resource | L0 role | Application responsibility |
+|---|---|---|
+| **Network forwarding** | Carry encrypted traffic between entries, routes, mailboxes, egresses, and application hosts | Select routes, encrypt for the correct recipient, authenticate responses, and handle failure |
+| **Ciphertext storage** | Retain encrypted mailbox or fragment material | Define keys, fragmentation, redundancy, recovery, deletion, and availability checks |
+| **Service hosting** | Expose wallet-addressed Web, API, AI, or TCP services through contributed hosts | Define the application protocol, authorization, isolation, and output verification |
+| **Compute** | Contribute CPU/GPU capacity where an application defines work | Verify results and avoid trusting a single unproven provider |
+| **Metering** | Measure eligible resource use in **GB** | Define who pays, what completion means, and how disputes are resolved |
 
-Layer Minus is a **permissionless, decentralized cloud** and, on the wire, CoNET's **PGP / wallet-address forwarding network**. Anyone may use it. Participants may join by offering **CPU / GPU compute**, **network forward**, and **storage**, and earn **GB** for useful ciphertext work. It runs **above the existing TCP/IP Internet**; it does not replace IP routing or define a new physical network.
+L0 runs above the existing TCP/IP Internet. It is not a replacement IP
+network, a new physical transport, or proof that participating machines are
+independently controlled.
 
-Its job is to move ciphertext from an entry to the mailbox (or egress) named by a recipient OpenPGP key, while keeping a peer's durable identity as a **wallet** plus OpenPGP and mailbox-route bindings, not as the IP used for one connection. **Any one node may be malicious.** Developers therefore compose **privacy routing + data fragmentation + client cryptography**. Applications should encrypt and fragment sensitive state so that no single storage provider receives enough material to reconstruct the whole; this is **not** an automatic property of all L0 traffic. That is how privacy-first **communications, storage, compute, and decentralized AI** are built: models, data, and agents stay independent wallet-addressed roles; Layer Minus and `web3://` reduce the need for one network intermediary to observe the complete user–service relationship — **conditional** on operator and identifier separation; CoNET-DLE is designed so each measurable contribution can be paid. Thesis: [Permissionless cloud and zero-trust applications](permissionless-cloud.md). Product direction: [Privacy-first Decentralized AI](../applications/privacy-first-ai.md)
-([whitepaper](../applications/privacy-first-ai-whitepaper.md)).
+## Layer Minus uses L0
 
-How to use L0 is **application-layer development**. Chat, SilentPass, mining
-gossip, UDP frames, Beamio control messages, and the
-[`web3://` Application Protocol](web3-application-protocol.md) are
-**combinations** of the same forwarding primitives. They are not extra L0 wire
-protocols. Start with [How to use Layer Minus](using-l0.md), then the
-[L0 development](../developers/l0.md) track.
+[Layer Minus](layer-minus.md) is the privacy-routing protocol built on these
+resources. It binds durable wallet identity to OpenPGP and mailbox routes,
+forwards recipient-encrypted traffic through separated entry and mailbox
+roles, and uses HTTP(S)-shaped carriers.
 
-## What it is
+The distinction is important:
 
-A Layer Minus identity combines:
+- **L0 supplies decentralized cloud resources.**
+- **Layer Minus specifies how wallet/OpenPGP-addressed ciphertext is routed
+  across those resources.**
+- **Application protocols** such as [`web3://`](web3-application-protocol.md)
+  define request, response, stream, authorization, and rendering semantics.
+- **Products** such as SilentPass, CoNET Chat, and Beamio compose these
+  capabilities into user-facing behavior.
 
-- an **EOA wallet address** for ownership and signatures;
-- a **user OpenPGP key** for business-message encryption; and
-- a **route OpenPGP key** that identifies the mailbox node selected for that wallet.
+Layer Minus is not synonymous with L0, and an application using L0 does not
+become an L0 wire command.
 
-The bindings are published through **AddressPGP on CoNET L1**. Clients send signed, **already-encrypted** OpenPGP envelopes to a healthy entry node over **HTTP or HTTPS**. A node reads the OpenPGP recipient **key ID** (an intentional packet side channel). If the key is not local, it forwards the same armor and appends an SI hop signature (`X-CoNET-Hop-Sigs`, cap **3**). If the key **is** local, it decrypts **once**; when the plaintext is still OpenPGP and the inner key ID is not this node, it forwards the **inner** armor. Same-node inner PGP, or more than three hop signatures, ends the socket as an attack. The node still does not read user-PGP **business** plaintext. The last hop meters verified prior-hop bytes against the user wallet for **GB**.
+## Permissionless does not mean trusted
 
-## Protocol at a glance
+Any L0 participant may be unavailable, malicious, colluding, or incorrectly
+configured. Applications must not give an infrastructure intermediary the
+keys or plaintext it does not need.
+
+Depending on the product, robust composition can require:
+
+- recipient-specific encryption;
+- separation of entry, mailbox, storage, compute, and application-host roles;
+- fragmentation with independently controlled keys;
+- redundant execution or verifiable outputs;
+- acknowledgement and replay rules;
+- local-first trusted state that is not erased by an untrusted network
+  failure; and
+- explicit payment, expiry, challenge, and recovery semantics.
+
+These properties are application work. Fragmentation and operator
+independence are not automatic properties of all L0 traffic.
+
+## Freedom and privacy, precisely stated
+
+Moving durable application identity away from one fixed public origin can
+reduce dependence on a single intermediary and reduce direct origin
+exposure. OpenPGP encryption prevents forwarding nodes from reading
+application plaintext when clients use the correct keys. Separated roles can
+limit what one participant observes.
+
+The architecture does **not** promise absolute anonymity, untraceability,
+unblockability, or immunity to traffic analysis. TCP/IP remains visible to
+the endpoints of each connection. Stable wallets, timing, traffic volume,
+browser identifiers, compromised devices, operator collusion, and
+application-level logging can recreate linkability.
+
+## Infrastructure relationships
 
 ```text
-Business delivery
+TCP/IP underlay
+      │
+      ▼
+L0 contributed resources
+      │
+      ├── Layer Minus wallet/OpenPGP routing
+      │       └── web3://, Chat, SilentPass, Beamio envelopes
+      │
+      ├── ciphertext storage and service hosting
+      └── metered compute and forwarding
 
-Sender S
-  └─ encrypt to recipient R's user PGP
-     └─ optional outer wrap to A (or a hop chain)
-        └─ HTTP POST /post to entry A  (HTTPS optional)
-           └─ A reads key ID
-              ├─ not local → HTTP :80 forward same armor to B
-              └─ local decrypt → inner key ID not local → forward inner
-                 └─ A meters bytes for GB reward
-
-Mailbox listen
-
-Recipient R
-  └─ encrypt listen command to B's route PGP
-     └─ HTTP/SSE to entry C
-        └─ HTTP :80 forward to mailbox B
-           └─ stored and live ciphertext back to R
+L1 anchors shared identity, assets, and settlement.
+DLE L2 specifies specialized parallel application ledgers.
 ```
 
-For the privacy-preserving path, **A is not B and C is not B**. Client `/post` may use HTTP or HTTPS; **HTTP is sufficient** because the body is OpenPGP ciphertext, and it is the intended path where a TLS handshake would be classified or blocked. Browser pages served over HTTPS may still be forced to HTTPS by mixed-content policy. SI-to-SI forwarding uses HTTP on port 80.
+L1 and L2 complement L0; neither is replaced by Layer Minus. Public CoNET L1
+nodes currently join through conventional geth and Prysm P2P. The
+wallet-addressed L1-over-L0 overlay is an **under-development laboratory
+capability**, not the production join requirement.
 
-## Core invariants
+## Developer paths
 
-| Concern | Protocol rule |
-| --- | --- |
-| Network identity | Wallet address plus registered OpenPGP material, not a public IP |
-| HTTP `/post` body | **Only** `{ "data": "<OpenPGP armor>" }`. No sibling fields (`NoPush`, `beamioNoPush`, flags). |
-| Business encryption | Encrypt to the recipient's **user PGP**. TLS is not required for that confidentiality. |
-| Mailbox work | Delivery instructions such as `NoPush` live in JSON encrypted to **B’s route PGP**, wrapping inner user-PGP armor. Only B sees them. |
-| Routing metadata | Nodes read the OpenPGP **encryption key ID**. Non-local → forward. Local decrypt + inner PGP for another key → forward the inner armor. |
-| Forwarding incentive | Relayed ciphertext is metered; the forwarding node is compensated in **GB** |
-| Mailbox control | Encrypt listen, presence, acknowledgement, and UDP relay commands to **B's route PGP** |
-| Send path | `S → entry A → mailbox B` |
-| Listen path | `R → entry C → mailbox B → R` |
-| Chat listen | `command: "mining"` with `listenKind: "chat"` |
-| Mining listen | Direct infrastructure SSE to the target SI with `command: "mining"` and `listenKind` omitted; SI defaults it to mining |
-| Nested peel / hop-sign | After a local decrypt, hop-sign the **inner UTF-8 armor string**. Hop-sign or next-hop connect failure is a **fast 404**, not a hung SSE. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) |
-| Delivery evidence | Entry acceptance or an SSE handshake is transport progress, **not** proof that the application processed the message |
-| UDP key exchange | Encrypt `udp_subscribe` to the UDP server's **user PGP**; never expose its symmetric key to mailbox B |
-| Exclusive application attachment | `l0_listen` or `mining` + `listenKind: "l0"`. The first `l0_connect` attaches one opaque writer; a second writer for the same live line receives 409. Chat and mining continue independently. |
-| Application stream negotiation | Encrypt offers to the target **user PGP**. The endpoints authenticate accept/reject and ordered stream frames end to end. Stream keys never appear in B-decryptable `l0_listen` / `l0_connect` controls. SI does not parse application stream objects. |
+| Goal | Start here |
+|---|---|
+| Understand the cloud and zero-trust model | [Permissionless cloud and zero-trust applications](permissionless-cloud.md) |
+| Understand wallet/OpenPGP privacy routing | [Layer Minus](layer-minus.md) |
+| Build a Layer Minus client | [L0 development](../developers/l0.md) |
+| Implement SI `/post` behavior | [SI developer guide](si-developer-guide.md) |
+| Implement Chat envelopes and receipts | [CoNET Chat developer guide](chat-developer-guide.md) |
+| Build a wallet-addressed application | [`web3://` Application Protocol](web3-application-protocol.md) |
+| Publish or open a Linux service | [`conet-l0d`](../developers/conet-l0d.md) |
+| Review protocol security limits | [Security limits and threat grades](security-limits.md) |
 
-The A/B/C rule governs application mailbox delivery and control traffic. A LayerMinus mining collector intentionally dials each target SI directly to receive that node's signed gossip. This infrastructure exception is not an approved shortcut for Chat, presence, delivery ACKs, or UDP sessions.
+## Related
 
-## Why it matters
-
-IP addresses remain necessary for packet delivery, but they are poor long-term application identities: they expose network location, change across networks, and are easy to filter. Layer Minus keeps those transient locators in the underlay while applications resolve and authenticate wallets.
-
-This design is a shared forwarding plane. Applications combine it into Chat,
-typed Beamio control messages, mining gossip, presence queries, delivery
-acknowledgements, encrypted UDP-shaped frames, persistent application streams,
-SilentPass egress, and the [`web3://` Application
-Protocol](web3-application-protocol.md). Product-specific proxy traffic may also
-use short **Fetch-and-Close** sessions. L0 does not implement those products; it
-forwards the envelopes they create.
-
-## Guarantees and limits
-
-When clients follow the A/B/C route and cryptographic keys remain secure:
-
-- entries and mailboxes do not receive business plaintext;
-- the mailbox sees an entry as its network peer rather than a direct client connection; and
-- changing an entry or mailbox does not change the wallet identity. An application may also keep a **routing wallet** (AddressPGP + listen) separate from sender / recipient wallets inside the encrypted envelope.
-
-Layer Minus does **not** promise anonymity against a global observer, hide the client IP from the selected entry, make traffic-analysis metadata disappear, or guarantee delivery after an entry returns HTTP 200. It also does not make every HTTP-shaped flow indistinguishable from ordinary browsing. Fetch-and-Close is a short-session mode, not a mix network. Chat SSE is a traffic fingerprint. Long-term user OpenPGP is not forward-secret. A/B/C names roles, not independent operators. See [security limits and threat grades](security-limits.md).
-
-The mailbox, Chat listen, offline ciphertext store, acknowledgements, presence
-query, mining listen classification, and UDP relay are implemented in CoNET-SI.
-Persistent streams are an **application** composition over L0; SI does not
-interpret application request, response, or stream objects. Application coverage
-and user-facing reliability still depend on the client, healthy entry selection,
-key management, and acknowledgement behavior.
-
-## Implementation anchors
-
-| Component | Responsibility |
-| --- | --- |
-| **AddressPGP** | L1 user-key and route-key bindings |
-| **CoNET-SI** | Native HTTP/HTTPS entry, SI-to-SI forwarding, mailbox storage, SSE pools, presence, acknowledgements, and UDP relay |
-| **CoNET Chat SDK** | User-PGP message encryption and `listenKind: "chat"` mailbox listening through entry C |
-| **CoNET-DL / LayerMinus workers** | Mining listens, signed gossip verification, and optional reporting to the accounting plane |
-
-## Next
-
-1. [Permissionless cloud and zero-trust applications](permissionless-cloud.md) — who may join, what is rewarded, and why no node is trusted.
-2. [L0 development](../developers/l0.md) — SI `/post` samples and the Chat module guide.
-3. [How to use Layer Minus](using-l0.md) — forwarding primitives and how applications combine them.
-4. [The TCP/IP substrate](tcp-ip.md) — prerequisite, not a competing protocol.
-5. [The IP-address privacy problem](tcp-ip-privacy.md) — the threat model and its limits.
-6. [Wallet-addressed peer identity](wallet-address-p2p.md) — AddressPGP and key roles.
-7. [Zero-trust mailbox routing](mailbox-routing.md) — the normative A/B/C delivery path.
-8. [Peel, hop-sig, and listen timeouts](peel-hop-listen.md) — wrap-to-C listen field lesson.
-9. [HTTP transport and Fetch-and-Close](http-mimicry.md) — wire shape and short-session mode.
-10. [UDP frame forwarding](udp-forward.md) — one composition: symmetric payload relay without giving the key to B.
-11. [Persistent application streams](duplex-forward.md) — portable stream lifecycle over L0 attachment primitives.
-12. [Security limits and threat grades](security-limits.md) — what the live plane does and does not protect.
-13. [Node and client roles](node-roles.md) — runtime responsibilities and boundaries.
-
-User-facing products are documented under [Applications](../applications/README.md),
-including [`web3://`](../applications/web3-url.md),
-[SilentPass](../applications/silentpass-vpn.md),
-[Beamio](../applications/beamio.md), and
-[CoNET Chat](../applications/depin-chat.md). Linux `web3://` operators use the
-[`conet-l0d` developer guide](../developers/conet-l0d.md); interoperable
-clients and host adapters follow the
-[`web3://` protocol contract](web3-application-protocol.md).
+- [System overview](../overview.md)
+- [Layer Minus](layer-minus.md)
+- [Node and client roles](node-roles.md)
+- [Applications](../applications/README.md)
+- [Developers](../developers/README.md)
+- [Resources](../resources.md)

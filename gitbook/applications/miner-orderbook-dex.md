@@ -1,6 +1,10 @@
 # Miner-matched order-book exchange
 
-**Maturity: Under development / design study.** This page proposes a non-custodial exchange with signed limit orders and miner-assisted high-speed matching. No public exchange client, production matcher network, fungible order-book DLE specification, or audited settlement contract is identified as live by this GitBook.
+**Maturity: Design study.** This non-normative page proposes a non-custodial
+exchange with signed limit orders and miner-assisted high-speed matching. No
+public exchange client, production matcher network, fungible order-book DLE
+specification, or audited settlement contract is identified as live by this
+GitBook.
 
 Public site: [https://gitbook.conet.network/applications/miner-orderbook-dex.html](https://gitbook.conet.network/applications/miner-orderbook-dex.html)
 
@@ -214,8 +218,8 @@ A release must address:
 
 | Capability | Evidence |
 | --- | --- |
-| CoNET L1, EVM signatures, canonical assets, and deployed Treasury V3 | Production references |
-| Wallet-addressed encrypted L0 routing | Implemented protocol capability |
+| CoNET L1, EVM signatures, canonical assets, and deployed Treasury V3 | Production reference |
+| Layer Minus wallet-addressed encrypted routing over L0 resources | Implemented capability |
 | DLE asset-tip conservation and NFT-style trade coordinator | Normative design |
 | Fungible order schema and deterministic pair-wide matching | Still to specify |
 | Matcher registry, bonds, fair sequencing, and challenge proofs | Still to specify and implement |

@@ -93,7 +93,7 @@ The proposed CoNET model keeps those facts on compatible identity, messaging, se
 
 | Tier | Contribution | Dependency and limit |
 | --- | --- | --- |
-| **L0 Layer Minus** | Private creator/fan communication and delivery coordination through wallet-addressed, zero-trust routes. | L0 protects business plaintext from intermediary hops; it does not prove authorship or guarantee content availability. See [mailbox routing](../l0/mailbox-routing.md). |
+| **L0 + Layer Minus** | L0 contributes decentralized resources; Layer Minus provides private creator/fan communication and delivery coordination through wallet-addressed, zero-trust routes. | Layer Minus protects business plaintext from intermediary hops; it does not prove authorship or guarantee content availability. See [mailbox routing](../l0/mailbox-routing.md). |
 | **L1 CoNET** | Wallet identity, NFT or subject anchors, hashes, assets, social stats, and settlement contracts. | L1 records agreed state; it does not store large plaintext works or adjudicate legal ownership. |
 | **L2 CoNET-DLE** | Proposed storage, trade, lineage, and sales journals on event-driven tips. | The relevant tip classes are design/specification work that still require deployment and product validation. |
 | **Distribution applications** | Delivery of large media fragments to authorized readers or buyers. | [BT DCDN](../applications/bt-dcdn.md) is under development and must not be treated as current production video delivery. |

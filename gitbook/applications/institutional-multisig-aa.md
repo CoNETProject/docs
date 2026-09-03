@@ -1,6 +1,9 @@
 # Beamio institutional multisig AA
 
-**Maturity: Integrated capability.** Beamio includes V2 institutional-wallet UI and relay paths. This label does not assert that every chain has identical deployment configuration, that every policy feature is complete, or that the contracts have an independent audit.
+**Maturity: Implemented capability.** Beamio includes V2 institutional-wallet
+UI and relay paths. This label does not assert that every chain has identical
+deployment configuration, that every policy feature is complete, or that the
+contracts have an independent audit.
 
 Public site: [https://gitbook.conet.network/applications/institutional-multisig-aa.html](https://gitbook.conet.network/applications/institutional-multisig-aa.html)
 
@@ -27,7 +30,7 @@ This capability is intended for team treasury and policy control. It is not a ba
 | **CoNET L1** | Primary chain for new Beamio consumer accounts and institutional accounts |
 | **Base** | Optional V2 institutional deployment; not a chain for new Beamio consumer-account issuance |
 | **EIP-712 manager signatures** | Lets managers authorize propose, approve, or reject actions without holding an AA gas key |
-| **Cluster / Master / Paymaster relay** | Prechecks signed requests, submits them, and sponsors gas for supported actions |
+| **Cluster / Master / Paymaster relay** | Prechecks signed requests, submits them, and sponsors gas for supported actions. **USDC outflows** (CoNET-USDC or Base USDC) use the same offline-sign + sponsored-gas rule as other Beamio payments; managers must not broadcast `USDC.transfer`. See [Cash and USDC](beamio/cash-and-usdc.md). |
 | **Factory manager index** | `accountsOfManager(eoa)` lets co-managers discover accounts they do not own |
 | **Application daemon and local store** | Periodically reads pending and recent tasks for the active manager and selected chain |
 | **CoNET Chat, optionally** | Can notify or deep-link to a task, but is not authoritative task state |
@@ -144,6 +147,7 @@ CoNET Chat can reference a task, but only the selected chain’s V2 account stat
 ## Related
 
 - [Beamio](beamio.md)
+- [Cash and USDC](beamio/cash-and-usdc.md)
 - [Applications](README.md)
 - [CoNET Chat](depin-chat.md)
 - [Assets on L1](../l1/assets.md)

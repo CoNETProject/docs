@@ -77,7 +77,7 @@ media delivery network                         creator-controlled lineage
 
 | Tier | Intended role | Boundary |
 | --- | --- | --- |
-| **L0 Layer Minus** | Creator/fan messaging, access coordination, and privacy-preserving transport patterns. | Current L0 and Chat do not by themselves provide multi-gigabyte adaptive video delivery. |
+| **L0 + Layer Minus** | L0 contributes decentralized resources; Layer Minus provides creator/fan messaging, access coordination, and privacy-oriented routing over them. | Neither L0 nor current Chat by itself provides multi-gigabyte adaptive video delivery. |
 | **L1 CoNET** | Creator identity, work hashes, subject NFTs, social stats, conet-USDC, access policy, and final settlement. | L1 should not hold plaintext video, and a chain record does not adjudicate copyright. |
 | **L2 CoNET-DLE** | Proposed storage tips for originals, trade tips for sales, and lineage/sales journals. | These are specified design classes that still require deployed end-to-end validation. |
 | **BT DCDN** | Planned wallet-addressed piece distribution and seeding incentives for large files. | The [BT DCDN application](../applications/bt-dcdn.md) is under development and is not a current production dependency. |
@@ -110,7 +110,7 @@ The defensible claim is that platform terms are not the sole root of the work’
 
 The intended money path avoids making a video platform the discretionary ledger of creator revenue:
 
-| Flow | Design direction |
+| Flow | Design study |
 | --- | --- |
 | **Tip** | Viewer sends conet-USDC-denominated value to the creator wallet through a bounded, non-custodial action. |
 | **Paid episode** | Settlement confirms payment and then authorizes buyer-bound content delivery under an explicit failure/refund rule. |

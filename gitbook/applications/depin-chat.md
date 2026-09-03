@@ -1,8 +1,11 @@
 # CoNET Chat
 
-**Wallet-addressed, zero-trust communication infrastructure built on CoNET L0.**
+**Wallet-addressed, zero-trust communication capability using Layer Minus
+over CoNET L0 resources.**
 
-**Maturity:** Integrated capability. Beamio Consumer, Merchant OS, and POS already use this infrastructure. It is not a finished public messenger with groups, channels, or calls.
+**Maturity: Implemented capability.** Beamio Consumer, Merchant OS, and POS
+already use this infrastructure. It is not a finished public messenger with
+groups, channels, or calls.
 
 > **Protect the relationship, not only the message.**
 
@@ -73,7 +76,7 @@ CoNET Chat takes a different architectural direction:
 ```text
 Wallet identity
    ↓
-Zero-trust CoNET L0 / Layer Minus
+Layer Minus over CoNET L0 resources
    ↓
 Encrypted communication
    ↓

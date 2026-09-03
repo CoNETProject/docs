@@ -1,8 +1,12 @@
 # Beamio
 
-**Maturity: Public application.** Consumer, Merchant OS, and POS entry points are public. This page is the **Beamio product whitepaper**: what the suite is, which surfaces exist today, and how cash rails are placed. It is not a claim that every workflow is complete, independently audited, or covered by a published SLA.
+**Maturity: Production reference.** Consumer, Merchant OS, and POS entry
+points are public. This page is the **Beamio product whitepaper**: what the
+suite is, which surfaces exist today, and how cash rails are placed. It is not
+a claim that every workflow is complete, independently audited, or covered
+by a published SLA.
 
-Revision: **2026-08-29**.
+Revision: **2026-09-01**.
 
 Public site: [https://gitbook.conet.network/applications/beamio.html](https://gitbook.conet.network/applications/beamio.html)
 
@@ -13,13 +17,15 @@ Chapters in this whitepaper:
 | [Consumer PWA](beamio/consumer.md) | Wallet, Discover, coupons, Chat, mining tools, and how users add USDC |
 | [Merchant OS](beamio/merchant-os.md) | Programs, staff, terminals, catalogs, coupons, and merchant treasury |
 | [POS terminal](beamio/pos.md) | In-store charge, top-up, membership, claim, and redeem |
-| [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails: Coinbase / Treasury CONET-USDC vs Stripe Onramp Base USDC to EOA |
+| [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails (Coinbase / Treasury CONET-USDC vs Stripe Onramp Base USDC to EOA) **and** Beamio-initiated USDC transfers / payments (offline sign + sponsored gas) |
 
 Cursor rule: when a Beamio product capability is added or changed, update the matching chapter in the same task (`beamio-gitbook-whitepaper-sync.mdc`).
 
 ## Product role
 
-Beamio is the application suite that turns CoNET wallet identity, account state, and Layer Minus messaging into three coordinated products:
+Beamio is the application suite that combines CoNET L1 wallet and account
+state with Layer Minus messaging over L0 resources in three coordinated
+products:
 
 | Surface | Product role | Public entry |
 | --- | --- | --- |
@@ -52,9 +58,10 @@ Share and install links on `https://beamio.app/app-download` open **Consumer onl
 | Dependency | Beamio use |
 | --- | --- |
 | **CoNET L1 (`chainId` 224422)** | Wallet and account state, merchant program state, consumer Smart Wallets, institutional V2 accounts, assets, identity records, and application registries |
-| **L0 / Layer Minus** | CoNET Chat, POS terminal-authorization messages, routed mailbox delivery, and optional UDP frame forwarding |
+| **L0** | Decentralized forwarding, ciphertext storage, hosting, compute, and metering resources |
+| **Layer Minus** | CoNET Chat, POS terminal-authorization messages, routed mailbox delivery, and optional UDP frame forwarding over L0 |
 | **EOA + `@BeamioTag` identity** | Human-readable discovery anchored to a wallet; the EOA also owns the PGP material used by messaging |
-| **Cluster / Master relay** | Prechecks application write requests and submits approved gas-sponsored transactions; it is not the source of a user’s private key |
+| **Cluster / Master relay** | Prechecks application write requests and submits approved gas-sponsored transactions; it is not the source of a user’s private key. **Every Beamio-started USDC transfer or payment** (CoNET-USDC and Base USDC) is an offline signature on this path — the user wallet does not broadcast `USDC.transfer` or pay ETH / CNET gas |
 | **Local application storage** | Holds client state and, depending on the product, self-custody wallet material or session state |
 | **Base (`chainId` 8453)** | Treasury and USDC operations, plus supported institutional multisig deployments; not new merchant programs or new consumer Smart Wallet issuance |
 
@@ -111,13 +118,25 @@ Two USDC deposit rails must not be merged:
 
 Merchant Kit Stripe (CAD kits → B-Units / Ket) is a third Stripe product and is **not** a consumer USDC deposit rail. Both Kit Checkout and Consumer Onramp use the same operator account **`StripeBeamio`** and the same live webhook **`https://beamio.app/api/stripeBeamioHook`** (signing secret **`STRIPE_WEBHOOK_SECRET_MERCHANT_KIT`**). Older Dashboard URLs are retired; the API may still forward them to the same handler. Fulfillment remains on separate rails. Consumers who buy USDC with a card receive native Base USDC **directly in the owner EOA**.
 
+**Outbound USDC is a different rule.** Pay / Send, Gift, Charge when USDC is the settlement asset, AA ↔ EOA, NFC / QR, Fuel Pack USDC debit, card `#13` escrow deposit, and institutional-multisig USDC out are **offline signatures**. Cluster prechecks; Master or the Factory Paymaster submits and sponsors gas. Do not describe those writes as “the user pays ETH or CNET.” Third-party **Receive from a wallet / Receive via QR** remains an inbound exception (the peer pays gas). See [Cash and USDC](beamio/cash-and-usdc.md).
+
 For Beamio issued-NFT social exchange, canonical CoNET-USDC is
 [`0x5209865D404aA5646eDe5B91CD4218909eA72eDA`](https://mainnet.conet.network/token/0x5209865D404aA5646eDe5B91CD4218909eA72eDA)
 (6 decimals). The user's AA burns Reward PT `#13`; the merchant card escrow
 pays the reward to the user's EOA. This is not a direct USDC transfer to the
 AA. **Discover same-store Top-up** is a different rail: this card’s `#13`
 converts to this card’s `#0` on the user’s AA and does **not** use USDC
-escrow. The sole active CoNET Treasury is TreasuryBridgeV3 at
+escrow. When Reward PT does not cover the full amount, Consumer Smart Pay
+prefers **one CoNET payment** after a **Confirm Top-Up** review (the
+remainder / insufficient-USDC warning lives on that confirm page, not the
+payment-method page): `topupWithReward13Container` with peer `#13` redeem,
+same-store `#13` → `#0`, and leftover cash as EOA **CONET-USDC EIP-3009
+`cash`** in the same Relayer AA `executeBatch`. **Base USDC is not in that
+container.** If CONET-USDC is short, Consumer then settles Reward PT
+(`cash=0`) and pays the leftover via **Base USDC treasuryBridge** as a
+second step. Cluster CONET-USDC precheck applies when a request includes
+`cash`. Cash-only Discover Top-up (Use Points off) may still use Base USDC
+via treasuryBridge. The sole active CoNET Treasury is TreasuryBridgeV3 at
 [`0xa208982212978550594A7FEEB70a61665d129003`](https://mainnet.conet.network/address/0xa208982212978550594A7FEEB70a61665d129003).
 The legacy USDC factory address `0xfD0D7B0706AaB5E4351bcED37bC3C77ed6813907`
 is deprecated.

@@ -1,10 +1,13 @@
 # Beamio Merchant OS
 
-**Maturity: Public application.** Merchant OS is live at [https://biz.beamio.app](https://biz.beamio.app). This chapter inventories merchant capabilities. It is not an operator runbook and not an audit or SLA claim.
+**Maturity: Production reference.** Merchant OS is live at
+[https://biz.beamio.app](https://biz.beamio.app). This chapter inventories
+merchant capabilities. It is not an operator runbook and not an audit or SLA
+claim.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-08-31**.
+Revision: **2026-09-01**.
 
 ## Product role
 
@@ -63,7 +66,7 @@ Top-up `#13` percentages use **actual payment** only. Promotion bonus `#0` is no
 
 **Same-store `#13` → `#0`:** Consumer Discover Top-up may convert this card’s Reward PT into this card’s program credit. That path does **not** require USDC escrow or `convertReward13ToPointsRatioE6`.
 
-**Parallel Smart Pay Top-up:** When Smart Pay includes `#13` legs **and** leftover cash, Consumer UI starts **two** jobs at once: (1) `topupWithReward13Container` with **`cash=0`** — Relayer AA `executeBatch`: peer `peerRedeem13ForContainerTopup` (exact `quoteUsdcWithdrawForFiat6(burn13)` CONET-USDC to the **target merchant card**, after escrow **and** ERC20 balance checks) → container mint `#0`; (2) remaining fiat via **Base USDC treasuryBridge**. The two jobs are **not** one atomic UserOp. Cluster CONET-USDC `balanceOf` reject applies **only** when a request still includes `cash`. Peer legs remain fail-closed inside the container (no silent cap, no “burn `#13` without USDC”). Cash-only top-up (no `#13` legs) keeps `purchasingCard` / `postBuyCardPoints` (and may use Base USDC treasuryBridge). Issued-NFT social exchange (`#13` → CONET-USDC to the user’s **EOA**) remains a **separate** escrow rail and must not be used as the container peer path.
+**Smart Pay Top-up (one CoNET payment):** When Smart Pay includes `#13` legs **and** leftover cash, Consumer UI prefers **one** `topupWithReward13Container`: Relayer AA `executeBatch` runs peer `peerRedeem13ForContainerTopup` (exact `quoteUsdcWithdrawForFiat6(burn13)` CONET-USDC to the **target merchant card**, after escrow **and** ERC20 balance checks), same-store `#13` → `#0`, and leftover cash as EOA **CONET-USDC EIP-3009 `cash`**. **Base USDC is not in that container.** If CONET-USDC is short, Consumer then settles Reward PT (`cash=0`) and pays the leftover via **Base USDC treasuryBridge** as a second step. Cluster CONET-USDC `balanceOf` reject applies when a request includes `cash`. Peer legs remain fail-closed inside the container (no silent cap, no “burn `#13` without USDC”). Cash-only top-up (no `#13` legs) keeps `purchasingCard` / `postBuyCardPoints` (and may use Base USDC treasuryBridge). Issued-NFT social exchange (`#13` → CONET-USDC to the user’s **EOA**) remains a **separate** escrow rail and must not be used as the container peer path.
 
 **Charge `#13`:** POS settle burns `#0` (`burnPointsByAdmin`). Beacon **V19+** runs the same UpdateLib mint as a real `#0` transfer (`amountFiat6 × chargeRewardRatioE6 / 1e6` → actor `#13`, plus referrer if configured). Pre-V19 burn-only Charges minted no `#13`. Master `enqueueRecordChargeReferrerReward` stays a no-op.
 
@@ -79,7 +82,7 @@ Top-up `#13` percentages use **actual payment** only. Promotion bonus `#0` is no
 | **Messages** | Ordinary Merchant OS chat omits mailbox `NoPush` (offline peer may get a native badge). Delivery receipts use `NoPush: true`. Same rule as Consumer; see [CoNET Chat](../depin-chat.md). |
 | **Transactions** | Indexer ledger. B-Unit service fees are a **separate indexer row**; the UI merges them into Charge / Top-up / Claim when a parent row exists |
 | **Overview KPI** | Chain-first. A failed RPC must not overwrite the last trusted value with zero |
-| **Wallet USDC** | Overview and Wallets show **one** merchant-owned **USDC** total: Base USDC + canonical CONET-USDC, summed per EOA and Smart Wallet. The UI does not split those chains. Program-card **USDC Reserve / Diff** is a separate KPI: **Reserve** = `min(rewardEscrowUsdc6, CONET-USDC.balanceOf(card))`; **Diff** = Reserve − `quoteUsdcWithdrawForFiat6(totalSupply(13))`. Deposit funds the `#13` redeem pool via owner EOA EIP-2612 `permit` (when allowance is insufficient) + `fundSocialExchangeUsdcEscrow`; Master Settle_Conet sponsors CNET gas so the merchant EOA does not need CNET. On-card CONET-USDC that is not in escrow does not count toward Reserve. |
+| **Wallet USDC** | Overview and Wallets show **one** merchant-owned **USDC** total: Base USDC + canonical CONET-USDC, summed per EOA and Smart Wallet. The UI does not split those chains. **Every merchant-started USDC transfer or payment** (Pay / Send, escrow deposit, Fuel Pack USDC debit) is an **offline signature** + Cluster → Master / Paymaster; the merchant EOA must not broadcast `USDC.transfer` or hold CNET / ETH for gas. Program-card **USDC Reserve / Diff** is a separate KPI: **Reserve** = `min(rewardEscrowUsdc6, CONET-USDC.balanceOf(card))`; **Diff** = Reserve − `quoteUsdcWithdrawForFiat6(totalSupply(13))`. Deposit funds the `#13` redeem pool via owner EOA EIP-2612 `permit` (when allowance is insufficient) + `fundSocialExchangeUsdcEscrow`; Master Settle_Conet sponsors CNET gas. On-card CONET-USDC that is not in escrow does not count toward Reserve. See [Cash and USDC](cash-and-usdc.md). |
 
 ### Fuel and cash (merchant view)
 
@@ -93,7 +96,7 @@ Merchant program cards are **CoNET L1 only**. Do not treat the historical Base U
 
 New cards issued after the CoNET UserCard beacon cutover are **BeaconProxy**. The platform upgrades every such card together with `beacon.upgradeTo`; card addresses stay the same. Historical CREATE cards cannot join the beacon and keep the ChargeReward runtime preCheck.
 
-Writes that need sponsored gas go Cluster → Master (CoNET settle pool). Reads of program state, metadata, and KPI should prefer RPC / trusted cache, not a centralized API as the source of truth.
+Writes that need sponsored gas go Cluster → Master (CoNET settle pool; Base USDC legs occupy the Base settle pool). That includes **all merchant USDC outflows**. Reads of program state, metadata, and KPI should prefer RPC / trusted cache, not a centralized API as the source of truth.
 
 ### Factory create: one transaction for loyalty tiers
 

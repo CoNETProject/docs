@@ -1,6 +1,8 @@
 # SilentPass VPN
 
-**Maturity: Public application.** Public clients and node-side implementations exist. This label does not imply identical behavior on every platform, independent privacy certification, or a universal VPN replacement.
+**Maturity: Production reference.** Public clients and node-side
+implementations exist. This label does not imply identical behavior on every
+platform, independent privacy certification, or a universal VPN replacement.
 
 Public site: [https://gitbook.conet.network/applications/silentpass-vpn.html](https://gitbook.conet.network/applications/silentpass-vpn.html)
 
@@ -8,13 +10,18 @@ App Store listing: [Silent Pass VPN](https://apps.apple.com/ca/app/silent-pass-v
 
 ## Product role
 
-SilentPass is a **privacy-oriented access product**. It captures traffic from a device or selected applications, authorizes access with a wallet, and uses Layer Minus to reach an egress node that opens an ordinary Internet connection.
+SilentPass is a **privacy-oriented access product**. It captures traffic from
+a device or selected applications, authorizes access with a wallet, and uses
+Layer Minus over L0 resources to reach an egress node that opens an ordinary
+Internet connection.
 
 It does not turn L0 into a universal VPN protocol and does not replace the Internet underlay. L0 remains a [PGP / wallet-address forwarding network](../l0/using-l0.md); SilentPass is one combination that asks an SI egress to open `host:port`:
 
 - TCP/IP still carries traffic between clients, entries, nodes, egresses, and destinations.
 - HTTPS/TLS between the application and destination remains responsible for end-to-end website security.
-- Layer Minus supplies wallet-addressed control, entry routing, and a node path; it is not a new global IP network.
+- L0 supplies decentralized network resources; Layer Minus supplies
+  wallet-addressed control, entry routing, and a node path. Neither is a new
+  global IP network.
 - Datagram-oriented applications require a separate UDP-forwarding path and should not be inferred from the TCP/SOCKS implementation.
 
 Two product surfaces use this model:

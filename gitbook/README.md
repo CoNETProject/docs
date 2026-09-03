@@ -1,24 +1,41 @@
 # CoNET
 
-CoNET is a wallet-addressed stack with three infrastructure layers and
-multiple applications:
+## From infrastructure to applications
 
-| Layer | Responsibility | Start here |
+CoNET is a wallet-addressed infrastructure stack. Three infrastructure
+layers supply cloud resources, shared state, and specialized ledgers.
+**Layer Minus** uses the L0 cloud to route OpenPGP-encrypted application
+traffic by wallet-linked identity. Application protocols and products then
+combine only the capabilities they need.
+
+| Plane | Responsibility | Start here |
 |---|---|---|
-| **L0 — Layer Minus** | Route encrypted application data by wallet/OpenPGP identity through a permissionless node network | [L0 overview](l0/README.md) · [How to use L0](l0/using-l0.md) |
+| **L0 — Decentralized Cloud** | Permissionless forwarding, ciphertext storage, service hosting, contributed CPU/GPU capacity, and GB metering | [L0 overview](l0/README.md) |
+| **Layer Minus — Privacy Protocol** | Wallet/OpenPGP-addressed routing, zero-trust entry and mailbox roles, and HTTP(S)-shaped encrypted transport on L0 | [Layer Minus](l0/layer-minus.md) · [How to use it](l0/using-l0.md) |
 | **L1 — CoNET Blockchain** | EVM state, identity registries, validators, canonical assets, Treasury, and settlement (`chainId` **224422**) | [L1 overview](l1/README.md) · [Run an L1 node](developers/l1-node.md) |
-| **L2 — CoNET-DLE** | Parallel application-ledger classes with explicit archive, finality, and settlement rules | [L2 overview](l2/README.md) · [DLE explorer](l2/explorer.md) |
+| **L2 — CoNET-DLE** | Specialized parallel application-ledger classes with explicit archive, finality, availability, and settlement rules | [L2 overview](l2/README.md) · [DLE explorer](l2/explorer.md) |
 
-Applications use only the layers they need. [SilentPass](applications/silentpass-vpn.md)
-provides privacy egress, [CoNET Chat](applications/depin-chat.md) provides
-relationship-private wallet communication, and [Beamio](applications/beamio.md) provides consumer,
-merchant, and POS workflows.
+```text
+L0 cloud resources
+        │
+        ▼
+Layer Minus privacy routing ───────┐
+                                   │
+L1 shared state and settlement ────┼──► application protocols ───► applications
+                                   │
+DLE L2 specialized ledgers ────────┘
+```
+
+This is a dependency map, not a mandatory pipeline. [SilentPass](applications/silentpass-vpn.md)
+focuses on privacy-oriented Internet access, [CoNET Chat](applications/depin-chat.md)
+on relationship-private wallet communication, and [Beamio](applications/beamio.md)
+on consumer, merchant, and POS workflows.
 
 ## Wallet-addressed applications
 
-[`web3://`](applications/web3-url.md) is an **application protocol using L0
-infrastructure**. It defines wallet-addressed locators, exact identity
-resolution, caller-signed requests, correlated encrypted responses,
+[`web3://`](applications/web3-url.md) is an **application protocol using Layer
+Minus on L0 infrastructure**. It defines wallet-addressed locators, exact
+identity resolution, caller-signed requests, correlated encrypted responses,
 persistent application streams, and client security rules without adding
 another L0 wire command.
 
@@ -26,39 +43,35 @@ Linux servers and clients can use the
 [`conet-l0d` runtime](developers/conet-l0d.md). Windows, macOS, Android, iOS,
 and browser applications implement the same `web3://` contract in browser or
 native client code. See the [protocol contract](l0/web3-application-protocol.md)
-for the interoperable URI and envelope rules.
+for interoperable URI and envelope rules.
 
-## Layer boundaries
+## Privacy boundary
 
-```text
-applications ───── encrypted transport ─────► L0
-     │                                        │
-     ├──────── shared state / settlement ────► L1
-     │
-     └──────── high-frequency ledger work ───► L2
-
-L0 route identities may be anchored in selected L1 registries.
-L0 does not replace L1 consensus or L2 finality.
-```
-
-L0 does not remove IP from the Internet. It moves application identity and
-routing away from public origin addresses, encrypts data for the intended
-recipient, and limits what an intermediary needs to know.
+Layer Minus does not remove TCP/IP from the Internet and does not promise
+absolute anonymity. OpenPGP protects application plaintext, while role
+separation reduces the need for one intermediary to observe both endpoints.
+An entry can still observe the connecting client, a mailbox can observe route
+activity, and traffic timing and size remain metadata. Ordinary HTTP-shaped
+transport can reduce dependence on a distinctive custom carrier or TLS
+handshake, but it is not guaranteed to be indistinguishable from all Web
+traffic.
 
 ## How to read this book
 
-- Products and application protocols: [Applications](applications/README.md).
-- Architecture: [System overview](overview.md), then L0 → L1 → L2.
-- `web3://`: [Applications](applications/web3-url.md) →
-  [protocol](l0/web3-application-protocol.md) →
+- Architecture: [System overview](overview.md), then
+  [L0](l0/README.md) → [Layer Minus](l0/layer-minus.md) →
+  [L1](l1/README.md) → [L2](l2/README.md).
+- Application protocol: [`web3://`](applications/web3-url.md) →
+  [protocol contract](l0/web3-application-protocol.md) →
   [Linux runtime](developers/conet-l0d.md).
+- Products: [Applications](applications/README.md).
+- L0 and Layer Minus implementation: [L0 development](developers/l0.md),
+  [SI developer guide](l0/si-developer-guide.md), and
+  [security limits](l0/security-limits.md).
 - L1 operations: [Run an L1 node](developers/l1-node.md),
   [RPC and Explorer](l1/rpc-explorer.md), and
   [decentralization evidence](l1/decentralization.md).
-- L0 implementation: [L0 development](developers/l0.md),
-  [SI developer guide](l0/si-developer-guide.md), and
-  [security limits](l0/security-limits.md).
-- Current endpoints and repositories: [Resources](resources.md).
+- Current endpoints, repositories, and evidence: [Resources](resources.md).
 
 ## Status and evidence
 

@@ -80,7 +80,7 @@ Handshake frames may omit `nodeWallets`. Signed gossip is **not** mailbox busine
 
 ### 4. Sample: mining listen command
 
-Reuse the SI signed-command helper from the [SI developer guide](../l0/si-developer-guide.md#sample-encrypt-and-post-a-signed-command). The command object is:
+Reuse the SI signed-command helper from the [SI developer guide](../l0/si-developer-guide.md#sample-encrypt-a-signed-si-command). The command object is:
 
 ```ts
 const command = {

@@ -42,8 +42,9 @@ deployment note.
 
 | Goal | Guide |
 |---|---|
-| Understand L0 | [L0 — Layer Minus](l0/README.md) |
-| Build with L0 | [L0 development](developers/l0.md) |
+| Understand decentralized cloud resources | [L0](l0/README.md) |
+| Understand privacy routing | [Layer Minus](l0/layer-minus.md) |
+| Build with Layer Minus | [L0 development](developers/l0.md) |
 | Build a wallet-addressed application | [`web3://` Application Protocol](l0/web3-application-protocol.md) |
 | Use the Linux `web3://` runtime | [`conet-l0d`](developers/conet-l0d.md) |
 | Implement a browser/native `web3://` client | [`web3://` application](applications/web3-url.md) |
@@ -51,7 +52,7 @@ deployment note.
 | Participate in mining | [L1 mining](developers/l1-mining.md) |
 | Build against DLE specifications | [L2 development](developers/l2.md) |
 | Read the CoNET Chat product thesis | [CoNET Chat](applications/depin-chat.md) |
-| Read the privacy-first decentralized AI direction | [Landing](applications/privacy-first-ai.md) · [Whitepaper](applications/privacy-first-ai-whitepaper.md) |
+| Read the privacy-first decentralized AI design study | [Landing](applications/privacy-first-ai.md) · [Whitepaper](applications/privacy-first-ai-whitepaper.md) |
 
 ## Source repositories
 
@@ -66,11 +67,12 @@ deployment note.
 
 | Capability | Evidence level |
 |---|---|
-| L0 encrypted entry/mailbox forwarding | Implemented |
-| L1 chain, RPC, Explorer, validators, and assets | Public network |
-| CoNET Chat delivery, receipt, presence, and encrypted-history components | Integrated capability |
+| L0 decentralized resource plane | Implemented capability |
+| Layer Minus encrypted entry/mailbox forwarding | Implemented capability |
+| L1 chain, RPC, Explorer, validators, and assets | Production reference |
+| CoNET Chat delivery, receipt, presence, and encrypted-history components | Implemented capability |
 | `web3://` locator, Linux runtime, caller-signed gateway, and early browser client | Under development |
-| CoNET-DLE specifications and lab explorer | Draft / lab evidence, not a production L2 launch |
+| CoNET-DLE specifications | Normative design; lab evidence is separate from production |
 
 These labels are not security-audit, uptime, or anonymity guarantees.
 
@@ -78,8 +80,8 @@ These labels are not security-audit, uptime, or anonymity guarantees.
 
 - The public L1 node-joining path uses the documented geth and Prysm P2P
   interfaces and does not require `conet-l0d`.
-- `web3://` uses the existing L0 entry and mailbox infrastructure; it does not
-  add a second network or SI command family.
+- `web3://` uses Layer Minus over existing L0 resources; it does not add a
+  second network or SI command family.
 - SilentPass provides wallet-authorized privacy egress to ordinary Internet
   services. It is not an L1 consensus transport.
 - Do not create a new public domain or endpoint without prior DNS, TLS, and

@@ -4,38 +4,62 @@
 
 CoNET separates concerns that are often collapsed into one “decentralized network” label:
 
-1. **Who is the peer, and how is encrypted traffic forwarded?** — L0 Layer Minus, a PGP / wallet-address forwarding network. Applications combine it; L0 does not implement those products.
-2. **Where does shared, production state settle?** — L1 CoNET Blockchain (EVM PoS, `chainId` **224422**).
-3. **How can application activity scale into many specialized ledgers?** — L2 CoNET-DLE.
-4. **How are wallet-addressed applications opened and published?** — The
+1. **Where do decentralized network, storage, and compute resources come from?** — L0, the permissionless cloud resource plane.
+2. **How does encrypted application traffic move without using a stable public origin as the application identity?** — Layer Minus, the wallet/OpenPGP-addressed privacy-routing protocol built on L0.
+3. **Where does shared, production state settle?** — L1 CoNET Blockchain (EVM PoS, `chainId` **224422**).
+4. **How can application activity scale into specialized parallel ledgers?** — L2 CoNET-DLE.
+5. **How are wallet-addressed applications opened and published?** — The
    [`web3://` Application Protocol](l0/web3-application-protocol.md) defines
    locators, caller-signed requests, correlated encrypted responses,
-   persistent streams, and browser adaptation on top of L0.
+   persistent streams, and browser adaptation on top of Layer Minus.
 
 Operational facts in this book come from current source code, deployed contracts, and live endpoints. Destination architecture is labeled separately from production join paths.
 
 ## Responsibility by layer
 
-### L0 — communication
+### L0 — decentralized cloud resources
 
-[Layer Minus](l0/README.md) is a **permissionless decentralized cloud** and a **PGP / wallet-address forwarding network**. Anyone may use it. Participants may offer CPU / GPU, forward traffic, and storage for **GB**. It retains TCP/IP as the physical transport but does not treat an IP address as the application identity. Wallet addresses, OpenPGP keys, and on-chain route registration provide the identity and routing inputs. If a node can decrypt an outer layer and the inner OpenPGP key ID is not local, SI forwards the inner armor.
+[L0](l0/README.md) is the **permissionless decentralized cloud resource
+plane**. Participants may contribute traffic forwarding, ciphertext storage,
+service hosting, CPU/GPU capacity, and other measurable resources. GB is the
+active resource unit. L0 uses ordinary TCP/IP as its underlay and does not
+claim that every resource provider is trusted, independently operated, or
+able to reconstruct an application.
 
-**Any node may be malicious.** Developers compose privacy routing, data fragmentation, and other client cryptography so that privacy-first communications, storage, compute, and decentralized AI do not trust a single host. The intended AI direction keeps models, data, and agents as independent wallet-addressed roles, using Layer Minus and `web3://` to reduce the need for one network intermediary to observe the complete user–service relationship — **conditional** on operator and identifier separation — and CoNET-DLE micropayments so each measurable contribution can be paid without one party owning the stack. See [Permissionless cloud and zero-trust applications](l0/permissionless-cloud.md),
+**Any node may be malicious.** Applications must add recipient encryption,
+fragmentation, redundancy, verification, and recovery rules appropriate to
+their data. Those are not automatic properties of resource contribution.
+The intended AI direction keeps models, data, and agents as independent
+wallet-addressed roles. See [Permissionless cloud and zero-trust applications](l0/permissionless-cloud.md),
 [Privacy-first Decentralized AI](applications/privacy-first-ai.md), and the
-[whitepaper](applications/privacy-first-ai-whitepaper.md). [How to use L0](l0/using-l0.md) is application-layer work: each product chooses wallets, encryption targets, and the object carried inside the envelope.
+[whitepaper](applications/privacy-first-ai-whitepaper.md).
 
-A sender posts recipient-encrypted traffic to an entry node. The network routes it to the recipient's mailbox without requiring the sender to connect directly to that mailbox. An application mailbox listener also enters through a node other than the mailbox. This is the [A → B / C → B mailbox model](l0/mailbox-routing.md). Infrastructure mining collectors use a separate direct SI-listen path and must not be copied into Chat, presence, acknowledgement, or UDP delivery.
+### Layer Minus — privacy routing on L0
 
-L0 is intended to reduce direct IP exposure and protocol-specific fingerprints. It does **not** make traffic analysis impossible, make compromised endpoints safe, or remove the public Internet from the path.
+[Layer Minus](l0/layer-minus.md) uses L0 resources to forward application
+ciphertext by wallet-linked OpenPGP identity. Wallets, OpenPGP keys, and
+on-chain route bindings replace a stable origin IP as the durable application
+route name. A sender posts recipient-encrypted traffic to entry **A**. A
+recipient listens through entry **C**. Both are distinct from mailbox **B**.
+This is the [A → B / C → B mailbox model](l0/mailbox-routing.md).
 
-### `web3://` — application protocol on L0
+The carrier is ordinary HTTP between nodes and HTTP or HTTPS from clients to
+entries. HTTP-shaped traffic reduces reliance on a distinctive custom
+protocol, but does not guarantee indistinguishability from all Web traffic.
+TCP/IP remains the underlay. Entry and mailbox roles reduce direct endpoint
+exposure only when operators and identifiers are sufficiently separated;
+they do **not** prove absolute anonymity, censorship resistance, or immunity
+to traffic analysis. [How to use Layer Minus](l0/using-l0.md) explains how
+applications select wallets, encryption targets, and envelope contents.
+
+### `web3://` — application protocol
 
 The [`web3://` Application Protocol](l0/web3-application-protocol.md) is an
 **application-layer** contract: URI grammar, exact wallet/tag resolution,
 caller-signed requests, correlated encrypted responses, persistent
 application streams, host-adapter security, and failure semantics. It is not
-a new Layer Minus wire command; L0 continues to route encrypted application
-envelopes.
+a new Layer Minus wire command; Layer Minus continues to route encrypted
+application envelopes over L0 resources.
 
 The canonical product and platform model is
 [`web3://` under Applications](applications/web3-url.md). Linux servers and
@@ -61,7 +85,7 @@ For an ERC-20 issued elsewhere, entering CoNET L1 and activating DLE are differe
 
 Consider a paid social post:
 
-1. **Identity and delivery:** the publisher and reader use wallet-linked identities; encrypted payloads travel through L0 entry and mailbox routes.
+1. **Identity and delivery:** the publisher and reader use wallet-linked identities; Layer Minus moves encrypted payloads through L0 entry and mailbox resources.
 2. **Rights and payment assets:** ownership, access rights, and settlement assets can be anchored on L1.
 3. **High-frequency events:** reads, tips, boosts, or revenue shares can be modeled as L2 application events and periodically settled according to a DLE ledger class.
 
@@ -74,7 +98,7 @@ access.
 
 A second composition is **wallet-addressed hosting**: a browser or native
 client resolves a `web3://` target, signs an Application Protocol request,
-and submits ciphertext through a healthy L0 entry. A Linux host can use
+and submits ciphertext through a healthy Layer Minus entry. A Linux host can use
 `conet-l0d` to verify the requester and map the logical port to a loopback
 Web, API, AI, or TCP application service. Other server runtimes may implement
 the same protocol contract.
@@ -91,8 +115,8 @@ The comparison below is architectural, not a throughput or anonymity benchmark.
 | Content networks / IPFS | Content identifiers and provider records | Content-addressed distribution | Adds private message routing and L1/L2 settlement |
 | Mix networks | Layered relay paths | Stronger traffic-correlation resistance, usually with latency cost | Uses ordinary HTTP(S)-shaped sessions and application-specific relays |
 | Decentralized RPC / AVS | Public service endpoints plus stake | Replicated access to an existing chain or service | Couples a communication plane, an EVM L1, and application-ledger designs |
-| Cloudflare Tunnel / Tor Onion / SIWE alone | Tunnel hostname, onion address, or login proof | Origin hiding or wallet login in isolation | Combines **wallet identity + exact target resolution + L0 routing + signed application requests** |
-| Typical “L1 + L2” stacks | Public Internet as external P2P | Execution / scaling layers | CoNET adds an L0 application transport and wallet-addressed protocol alongside L1 and DLE |
+| Cloudflare Tunnel / Tor Onion / SIWE alone | Tunnel hostname, onion address, or login proof | Origin hiding or wallet login in isolation | Combines **wallet identity + exact target resolution + Layer Minus routing over L0 + signed application requests** |
+| Typical “L1 + L2” stacks | Public Internet as external P2P | Execution / scaling layers | CoNET adds an L0 cloud resource plane and the Layer Minus wallet-addressed privacy protocol alongside L1 and DLE |
 
 ## Security and engineering boundaries
 
@@ -109,7 +133,7 @@ The comparison below is architectural, not a throughput or anonymity benchmark.
 
 | Question | Read |
 | --- | --- |
-| How are peers identified and messages forwarded? | [How to use L0](l0/using-l0.md), [wallet-addressed P2P](l0/wallet-address-p2p.md), [mailbox routing](l0/mailbox-routing.md) |
+| How are peers identified and messages forwarded? | [Layer Minus](l0/layer-minus.md), [wallet-addressed P2P](l0/wallet-address-p2p.md), [mailbox routing](l0/mailbox-routing.md) |
 | Why is L0 a permissionless cloud, and why trust no node? | [Permissionless cloud and zero-trust applications](l0/permissionless-cloud.md) |
 | What is the `web3://` Application Protocol? | [`web3://` Application Protocol](l0/web3-application-protocol.md) |
 | How can Linux publish or open a `web3://` service? | [`conet-l0d` Linux runtime](developers/conet-l0d.md) |

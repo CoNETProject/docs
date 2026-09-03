@@ -1,6 +1,7 @@
 # Beamio POS terminal
 
-**Maturity: Public application.** The active POS product is the **POS PWA** loaded by native WebView shells.
+**Maturity: Production reference.** The active POS product is the **POS PWA**
+loaded by native WebView shells.
 
 | Entry | Role |
 | --- | --- |
@@ -12,7 +13,7 @@ Retired native POS business apps (`iOS_NDEF`, `android-NDEF`) are **not** the cu
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-08-29**.
+Revision: **2026-08-31**.
 
 ## Product role
 
@@ -53,7 +54,7 @@ For POS-executed Charge, Top-up, Claim, Burn, and Redeem, Indexer `subordinate` 
 | Dependency | POS use |
 | --- | --- |
 | CoNET L1 program card | Membership, points, issued NFTs |
-| Cluster / Master | Precheck + gas-sponsored `executeForAdmin` / Charge relay |
+| Cluster / Master | Precheck + gas-sponsored `executeForAdmin` / Charge relay. Any USDC settlement leg is an **offline signature**; the terminal must not broadcast `USDC.transfer` or pay CNET / ETH gas itself. See [Cash and USDC](cash-and-usdc.md). |
 | Local IndexedDB | Terminal mnemonic (Consumer/POS persistence model) |
 | Layer Minus | POS permission envelope to merchant mailbox; optional ordinary chat to customers (push-eligible) |
 | Native shell | NFC / camera / `openURL`; business UI remains the PWA |
@@ -76,4 +77,5 @@ iOS POS must **not** register the Consumer custom scheme `beamio://` or Associat
 - [Beamio](../beamio.md)
 - [Consumer PWA](consumer.md)
 - [Merchant OS](merchant-os.md)
+- [Cash and USDC](cash-and-usdc.md)
 - [CoNET Chat](../depin-chat.md)

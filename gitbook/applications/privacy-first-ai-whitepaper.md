@@ -1,6 +1,6 @@
 # Privacy-first Decentralized AI — Whitepaper
 
-**Maturity: Design direction · Concept draft v0.11.** This paper is an
+**Maturity: Design study · Non-normative concept draft v0.11.** This paper is an
 architecture and economic thesis. It is not a shipped GPU marketplace,
 training network, data market, or decentralized AI product.
 
@@ -341,11 +341,12 @@ compare, or cross-check results.
 
 ## 5. Private Coordination
 
-**Implementation status.** Layer Minus forwarding is an implemented L0
-capability. `web3://` has implemented v1 components, including wallet
-locators, signed requests, encrypted response correlation, Linux runtime
-support, and early persistent streams. Complete cross-platform handling
-and general public hosting remain under development. See
+**Implementation status.** Layer Minus forwarding is an **Implemented
+capability** over L0 resources. `web3://` is **Under development**: v1
+components include wallet locators, signed requests, encrypted response
+correlation, Linux runtime support, and early persistent streams. Complete
+cross-platform handling and general public hosting are not production
+references. See
 [`web3://` wallet-addressed applications](web3-url.md) and the
 [`web3://` Application Protocol](../l0/web3-application-protocol.md).
 
@@ -664,7 +665,8 @@ each control surface.
 
 Evidence that **does** exist, and should not be confused with this paper:
 
-- Layer Minus encrypted entry/mailbox forwarding is an implemented L0 plane.
+- Layer Minus encrypted entry/mailbox forwarding is an **Implemented
+  capability** over L0 resources.
 - CoNET L1 is a public EVM network.
 - CoNET Chat and related applications compose private paths over that plane.
 - CoNET-DLE has published specifications and a lab explorer. That is draft /
@@ -847,8 +849,9 @@ Recommender systems and choice architecture:
 
 CoNET architecture documents:
 
-29. CoNET Documentation, L0 — Layer Minus; How to use Layer Minus.
+29. CoNET Documentation, L0; Layer Minus; How to use Layer Minus.
     [https://gitbook.conet.network/l0/](https://gitbook.conet.network/l0/)
+    [https://gitbook.conet.network/l0/layer-minus.html](https://gitbook.conet.network/l0/layer-minus.html)
 30. CoNET Documentation, `web3://` Application Protocol contract.
     [https://gitbook.conet.network/l0/web3-application-protocol.html](https://gitbook.conet.network/l0/web3-application-protocol.html)
 31. CoNET Documentation, CoNET-DLE Design Thesis and Economics.
@@ -870,7 +873,7 @@ CoNET architecture documents:
 | **Metadata** | Identifiers, time, frequency, device, location, relations, and payment traces. |
 | **Privacy-first** | Minimum disclosure, role isolation, and user control from the start. |
 | **Contestable intelligence** | Provenance, interest, and method are visible; the user can compare, refuse, and replace. |
-| **Layer Minus** | Wallet- and OpenPGP-addressed encrypted forwarding and mailbox infrastructure above TCP/IP. Implemented L0 capability. |
+| **Layer Minus** | Wallet- and OpenPGP-addressed encrypted forwarding and mailbox infrastructure over L0 resources and above TCP/IP. **Implemented capability.** |
 | **`web3://`** | Address a service by wallet identity plus OpenPGP / mailbox-route bindings; signed requests and encrypted responses. v1 components are implemented; complete cross-platform handling and general public hosting remain under development. |
 | **CoNET-DLE** | L2 design for parallel, event-driven application ledgers. |
 | **Privacy-preserving settlement** | A future AI payment should prove only the service right, amount, and settlement condition for one interaction. It requires a specified payment-session and unlinkability design. Wallet payments and DLE do not provide this automatically. |

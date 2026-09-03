@@ -1,8 +1,12 @@
 # How to use Layer Minus
 
-Layer Minus (L0) is CoNET's encrypted, wallet-addressed forwarding plane. An
-application selects a recipient, encrypts a versioned payload, submits it
-through an entry, and receives through the recipient's mailbox route.
+Layer Minus is CoNET's encrypted, wallet-addressed privacy routing protocol
+over L0 cloud resources. An application selects a recipient, encrypts a
+versioned payload, submits it through an entry, and receives through the
+recipient's mailbox route.
+
+For the infrastructure boundary, read [L0](README.md). For the protocol model,
+read [Layer Minus](layer-minus.md).
 
 Start with the application contract. Do not invent a new SI command or
 plaintext HTTP field when an existing application envelope can compose the

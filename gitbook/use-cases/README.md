@@ -1,8 +1,13 @@
 # Economic design studies
 
-These pages examine how CoNET’s three infrastructure tiers could be composed into creator-facing economies:
+**Maturity: Design study.** These pages are **non-normative** architecture and
+economic studies. They are not protocol specifications or promises of
+deployed production systems.
 
-- **L0 Layer Minus** provides wallet-addressed, zero-trust communication and delivery.
+- **L0** provides decentralized forwarding, ciphertext storage, hosting,
+  compute, and metering resources.
+- **Layer Minus** provides wallet/OpenPGP-addressed, zero-trust communication
+  and delivery over L0.
 - **L1 CoNET** provides identity, assets, signatures, and settlement anchors.
 - **L2 CoNET-DLE** specifies event-driven tip ledgers for high-frequency or specialized economic activity.
 
