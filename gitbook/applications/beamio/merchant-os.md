@@ -7,7 +7,7 @@ claim.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-01**.
+Revision: **2026-09-04**.
 
 ## Product role
 
@@ -24,6 +24,7 @@ Merchant configuration is written to **card0 / `metadata_json`** (HTTP `GET http
 | Area | Behavior |
 | --- | --- |
 | **Card Setup / Program Basic** | Name, imagery, currency, and Discover presentation (`shareTokenMetadata`). Onboarding’s business category, channel, store name, and region are persisted in `shareTokenMetadata.businessProfile`. The **PROGRAM CATEGORY** block is shown only for physical stores; digital/app stores do not automatically write `categories`. |
+| **Settlement Margin** | Program Basic buffer on the live CoNET oracle (0–5%, 0.25% steps). Top-up quotes use **oracle + store margin**. Overview shows `+X.XX% store margin`; 0% is “Using the live oracle rate (0% store margin).” The editor is **Settlement Margin**, not Exchange rate. |
 | **Membership** | **Base membership** lives in `baseMembership` (index `0`), not as an Add-tier row. Higher paid tiers live in `tiers[]` and must be strictly more expensive. After first successful publish, that tier’s price and duration are **locked**. A successful issue mints a membership NFT with `tokenId ∈ [100, 1e11)` — leftover `#0` program points are not a membership NFT. Fee mode and Add-tier stage read diamond `feeE6[]`, not a misaligned on-card `tiers.length`. |
 | **Top-up Promotion** | Bonus validity / minimum / percent-or-fixed. The **bonus master switch is independent** of Reward PT. |
 | **Reward PT (Top-up)** | Actor `#13` percent of **actual payment** (`actorPercentBps` / chain `topupActorRewardRatioE6`). Save writes **ratio E6** via `setTopupActorRewardRatio` — **not** Social Promotion `getRewardRule(2)`. |
