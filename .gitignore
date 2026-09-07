@@ -12,3 +12,6 @@ archive/_build/
 # HonKit
 gitbook/node_modules/
 gitbook/_book/
+
+# Local diagnostics
+.tmp-*

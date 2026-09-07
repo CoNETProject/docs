@@ -7,7 +7,7 @@ claim.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-04**.
+Revision: **2026-09-06**.
 
 ## Product role
 
@@ -25,7 +25,7 @@ Merchant configuration is written to **card0 / `metadata_json`** (HTTP `GET http
 | --- | --- |
 | **Card Setup / Program Basic** | Name, imagery, currency, and Discover presentation (`shareTokenMetadata`). Onboarding’s business category, channel, store name, and region are persisted in `shareTokenMetadata.businessProfile`. The **PROGRAM CATEGORY** block is shown only for physical stores; digital/app stores do not automatically write `categories`. |
 | **Settlement Margin** | Program Basic buffer on the live CoNET oracle (0–5%, 0.25% steps). Top-up quotes use **oracle + store margin**. Overview shows `+X.XX% store margin`; 0% is “Using the live oracle rate (0% store margin).” The editor is **Settlement Margin**, not Exchange rate. |
-| **Membership** | **Base membership** lives in `baseMembership` (index `0`), not as an Add-tier row. Higher paid tiers live in `tiers[]` and must be strictly more expensive. After first successful publish, that tier’s price and duration are **locked**. A successful issue mints a membership NFT with `tokenId ∈ [100, 1e11)` — leftover `#0` program points are not a membership NFT. Fee mode and Add-tier stage read diamond `feeE6[]`, not a misaligned on-card `tiers.length`. |
+| **Membership** | **Base membership** lives in `baseMembership` (index `0`), not as an Add-tier row. Higher paid tiers live in `tiers[]` and must be strictly more expensive. Price and duration may change for future members; issued NFT expiry is unchanged. A direct membership purchase mints a membership NFT with `tokenId ∈ [100, 1e11)` and grants **no** `#0` top-up credit. Fee mode and Add-tier stage use the same on-chain `feeE6[]` schedule, so metadata is a mirror rather than the only purchase-price source. |
 | **Top-up Promotion** | Bonus validity / minimum / percent-or-fixed. The **bonus master switch is independent** of Reward PT. |
 | **Reward PT (Top-up)** | Actor `#13` percent of **actual payment** (`actorPercentBps` / chain `topupActorRewardRatioE6`). Save writes **ratio E6** via `setTopupActorRewardRatio` — **not** Social Promotion `getRewardRule(2)`. |
 | **Referrer (Top-up)** | Referrer `#13` percent (`referrerPercentBps` / `referrerTopupAmountRatioE6`) via `setReferrerTopupAmountRatio`. Same ratio path; **not** `ruleId=2`. |
@@ -99,20 +99,20 @@ New cards issued after the CoNET UserCard beacon cutover are **BeaconProxy**. Th
 
 Writes that need sponsored gas go Cluster → Master (CoNET settle pool; Base USDC legs occupy the Base settle pool). That includes **all merchant USDC outflows**. Reads of program state, metadata, and KPI should prefer RPC / trusted cache, not a centralized API as the source of truth.
 
-### Factory create: one transaction for loyalty tiers
+### Factory create: one transaction for every card’s tiers
 
-The live CoNET Factory (`0xfA52…774FB`) is **not** upgradeable at the same address. New-card writes must use the functions already on that Factory.
+The live CoNET Factory (`0xfA52…774FB`) is **not** upgradeable at the same address. Its existing create call deploys a card proxy whose initializer installs the entire selected tier configuration before the create receipt is returned.
 
 | Card kind | Factory call |
 | --- | --- |
-| **Membership-fee** (`baseMembership.membershipFeeE6 > 0`, or legacy `tiers[]` with a fee) | `createCardCollectionWithInitCode` only. Price and duration live in **metadata**. Do not send Factory AndTiers. |
-| **Loyalty** (Top-up / Charge / Balance) | One transaction: `createCardCollectionWithInitCodeAndTiers` with the live **3-tuple** (`minUsdc6`, `attr`, `tierExpirySeconds`), selector **`0x9a7eb0f0`**. |
+| **Direct paid membership** | `createCardCollectionWithInitCode` with an initializer schedule: base fee at on-chain slot `0`, then higher paid tiers in ascending slots. The same receipt makes both fee and duration readable. The payment is membership-only, never a top-up. |
+| **Loyalty** (Top-up / Charge) | One create transaction installs the complete threshold schedule, including semantic Base at `tiers[0]`. The route is card-level: a card cannot mix direct purchase, Top-up, and Charge qualification. |
 
-Do **not** create the card first and then call `appendTierForCard` on the new-card path. If create succeeds and append reverts, Discover never gets a `beamio_cards` row (orphan). Do **not** encode the Hardhat 4-tuple AndTiers (`upgradeByBalance`, selector `0x62cb913c`) — that selector is not on the live Factory.
+Do **not** create the card first and then call `appendTierForCard`, `setMembershipFees`, or wait for the first purchaser to bootstrap a fee on the new-card path. Metadata/DB writing may finish after the create receipt, but can only mirror the tier schedule that is already on-chain. Do **not** encode the Hardhat 4-tuple AndTiers (`upgradeByBalance`, selector `0x62cb913c`) — that selector is not on the live Factory.
 
-Charge versus Top-up is **card-level `upgradeType`** in initCode, not a field on the 3-tuple. Balance (`upgradeType === 1`) is derived on the card’s 3-arg `appendTier` (Beacon impl **V18+**). Until the UserCard beacon is upgraded to V18, a live AndTiers call reverts the **whole** create (no orphan).
+Charge versus Top-up is **card-level `upgradeType`** in initCode, not a field on the 3-tuple. On beacon implementation **V20+**, every qualification mode writes its complete canonical schedule during initialization: direct membership writes both `tiers[0…n)` and `feeE6[0…n)`, while Top-up and Charge write `tiers[0…n)`. A new card therefore has one acquisition mode and cannot be created as a metadata-only base tier. If its atomic initialization reverts, the complete create reverts—there is no partially initialized card.
 
-`appendTierForCard` remains for recover of an already-deployed card only.
+`appendTierForCard` and purchaser-time fee bootstrap remain compatibility recovery tools for already-deployed historical cards only; neither is an initialization step for a new card.
 
 ### Membership fee modules (CoNET, 2026-08-23)
 
