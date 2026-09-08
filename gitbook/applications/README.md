@@ -32,7 +32,7 @@ Maturity is not an audit, uptime, or anonymity guarantee.
 | **`web3://` wallet-addressed applications** | Cross-platform application protocol using Layer Minus on L0 | Under development | [`web3://`](web3-url.md) |
 | **Web3 Browser + Wallet** | Native shell + local PWA: browse/publish `web3://`, SI subset, L2 on-demand | Under development | [Web3 Browser](web3-browser.md) |
 | **SilentPass** | Wallet-authorized privacy access to ordinary Internet services | Production reference | [SilentPass](silentpass-vpn.md) |
-| **Beamio** | Consumer wallet, Merchant OS, POS, Cash and USDC | Production reference | [Beamio](beamio.md) |
+| **Beamio** | Consumer wallet, Merchant OS (including website lookup onboarding), POS, Cash and USDC | Production reference | [Beamio](beamio.md) |
 | **CoNET Chat** | Wallet-addressed, relationship-private communication: receipts, presence, and encrypted-history recovery | Implemented capability | [CoNET Chat](depin-chat.md) |
 | **Privacy-first Decentralized AI** | Three independent roles and one open intelligence economy: private paths plus candidate micropayments (not a live AI fee rail) | Design study | [Landing](privacy-first-ai.md) · [Whitepaper](privacy-first-ai-whitepaper.md) |
 | **Institutional multisig AA** | Team-controlled Smart Wallet with on-chain tasks and threshold votes | Implemented capability | [Institutional multisig AA](institutional-multisig-aa.md) |

@@ -12,6 +12,8 @@ boundaries for CoNET.
 | Explorer / Blockscout | `https://mainnet.conet.network` |
 | Alternate Explorer entry | `https://scan.conet.network` |
 | Beamio application/API origin | `https://beamio.app` |
+| Merchant OS onboarding website lookup (Cluster read) | `POST https://beamio.app/api/onboardingBusinessLookup` |
+| Merchant OS onboarding Card Setup assets (Cluster read) | `POST https://beamio.app/api/onboardingBusinessCardSetup` |
 | IPFS fragment service | `https://ipfs.conet.network` |
 | Base RPC used by active Treasury and institutional-multisig paths | `https://base-rpc.conet.network` |
 
