@@ -15,7 +15,7 @@ Chapters in this whitepaper:
 | Chapter | What it covers |
 | --- | --- |
 | [Consumer PWA](beamio/consumer.md) | Wallet, Discover (Top Up + Gifting), coupons, Chat, mining tools, and how users add USDC |
-| [Merchant OS](beamio/merchant-os.md) | Onboarding (website or business-name lookup fills the cover; tap the name again to pick a different match), programs, staff, terminals, catalogs, coupons, and merchant treasury |
+| [Merchant OS](beamio/merchant-os.md) | Onboarding (website, business name, or attached PDF/Word/image lookup fills the cover; tap the composer again to pick a different match), programs, staff, terminals, catalogs, coupons, and merchant treasury |
 | [POS terminal](beamio/pos.md) | In-store charge, top-up, membership, claim, and redeem |
 | [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails (Coinbase / Treasury CONET-USDC vs Stripe Onramp Base USDC to EOA) **and** Beamio-initiated USDC transfers / payments (offline sign + sponsored gas) |
 
