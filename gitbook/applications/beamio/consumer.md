@@ -7,7 +7,7 @@ coverage.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-01**.
+Revision: **2026-09-08**.
 
 ## Product role
 
@@ -22,7 +22,7 @@ It is not Merchant OS and not a POS terminal. It does not hold merchant program-
 | **Wallet** | Self-custody EOA from a local 12-word mnemonic. Cold start derives a global signing key. Missing mnemonic requires Restore (`@BeamioTag` + access password → on-chain recover package). |
 | **Smart Wallet** | Optional AA / Express Pay. **New consumer AA issuance is CoNET only.** Existing Base V1 accounts may remain readable; they are not a new-issuance path. |
 | **Identity** | `@BeamioTag`, profile language / currency, AddressPGP registration for Chat |
-| **Discover** | Featured Brands and Ongoing Coupons from the public latest-cards / coupon APIs (single merchant-visibility gate). Merchant detail **Top Up** (store-credit button and welcome-offer CTA when membership is already valid) opens a multi-step full-screen flow: amount → pay → optional Reward PT cover → confirm. **Smart Pay** (Use Points on) prefers **one CoNET payment** when Reward PT does not cover the full quote: `topupWithReward13Container` with peer `#13` redeem, same-store `#13` → `#0` on the user’s **AA** (no USDC escrow), and leftover cash as EOA **CONET-USDC EIP-3009 `cash`** in the same Relayer AA `executeBatch`. **Base USDC is not in that container.** If CONET-USDC is short, Consumer then settles Reward PT (`cash=0`) and pays the leftover via **Base USDC treasuryBridge** as a second step. The success screen is a centered confirmation (minted store-credit amount, currency prefix) plus a **Share & Earn** card that shares the Discover merchant `/app-download` link with the signer’s `ref=` when a wallet is present; **Done** closes the overlay. Insufficient CONET-USDC and Base USDC together, and a failed step, stay on the **confirm** panel (not the payment-method page). Cash-only (no Reward PT legs) may still pay with **Base USDC** via treasuryBridge, then CoNET-USDC, then third-party. Paid **Join / Upgrade** still uses the locked membership-fee path, not this Top Up flow. |
+| **Discover** | Featured Brands and Ongoing Coupons from the public latest-cards / coupon APIs (single merchant-visibility gate). Merchant detail **Top Up** (store-credit button and welcome-offer CTA when membership is already valid) opens a multi-step full-screen flow: amount → pay → optional Reward PT cover → confirm. **Smart Pay** (Use Points on) prefers **one CoNET payment** when Reward PT does not cover the full quote: `topupWithReward13Container` with peer `#13` redeem, same-store `#13` → `#0` on the user’s **AA** (no USDC escrow), and leftover cash as EOA **CONET-USDC EIP-3009 `cash`** in the same Relayer AA `executeBatch`. **Base USDC is not in that container.** If CONET-USDC is short, Consumer then settles Reward PT (`cash=0`) and pays the leftover via **Base USDC treasuryBridge** as a second step. The success screen is a centered confirmation (minted store-credit amount, currency prefix) plus a **Share & Earn** card that shares the Discover merchant `/app-download` link with the signer’s `ref=` when a wallet is present; **Done** closes the overlay. Insufficient CONET-USDC and Base USDC together, and a failed step, stay on the **confirm** panel (not the payment-method page). Cash-only (no Reward PT legs) may still pay with **Base USDC** via treasuryBridge, then CoNET-USDC, then third-party. Paid **Join / Upgrade** still uses the locked membership-fee path, not this Top Up flow. Merchant detail **Gifting** purchases an **open redeem code** with gifter CONET-USDC (see **Discover Gifting** below). It is **not** a P2P transfer of the gifter’s existing `#0` store credit. |
 | **Issued assets** | Coupons and Business Catalogs: open claim, like / share stats, supply copy |
 | **Programs held** | Membership NFT (`tokenId ∈ [100, 1e11)`), program points (`#0`), Reward PT (`#13`). A newly issued BeaconProxy program has its complete ordered membership or loyalty tier schedule installed atomically in its create transaction; the base membership is on-chain index `0`, while metadata mirrors its name and presentation. Paid join / upgrade charges the **locked membership fee only**, shown to two decimal places (for example `CA$0.50`). A leftover `#0` min-unit may appear as `0.00` program points so `mintPointsByAdmin` is non-zero; it is **not** the membership NFT and is not added to the payable amount. |
 | **Messaging** | CoNET Chat (ordinary sends **omit** mailbox `NoPush` so offline peers can get a native badge), delivery receipts (`NoPush: true`), mailbox presence (listen-pool query; not on-chain `routeOnline`) |
@@ -56,9 +56,30 @@ The client should pass the **EOA** (`keyID`), not the AA address. If an AA addre
 
 ## Send / pay USDC (consumer)
 
-Beamio’s own USDC outflows (Pay / Send, Gift, Discover leftover cash, AA ↔ EOA) are **offline signatures**. The Consumer wallet signs EIP-712 / EIP-3009 / EIP-2612 / Container / UserOp locally and POSTs the authorization to Cluster. Master or the Factory Paymaster submits and sponsors ETH or CNET gas. The PWA must not `eth_sendTransaction` / `USDC.transfer` for a Beamio send, and it must not require the user to hold native gas.
+Beamio’s own USDC outflows (Pay / Send, Discover Gifting purchase, Discover leftover cash, AA ↔ EOA) are **offline signatures**. The Consumer wallet signs EIP-712 / EIP-3009 / EIP-2612 / Container / UserOp locally and POSTs the authorization to Cluster. Master or the Factory Paymaster submits and sponsors ETH or CNET gas. The PWA must not `eth_sendTransaction` / `USDC.transfer` for a Beamio send, and it must not require the user to hold native gas.
 
 **Receive from a wallet** and **Receive via QR** stay inbound exceptions: a third-party wallet sends **into** the owner EOA and that peer pays gas. Do not reuse that injected `eth_sendTransaction` path for Beamio Pay / Send. Detail and signing table: [Cash and USDC](cash-and-usdc.md).
+
+## Discover Gifting
+
+Merchant detail **Gifting** lets a consumer buy an **open redeem code** for a friend (or anyone who holds the code). Selecting a contact is share UX only; claim does not require that peer’s address on-chain.
+
+Two **purchase rails** share the same gift sheet and claim path. Default is **CONET-USDC**. When the merchant enables **Credit Gift** in Programs (`giftCreditPurchase.enabled`), the sheet also offers **Pay with store credit**.
+
+| Rule | Behavior |
+| --- | --- |
+| **Payment (USDC)** | Gifter pays **CONET-USDC** for the gift fiat amount (fair quote). Offline **EIP-3009** `transferWithAuthorization` to the merchant card **`owner()`**. |
+| **Payment (Credit)** | Gifter burns **program points `#0`** on their **Smart Wallet (AA)** for gift face **G** plus optional merchant fee **F** (`G + F`). Offline **EIP-712** `BeamioMerchantGiftCredit` / `GiftCreditPurchase` (`verifyingContract` = card). Redeem stores **G** only; **F is never minted**. |
+| **Credit extras** | No Top-up **Multiplier** and no **`#13` Reward PT** on the credit rail. Claim still uses the same open-redeem split for **G**. |
+| **Gas** | Gifter and claimer **pay no native gas**. Master / Factory Paymaster sponsors create and claim. |
+| **Create code** | `POST /api/purchaseMerchantGiftRedeem` with `payWith: "usdc" \| "credit"` → Master collects USDC **or** burns `#0`, then EntryPoint-relays `createGiftRedeemForPayer` / `createGiftRedeemWithCreditBurn`. **No merchant card `owner()` signature**. |
+| **Secret** | Plaintext redeem code is returned **once** to the gifter. The chain stores only `keccak256(utf8(code))`. Code is not persisted in API DB. |
+| **Claim** | Anyone with the code uses the existing open-redeem path (`POST /api/cardRedeem` / Factory `redeemForUser`). Claimer signs only what that path requires; gas stays sponsored. |
+| **Non–membership-fee card (USDC)** | Gift principal (plus Discover Top-up **Multiplier** on that principal) mints program points **`#0`**. |
+| **Membership-fee card (USDC)** | Floor = **base membership** fee (`baseMembership` / legacy `tiers[0]`). Non-member claim: fee → membership NFT (`tokenId ∈ [100, 1e11)`); remainder → `#0`. Already a member: **full** gift (fee + top-up parts) → `#0`. Multiplier applies only to the top-up portion. |
+| **Not this product** | Home **Merchant Asset Gift** (sender AA OpenContainer of existing `#0`) is a different path. Merchant self-issued redeem codes that still use owner `executeForOwner` stay on that merchant track and are **not** Discover Gifting. |
+
+Indexer: create is recorded as `merchantGiftRedeem`; claim remains `cardRedeem` with gift fee/credit fields in `displayJson` when the redeem is a gift split. Detail: [Cash and USDC](cash-and-usdc.md).
 
 ## Protocol dependencies
 

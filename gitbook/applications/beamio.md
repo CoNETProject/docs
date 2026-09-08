@@ -6,7 +6,7 @@ suite is, which surfaces exist today, and how cash rails are placed. It is not
 a claim that every workflow is complete, independently audited, or covered
 by a published SLA.
 
-Revision: **2026-09-01**.
+Revision: **2026-09-08**.
 
 Public site: [https://gitbook.conet.network/applications/beamio.html](https://gitbook.conet.network/applications/beamio.html)
 
@@ -14,12 +14,23 @@ Chapters in this whitepaper:
 
 | Chapter | What it covers |
 | --- | --- |
-| [Consumer PWA](beamio/consumer.md) | Wallet, Discover, coupons, Chat, mining tools, and how users add USDC |
-| [Merchant OS](beamio/merchant-os.md) | Programs, staff, terminals, catalogs, coupons, and merchant treasury |
+| [Consumer PWA](beamio/consumer.md) | Wallet, Discover (Top Up + Gifting), coupons, Chat, mining tools, and how users add USDC |
+| [Merchant OS](beamio/merchant-os.md) | Onboarding (website or business-name lookup fills the cover; tap the name again to pick a different match), programs, staff, terminals, catalogs, coupons, and merchant treasury |
 | [POS terminal](beamio/pos.md) | In-store charge, top-up, membership, claim, and redeem |
 | [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails (Coinbase / Treasury CONET-USDC vs Stripe Onramp Base USDC to EOA) **and** Beamio-initiated USDC transfers / payments (offline sign + sponsored gas) |
 
 Cursor rule: when a Beamio product capability is added or changed, update the matching chapter in the same task (`beamio-gitbook-whitepaper-sync.mdc`).
+
+## Unified merchant-card tier model
+
+Every newly created merchant program card carries one canonical
+`tierQualificationMode`, initialized atomically with the complete BeaconProxy tier
+schedule: `0` means top-up qualification, `1` means direct membership purchase,
+and `2` means charge qualification. Direct membership charges only the configured
+fee and does not mint store-credit `#0`; store credit remains distinct from
+cross-store Reward PT `#13`. The card metadata mirrors the schedule for
+presentation, while the on-chain fee and qualification schedule is authoritative
+for purchase and qualification.
 
 ## Product role
 
@@ -118,7 +129,7 @@ Two USDC deposit rails must not be merged:
 
 Merchant Kit Stripe (CAD kits → B-Units / Ket) is a third Stripe product and is **not** a consumer USDC deposit rail. Both Kit Checkout and Consumer Onramp use the same operator account **`StripeBeamio`** and the same live webhook **`https://beamio.app/api/stripeBeamioHook`** (signing secret **`STRIPE_WEBHOOK_SECRET_MERCHANT_KIT`**). Older Dashboard URLs are retired; the API may still forward them to the same handler. Fulfillment remains on separate rails. Consumers who buy USDC with a card receive native Base USDC **directly in the owner EOA**.
 
-**Outbound USDC is a different rule.** Pay / Send, Gift, Charge when USDC is the settlement asset, AA ↔ EOA, NFC / QR, Fuel Pack USDC debit, card `#13` escrow deposit, and institutional-multisig USDC out are **offline signatures**. Cluster prechecks; Master or the Factory Paymaster submits and sponsors gas. Do not describe those writes as “the user pays ETH or CNET.” Third-party **Receive from a wallet / Receive via QR** remains an inbound exception (the peer pays gas). See [Cash and USDC](beamio/cash-and-usdc.md).
+**Outbound USDC is a different rule.** Pay / Send, **Discover Gifting** (gifter CONET-USDC → open redeem; no merchant owner signature), Charge when USDC is the settlement asset, AA ↔ EOA, NFC / QR, Fuel Pack USDC debit, card `#13` escrow deposit, and institutional-multisig USDC out are **offline signatures**. Cluster prechecks; Master or the Factory Paymaster submits and sponsors gas. Do not describe those writes as “the user pays ETH or CNET.” Third-party **Receive from a wallet / Receive via QR** remains an inbound exception (the peer pays gas). See [Cash and USDC](beamio/cash-and-usdc.md) and [Consumer — Discover Gifting](beamio/consumer.md#discover-gifting).
 
 For Beamio issued-NFT social exchange, canonical CoNET-USDC is
 [`0x5209865D404aA5646eDe5B91CD4218909eA72eDA`](https://mainnet.conet.network/token/0x5209865D404aA5646eDe5B91CD4218909eA72eDA)

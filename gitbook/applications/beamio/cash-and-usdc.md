@@ -8,7 +8,7 @@ session has already settled.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-01**.
+Revision: **2026-09-08**.
 
 ## Product role
 
@@ -137,7 +137,7 @@ Cash-only Discover Top-up (**Use Points** off, no `#13` legs) still pays with **
 
 ## USDC transfers and payments (offline sign + sponsored gas)
 
-Deposit rails above move USDC **into** a user or Treasury path. This section is the opposite: **Beamio products moving USDC out** — Pay / Send, Gift, Charge when USDC is the settlement asset, NFC / QR, AA ↔ EOA, Fuel Pack USDC debit, card `#13` escrow deposit, social-exchange user authorization, institutional multisig USDC out, and in-wallet “send USDC.”
+Deposit rails above move USDC **into** a user or Treasury path. This section is the opposite: **Beamio products moving USDC out** — Pay / Send, **Discover Gifting** (gifter CONET-USDC; optional Credit Gift burns `#0` instead), Charge when USDC is the settlement asset, NFC / QR, AA ↔ EOA, Fuel Pack USDC debit, card `#13` escrow deposit, social-exchange user authorization, institutional multisig USDC out, and in-wallet “send USDC.”
 
 ```text
 Client (EOA / AA / POS / institutional multisig)
@@ -165,9 +165,25 @@ Legacy CoNET-USDC `0xfD0D7B0706AaB5E4351bcED37bC3C77ed6813907` must not appear o
 | **EOA → Base USDC** | EIP-3009 `transferWithAuthorization` | Cluster → Master `Settle_BasePool` |
 | **Institutional V2 multisig** | Account EIP-712 task (not an EntryPoint nonce) | V2 Factory Paymaster / Proxy |
 | **Card-owner escrow deposit** | EIP-2612 `permit` + `fundSocialExchangeUsdcEscrow` | `executeForOwner` / Conet pool |
-| **Charge / Gift / NFC · QR** | Offline Container or `executeForAdmin` | `/api/AAtoEOA`, `/api/nfcTopup`, and the matching Charge relays |
+| **Charge / NFC · QR** | Offline Container or `executeForAdmin` | `/api/AAtoEOA`, `/api/nfcTopup`, and the matching Charge relays |
+| **Discover Gifting (USDC)** | EOA EIP-3009 `transferWithAuthorization` to card `owner()` (CONET-USDC) | `POST /api/purchaseMerchantGiftRedeem` (`payWith=usdc`) → Master collect + EntryPoint `createGiftRedeemForPayer` (**no** merchant `ownerSignature`). Claim: `/api/cardRedeem` |
+| **Discover Gifting (Credit)** | EOA EIP-712 `GiftCreditPurchase`; burn `#0` on buyer AA for **G + F** | Same API (`payWith=credit`) → Master `createGiftRedeemWithCreditBurn`. Redeem face = **G** only. Claim: `/api/cardRedeem` |
 
-The same rule applies on Consumer PWA, Merchant OS, POS PWA, Alliance, and new x402sdk write paths.
+### Discover Gifting (open redeem)
+
+Discover merchant **Gifting** is a **purchase of an open redeem code**, not a Home Merchant Asset Gift (AA OpenContainer of the gifter’s existing `#0`).
+
+| Step | Actor | Signature / gas |
+| --- | --- | --- |
+| Quote + pay (USDC) | Gifter | Fair CONET-USDC quote for gift fiat; offline EIP-3009 only; **zero** user gas |
+| Pay (Credit) | Gifter | When Programs **Credit Gift** is ON: burn AA `#0` for **G + F**; offline EIP-712 only; **zero** user gas. No Multiplier / `#13` on this rail |
+| Create redeem | Master / Paymaster | USDC: collect to `owner()` then `createGiftRedeemForPayer`. Credit: burn then `createGiftRedeemWithCreditBurn` (`membershipFeeE6` + `topupCreditE6` = **G**; **F** never minted). **Merchant owner does not sign.** |
+| Share | Gifter | Plaintext code shown once; optional friend pick is UX only |
+| Claim | Friend / code holder | Existing open redeem (`cardRedeem`); **zero** claimer gas |
+
+Membership-fee cards (USDC rail): floor = base membership; non-member claim splits fee → membership NFT and remainder → `#0`; member claim mints the full gift as `#0`. Multiplier applies only to the top-up portion on the **USDC** rail. Non-fee cards mint principal (+ Multiplier on USDC) as `#0`. Merchant-operated create-redeem that still requires owner `executeForOwner` is a separate product track.
+
+The same offline-sign + sponsored-gas rule applies on Consumer PWA, Merchant OS, POS PWA, Alliance, and new x402sdk write paths.
 
 ### What is not “user-paid USDC gas”
 
