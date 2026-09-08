@@ -74,7 +74,7 @@ Two **purchase rails** share the same gift sheet and claim path. Default is **CO
 | **Gas** | Gifter and claimer **pay no native gas**. Master / Factory Paymaster sponsors create and claim. |
 | **Create code** | `POST /api/purchaseMerchantGiftRedeem` with `payWith: "usdc" \| "credit"` → Master collects USDC **or** burns `#0`, then EntryPoint-relays `createGiftRedeemForPayer` / `createGiftRedeemWithCreditBurn`. **No merchant card `owner()` signature**. |
 | **Secret** | Plaintext redeem code is returned **once** to the gifter. The chain stores only `keccak256(utf8(code))`. Code is not persisted in API DB. |
-| **Claim** | Anyone with the code uses the existing open-redeem path (`POST /api/cardRedeem` / Factory `redeemForUser`). Claimer signs only what that path requires; gas stays sponsored. |
+| **Claim** | Anyone with the code uses the existing open-redeem path (`POST /api/cardRedeem` / Factory `redeemForUser`). Cluster prechecks redeem status on **CoNET** (the merchant card’s live chain). Claimer signs only what that path requires; gas stays sponsored. |
 | **Non–membership-fee card (USDC)** | Gift principal (plus Discover Top-up **Multiplier** on that principal) mints program points **`#0`**. |
 | **Membership-fee card (USDC)** | Floor = **base membership** fee (`baseMembership` / legacy `tiers[0]`). Non-member claim: fee → membership NFT (`tokenId ∈ [100, 1e11)`); remainder → `#0`. Already a member: **full** gift (fee + top-up parts) → `#0`. Multiplier applies only to the top-up portion. |
 | **Not this product** | Home **Merchant Asset Gift** (sender AA OpenContainer of existing `#0`) is a different path. Merchant self-issued redeem codes that still use owner `executeForOwner` stay on that merchant track and are **not** Discover Gifting. |
@@ -85,8 +85,8 @@ Indexer: create is recorded as `merchantGiftRedeem`; claim remains `cardRedeem` 
 
 | Dependency | Consumer use |
 | --- | --- |
-| CoNET L1 | Account, program assets, Smart Wallet, Chat index, mining / referral views |
-| Base | Stripe Onramp USDC destination; Coinbase lock step; optional institutional AA |
+| CoNET L1 | Account, **merchant program cards** (Discover / Gifting claim / My Brands), Smart Wallet, Chat index, mining / referral views |
+| Base | Stripe Onramp USDC destination; Coinbase lock step; optional institutional AA. **Not** merchant program cards (Base merchant cards are retired). |
 | Layer Minus | Chat listen / send (entry ≠ mailbox) |
 | Cluster / Master | Gas-sponsored writes (including all Beamio USDC outflows), Stripe session create / poll, `walletDeposit` |
 | Local IndexedDB | Mnemonic and derived key (Consumer allows persistence; Merchant OS does not) |

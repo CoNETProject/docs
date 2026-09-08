@@ -74,9 +74,9 @@ Share and install links on `https://beamio.app/app-download` open **Consumer onl
 | **EOA + `@BeamioTag` identity** | Human-readable discovery anchored to a wallet; the EOA also owns the PGP material used by messaging |
 | **Cluster / Master relay** | Prechecks application write requests and submits approved gas-sponsored transactions; it is not the source of a user’s private key. **Every Beamio-started USDC transfer or payment** (CoNET-USDC and Base USDC) is an offline signature on this path — the user wallet does not broadcast `USDC.transfer` or pay ETH / CNET gas |
 | **Local application storage** | Holds client state and, depending on the product, self-custody wallet material or session state |
-| **Base (`chainId` 8453)** | Treasury and USDC operations, plus supported institutional multisig deployments; not new merchant programs or new consumer Smart Wallet issuance |
+| **Base (`chainId` 8453)** | Treasury and USDC operations, plus supported institutional multisig AA. **Merchant program cards on Base are retired** — do not create, upgrade, Discover, POS-bind, or Cluster-precheck merchant cards via Base RPC. New consumer Smart Wallet issuance is CoNET only. |
 
-Merchant program cards and new consumer Smart Wallet accounts belong on CoNET L1. New CoNET merchant cards use a shared UpgradeableBeacon so the platform can upgrade implementation bytecode without changing card addresses. Base remains a separate execution environment for its limited active roles. A matching address on two chains does not imply shared balances or shared application state.
+**Merchant program cards are CoNET L1 only.** The historical Base UserCard Factory and any Base-deployed merchant cards are archive only; they are not the live program-card chain. Cluster / Master views that read a merchant card (`owner`, `getRedeemStatus`, membership, reward rules, balances) must use CoNET RPC — never Base as the default. New consumer Smart Wallet accounts also belong on CoNET L1. New CoNET merchant cards use a shared UpgradeableBeacon so the platform can upgrade implementation bytecode without changing card addresses. Base remains a separate execution environment for treasury / USDC / institutional multisig. A matching address on two chains does not imply shared balances or shared application state.
 
 ## How protocol capability becomes product behavior
 

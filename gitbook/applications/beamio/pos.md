@@ -13,13 +13,17 @@ Retired native POS business apps (`iOS_NDEF`, `android-NDEF`) are **not** the cu
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-08-31**.
+Revision: **2026-09-08**.
 
 ## Product role
 
 A POS terminal is a **wallet that is also a lower-level merchant administrator**. The same EOA can be payee and executing terminal. It performs in-store Charge, Top-up, membership issue, coupon claim, redeem, and coupon burn.
 
 It is not Merchant OS. It does not create program cards or edit Programs metadata. Consumer Stripe Onramp (Buy USDC with card) and Coinbase deposit are **not** POS flows.
+
+## Chain placement
+
+The bound **merchant program card** (`merchantInfraCard`) is **CoNET L1 only**. Base merchant cards are retired; POS must not resolve program-card views or Charge / Top-up / membership against Base UserCard Factory deployments.
 
 ## What exists today
 
@@ -53,8 +57,8 @@ For POS-executed Charge, Top-up, Claim, Burn, and Redeem, Indexer `subordinate` 
 
 | Dependency | POS use |
 | --- | --- |
-| CoNET L1 program card | Membership, points, issued NFTs |
-| Cluster / Master | Precheck + gas-sponsored `executeForAdmin` / Charge relay. Any USDC settlement leg is an **offline signature**; the terminal must not broadcast `USDC.transfer` or pay CNET / ETH gas itself. See [Cash and USDC](cash-and-usdc.md). |
+| CoNET L1 program card | Membership, points, issued NFTs (**only** live merchant-card chain; Base merchant cards retired) |
+| Cluster / Master | Precheck + gas-sponsored `executeForAdmin` / Charge relay on **CoNET**. Any USDC settlement leg is an **offline signature**; the terminal must not broadcast `USDC.transfer` or pay CNET / ETH gas itself. See [Cash and USDC](cash-and-usdc.md). |
 | Local IndexedDB | Terminal mnemonic (Consumer/POS persistence model) |
 | Layer Minus | POS permission envelope to merchant mailbox; optional ordinary chat to customers (push-eligible) |
 | Native shell | NFC / camera / `openURL`; business UI remains the PWA |
