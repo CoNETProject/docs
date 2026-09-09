@@ -7,13 +7,27 @@ claim.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-08**.
+Revision: **2026-09-09**.
 
 ## Product role
 
 Merchant OS is the merchant control plane: create and publish a program card, configure membership and reward rules, issue coupons and catalogs, authorize staff and POS terminals, and review settlements.
 
 It is not the Consumer PWA and not the in-store POS UI. Merchants sign as the owner (or authorized staff) after unlock; **signing material stays in session memory** and is not written to disk.
+
+### Stripe card payments
+
+For a merchant program card, Merchant OS provides **Accept card payments** →
+**Connect Stripe** when the card is not linked. The merchant completes Stripe
+Connect Express onboarding for that card. Before onboarding, the merchant
+authorizes the configured `StripeCardFulfillmentAdmin` EOA as a card admin
+with an owner-signed `ExecuteForOwner` call. This fulfillment identity is
+separate from the settlement admin and is used only to complete paid
+top-ups/membership purchases.
+
+The card is eligible for consumer Stripe Checkout only after the Connected
+Account reports both `charges_enabled` and `details_submitted`. Funds use a
+destination charge and go directly to the merchant's Connected Account.
 
 ## Onboarding
 
