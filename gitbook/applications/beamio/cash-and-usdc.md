@@ -27,6 +27,7 @@ This chapter is the whitepaper source for **deposit** semantics **and** for **Be
 | **Coinbase / `walletDeposit`** | Coinbase Onramp / x402 settle | TreasuryBridgeV3 **LockMint** | **CONET-USDC** on CoNET | Existing wallet-deposit workflow. Do **not** retarget it to Base USDC. |
 | **Buy USDC with card** | Stripe Crypto Onramp (card / Stripe policy) | Stripe sends native USDC | **Native USDC on Base** to the owner **EOA** | `eoaUsdcStripe` — independent of `walletDeposit` |
 | **Merchant Kit Stripe** | Card (CAD kits) | Kit fulfillment | **B-Units / Ket** on CoNET | Merchant fuel / kit product — **not** a consumer USDC deposit |
+| **Merchant card Stripe** | Card via Payment Element | Program-card top-up or membership fulfillment | Destination charge to the merchant's Connected Account | PaymentIntent rail; buyer email is optional and it is not a wallet deposit |
 
 ## Merchant card Stripe Connect
 

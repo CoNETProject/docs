@@ -28,19 +28,21 @@ top-ups/membership purchases. Starting OAuth also requires a short-lived,
 single-use signature from the current on-chain card owner; a wallet address
 alone cannot connect an account to a card.
 
-The card is eligible for consumer Stripe Checkout only after the OAuth-linked
-Connected Account reports both `charges_enabled` and `details_submitted`.
-Funds use a destination charge and go directly to the merchant's Connected
-Account. Webhook event IDs, checkout session IDs, and business idempotency keys
-are persisted so a retried event cannot mint twice; failed leases are
-recoverable by Master's signer pool.
+The card is eligible for consumer Stripe card payments only after the
+OAuth-linked Connected Account reports both `charges_enabled` and
+`details_submitted`. Funds use a destination charge and go directly to the
+merchant's Connected Account. Consumer payments use Stripe PaymentIntent +
+Payment Element rather than a hosted Checkout page, so the buyer's email is
+optional. Webhook event IDs, PaymentIntent/session IDs, and business
+idempotency keys are persisted so a retried event cannot mint twice; failed
+leases are recoverable by Master's signer pool.
 
 Merchant OS always shows the card's Stripe connection state. Its **Stripe
 connected** status control offers two card-level actions. **Stripe topup off**
-pauses only new program-card top-up Checkout sessions; membership-fee payments
+pauses only new program-card top-up PaymentIntents; membership-fee payments
 remain available and the Connected Account remains linked. The owner can later
 turn Stripe top-ups back on. **Disconnect Stripe** removes Beamio's saved
-Connected Account and OAuth credentials, blocking all new Stripe Checkout
+Connected Account and OAuth credentials, blocking all new Stripe card
 sessions for that card. It does **not** close, delete, or otherwise restrict
 the merchant's Stripe account itself. To prevent accidental disconnects, the
 merchant must drag a left-to-right confirmation control and then sign with the
