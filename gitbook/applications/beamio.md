@@ -15,7 +15,7 @@ Chapters in this whitepaper:
 | Chapter | What it covers |
 | --- | --- |
 | [Consumer PWA](beamio/consumer.md) | Wallet, Discover (Top Up + Gifting), coupons, Chat, mining tools, and how users add USDC |
-| [Merchant OS](beamio/merchant-os.md) | Onboarding (website, business name, or attached PDF/Word/image lookup fills the cover; tap the composer again to pick a different match), programs, staff, terminals, catalogs, coupons, and merchant treasury |
+| [Merchant OS](beamio/merchant-os.md) | Onboarding (website, marketplace seller page, business name, or attached PDF/Word/image lookup fills the cover; marketplace platform chrome is excluded from merchant fields), programs, staff, terminals, catalogs, coupons, and merchant treasury |
 | [POS terminal](beamio/pos.md) | In-store charge, top-up, membership, claim, and redeem |
 | [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails (Coinbase / Treasury CONET-USDC vs Stripe Onramp Base USDC to EOA) **and** Beamio-initiated USDC transfers / payments (offline sign + sponsored gas) |
 
@@ -93,7 +93,10 @@ existing Stripe account, Beamio creates a destination charge for that
 Connected Account, and the shared webhook records payment and fulfillment
 state. Only a trusted paid event can enqueue the card mint; persistent
 session/event/business-idempotency keys and recoverable Master leases prevent
-one payment from minting twice.
+one payment from minting twice. The card owner may pause Stripe top-ups without
+removing the connection; membership-fee payments remain enabled. Disconnecting
+the account requires a left-to-right confirmation slide and removes only
+Beamio's local Connected Account association, never the Stripe account itself.
 
 ### POS
 

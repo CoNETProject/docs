@@ -8,7 +8,7 @@ session has already settled.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-09**.
+Revision: **2026-09-10**.
 
 ## Product role
 
@@ -60,14 +60,19 @@ the same payment can reach `ExecuteForAdmin` mint at most once, and a recorded
 transaction hash makes retries observational rather than a second mint.
 
 This rail is only offered when the Connected Account is ready
-(`charges_enabled` and `details_submitted`). Stripe receives no user private
-key, and all card/merchant UI errors remain in the current flow for retry.
+(`charges_enabled` and `details_submitted`). A merchant may turn **Stripe
+topup off** in Merchant OS: it blocks only new program-card top-up Checkout
+sessions, leaves the account connected, and does not block membership-fee
+payments. The owner can turn top-ups back on later. Stripe receives no user
+private key, and all card/merchant UI errors remain in the current flow for
+retry.
 
-A merchant can confirm **Disconnect Stripe** from the Merchant OS connection
-status control. The owner signs a short-lived, single-use authorization;
-Beamio then removes only that card's saved Connected Account and OAuth
-credentials. The action blocks new Checkout sessions for the card but does not
-close, delete, or restrict the merchant's Stripe account.
+A merchant can choose **Disconnect Stripe** from the same Merchant OS status
+control. The owner must drag a left-to-right confirmation control and sign a
+short-lived, single-use authorization; Beamio then removes only that card's
+saved Connected Account and OAuth credentials. The action blocks all new
+Checkout sessions for the card but does not close, delete, or restrict the
+merchant's Stripe account.
 
 Treasury (sole active): **TreasuryBridgeV3** `0xa208982212978550594A7FEEB70a61665d129003`.
 
