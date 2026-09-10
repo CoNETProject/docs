@@ -30,24 +30,44 @@ This chapter is the whitepaper source for **deposit** semantics **and** for **Be
 
 ## Merchant card Stripe Connect
 
-This is a separate Stripe Connect Express rail for merchant program cards. A
-merchant completes Connect Express onboarding for a specific card, and Stripe
-uses a destination charge so the payment is transferred directly to that
-merchant's Connected Account. Beamio does not treat this as a wallet deposit,
+This is a separate Stripe Connect OAuth rail for merchant program cards. The
+merchant authorizes Beamio to use an existing Stripe account; Beamio does not
+create an Express account or use an Express Account Link. OAuth state is
+short-lived, single-use, and bound to the merchant EOA and card address. The
+OAuth start requires a short-lived, single-use signature from the current
+on-chain card owner. The returned `stripe_user_id` is stored as the merchant's
+Connected Account, never as the Beamio platform account.
+
+For a linked card, Beamio creates a destination charge with
+`transfer_data[destination] = stripe_user_id`. Stripe settles the payment into
+the merchant's own Stripe account. This rail is not a wallet deposit,
 Merchant Kit purchase, or operator-inventory USDC transfer.
 
 The consumer may use **Pay with Stripe** for a linked card's program-card
 top-up or membership fee. After Stripe confirms payment, the server performs
-the corresponding CoNET card operation through the dedicated
-`StripeCardFulfillmentAdmin`: a top-up mints program points, while a membership
-payment follows the card's membership-fee staging and membership NFT flow.
-The fulfillment admin is a separate configured EOA and must be registered as
-an admin on the merchant card. The Checkout `session_id` is persisted and
-claimed atomically, so repeated webhook delivery cannot mint twice.
+the corresponding CoNET card operation through a dedicated
+`initManager[]` Stripe fulfillment signer pool: a top-up mints program points,
+while a membership payment follows the card's membership-fee staging and
+membership NFT flow. A Master worker acquires one idle EOA only when it starts
+the chain task, signs the `ExecuteForAdmin` payload, submits it through the
+gas/EntryPoint path, and releases the EOA in all completion and error paths.
+The signer pool is separate from the settle gas pool. Every configured
+fulfillment admin must be registered as an admin on the merchant card. Checkout
+`session_id`, business idempotency key, and Stripe webhook event ID
+are persisted with unique constraints. Only a trusted paid event can enqueue an
+unsigned task. A recoverable lease lets Master reclaim work after a restart;
+the same payment can reach `ExecuteForAdmin` mint at most once, and a recorded
+transaction hash makes retries observational rather than a second mint.
 
 This rail is only offered when the Connected Account is ready
 (`charges_enabled` and `details_submitted`). Stripe receives no user private
 key, and all card/merchant UI errors remain in the current flow for retry.
+
+A merchant can confirm **Disconnect Stripe** from the Merchant OS connection
+status control. The owner signs a short-lived, single-use authorization;
+Beamio then removes only that card's saved Connected Account and OAuth
+credentials. The action blocks new Checkout sessions for the card but does not
+close, delete, or restrict the merchant's Stripe account.
 
 Treasury (sole active): **TreasuryBridgeV3** `0xa208982212978550594A7FEEB70a61665d129003`.
 

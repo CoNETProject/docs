@@ -68,7 +68,7 @@ Beamio’s own USDC outflows (Pay / Send, Discover Gifting purchase, Discover le
 
 ## Discover Gifting
 
-Merchant detail **Gifting** lets a consumer buy an **open redeem code** for a friend (or anyone who holds the code). Selecting a contact is share UX only; claim does not require that peer’s address on-chain.
+Merchant detail **Gifting** lets a consumer buy an **open redeem code** for a friend (or anyone who holds the code). Selecting a contact is share UX only; claim does not require that peer’s address on-chain. **Food & Beverage** and **Health & Beauty** merchants use category-themed Step 1 and success chrome (dining / wellness pass copy). Selected controls and the gift pass still use the merchant card brand color — not a generic Beamio blue.
 
 Two **purchase rails** share the same gift sheet and claim path. Default is **CONET-USDC**. When the merchant enables **Credit Gift** in Programs (`giftCreditPurchase.enabled`), the sheet also offers **Pay with store credit**.
 

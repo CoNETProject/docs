@@ -72,7 +72,7 @@ Share and install links on `https://beamio.app/app-download` open **Consumer onl
 | **L0** | Decentralized forwarding, ciphertext storage, hosting, compute, and metering resources |
 | **Layer Minus** | CoNET Chat, POS terminal-authorization messages, routed mailbox delivery, and optional UDP frame forwarding over L0 |
 | **EOA + `@BeamioTag` identity** | Human-readable discovery anchored to a wallet; the EOA also owns the PGP material used by messaging |
-| **Cluster / Master relay** | Prechecks application write requests and submits approved gas-sponsored transactions; it is not the source of a user’s private key. **Every Beamio-started USDC transfer or payment** (CoNET-USDC and Base USDC) is an offline signature on this path — the user wallet does not broadcast `USDC.transfer` or pay ETH / CNET gas |
+| **Cluster / Master relay** | Prechecks application write requests and submits approved gas-sponsored transactions; it is not the source of a user’s private key. **Every Beamio-started USDC transfer or payment** (CoNET-USDC and Base USDC) is an offline signature on this path — the user wallet does not broadcast `USDC.transfer` or pay ETH / CNET gas. Merchant-card Stripe fulfillment uses an independent `initManager[]` signer pool: Master workers acquire and release idle signers around unsigned queued tasks, separately from settle gas pools |
 | **Local application storage** | Holds client state and, depending on the product, self-custody wallet material or session state |
 | **Base (`chainId` 8453)** | Treasury and USDC operations, plus supported institutional multisig AA. **Merchant program cards on Base are retired** — do not create, upgrade, Discover, POS-bind, or Cluster-precheck merchant cards via Base RPC. New consumer Smart Wallet issuance is CoNET only. |
 
@@ -87,6 +87,13 @@ The Consumer PWA derives a signing wallet from device-local recovery material, r
 ### Merchant
 
 Merchant OS maps an owner EOA and authorized staff relationships to program-management screens. The merchant signs with session-memory key material after recovery and unlock. Long-term merchant signing material is not intended to be persisted by the Merchant OS browser application.
+
+Merchant card payments use Stripe Connect OAuth: the merchant authorizes an
+existing Stripe account, Beamio creates a destination charge for that
+Connected Account, and the shared webhook records payment and fulfillment
+state. Only a trusted paid event can enqueue the card mint; persistent
+session/event/business-idempotency keys and recoverable Master leases prevent
+one payment from minting twice.
 
 ### POS
 
