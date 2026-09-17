@@ -7,6 +7,20 @@ over CoNET L0 resources.**
 already use this infrastructure. It is not a finished public messenger with
 groups, channels, or calls.
 
+## Encrypted file attachments
+
+Beamio Chat supports protected document and folder attachments through
+`file_message_v1`. The browser ZIPs and AES-GCM encrypts the selected files,
+uploads the encrypted Data URL through resumable 512 KiB IPFS multipart chunks,
+and sends only an encrypted PGP manifest. The composer keeps concurrent upload
+jobs separate with progress and cancel controls; a completed attachment is
+still a draft until the user presses Send.
+
+Recipients decrypt and unzip locally and can download or preview individual
+files. Photo, audio, and voice-message paths are unchanged. Plaintext content,
+keys, and fragment hashes are not placed in ordinary UI/log/localStorage; the
+existing encrypted history track carries only the protected manifest.
+
 > **Protect the relationship, not only the message.**
 
 Encryption can protect what people say.

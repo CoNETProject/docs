@@ -21,6 +21,28 @@ Public packages: [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-
 | Presence (green dot) | Contact mailbox **B route PGP** | `wallet_online_query` via **C ≠ B** |
 | Optional recover history | — | Encrypted IPFS fragments + `ChatIndexRegistry` head pointer |
 
+## Protected file attachments
+
+Chat file attachments use the encrypted `file_message_v1` application type. The
+composer accepts non-photo, non-audio files and browser folder drops; photos,
+audio, and voice recordings continue to use their existing paths.
+
+1. The client recursively collects dropped files, creates a ZIP in the browser
+   with `fflate`, and encrypts the ZIP with AES-GCM.
+2. The encrypted Data URL is uploaded to `ipfs.conet.network` using authenticated
+   512 KiB multipart chunks. Upload status is queried first so interrupted
+   uploads resume; each job can be cancelled independently. The client enforces
+   a roughly 240 MiB Data URL ceiling before upload.
+3. The encrypted PGP application envelope carries a `file_message_v1` manifest
+   containing the fragment hash, AES key and IV, display name, file count,
+   total size, and file names/sizes.
+
+The manifest is protected by the normal recipient user-PGP envelope. Ordinary
+UI, logs, localStorage, and encrypted history must never expose plaintext file
+contents, the AES key, or fragment hash. Recipients fetch, decrypt, and unzip
+locally, then receive per-file download/preview controls. Object URLs must be
+revoked after each download or component unmount.
+
 Do **not** encrypt business Chat to an AA Smart Wallet unless that AA has its own AddressPGP row. Do **not** take `search-users` `results[0]` as the gossip target (`CoNET` ≠ `CONET`).
 
 ## Identity
