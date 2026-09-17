@@ -79,7 +79,7 @@ A earns GB for forwarding, not for reading content
 3. R opens an HTTP/SSE request to healthy entry C.
 4. C forwards the opaque command to B over HTTP on port 80. If the client wrapped the listen command to C’s route key, C peels once and must hop-sign the **inner UTF-8 armor string**. Prefer the peel plaintext when it already contains `BEGIN PGP MESSAGE`. Do **not** pass an OpenPGP.js 6 `Message.armor()` stream / thenable into `Buffer.byteLength`. Hop-sign failure, non-UTF-8 armor, or C→B TCP timeout (~8s) must return a fast **404** and close the client socket. A log-only `uncaughtException` that leaves the SSE open is a protocol bug: the client waits until its ~12s `connect_timeout` while **B is never dialed**. Field lesson: [Peel, hop-sig, and listen timeouts](peel-hop-listen.md).
 5. B decrypts the control command, verifies that R belongs to its route, and attaches the SSE response to the appropriate listen pool.
-6. B pushes stored and live business ciphertext through C; only R decrypts the business envelope.
+6. B pushes stored and live business ciphertext through C; only R decrypts the business envelope. Dedicated `mailbox_listen` sessions are keyed by a connection instance, not by wallet, so every healthy device session for R receives the same encrypted armor.
 
 ```text
 R ── route-PGP listen ──▶ C ── HTTP :80 ──▶ B
@@ -94,18 +94,35 @@ The SI runtime labels long-lived sessions so that unrelated lifecycle policies d
 
 | Use | Command | `listenKind` | Pool |
 | --- | --- | --- | --- |
-| Chat, Merchant OS, Alliance | `mining` | **`chat`** | Shared liveness pool, labeled chat |
+| Chat, Merchant OS, Alliance (legacy) | `mining` | **`chat`** | Shared liveness pool, labeled chat |
+| Mailbox B, multi-device Chat | **`mailbox_listen`** | — | Dedicated mailbox pool; one wallet may have multiple SSE instances and each receives a fan-out copy |
 | LayerMinus mining gossip | `mining` | Omitted; defaults to **mining** | Shared liveness pool, labeled mining |
 | UDP client | `udp_listen`, or `mining` | `udp` | Separate UDP client pool |
 | UDP server | `udp_server_listen`, or `mining` | `udp_server` | Separate UDP server pool |
 | Exclusive L0 occupancy | `l0_listen` or `mining` | **`l0`** | Separate `l0ListenPool`. First `l0_connect` occupies (HTTP 200 keep-alive; stop idle comment keepalives). Second `l0_connect` is **409**. Replacement `l0_listen` while live occupied is **409**; dead/stale occupy sockets are dropped so a restarted client can re-listen. Chat / mining gossip on the same node continues. Idle gossip does not occupy |
 
-Chat, mining, UDP, and exclusive application attachments are distinct SI
+Chat, mailbox, mining, UDP, and exclusive application attachments are distinct SI
 listen namespaces. Application offers, accepts, and stream frames are **not**
 SI commands. They remain endpoint-encrypted application data. See
 [Persistent application streams](duplex-forward.md).
 
 A completed HTTP request body does not make a receive-only SSE socket stale. SI checks whether the socket remains writable; chat-only timeout or zombie policy must not evict a mining session.
+
+### Mailbox B fan-out and keepalive
+
+`mailbox_listen` is the preferred Chat receive command. The signed command may
+include a client-generated opaque `instanceId`; if omitted, B assigns one.
+The mailbox pool stores sessions by `(wallet, instanceId)` and maintains a
+case-insensitive user-PGP-key index. A message is first persisted by `saveLocal`
+and then delivered independently to every non-stale session. A failed session
+is removed without preventing delivery to the remaining devices.
+
+Mailbox SSE sessions use a reliability keepalive scheduled as a non-overlapping
+`setTimeout` chain. The current implementation chooses a bounded delay between
+60 and 180 seconds for each session. This jitter is for reconnect and proxy
+load distribution; it is not a traffic-masquerading or detection-evasion
+feature. Operators must configure upstream idle timeouts above the 180-second
+bound plus network margin.
 
 Epoch / listing SSE frames (`{ status, epoch, ipaddress, … }` or `nodeWallets`) prove the listen pipe is alive. They are **not** business delivery. B must **not** treat a healthy writable chat listen as expired solely because `connectedAt` is older than a few seconds. Live SSE is skipped only when the socket is stale or unwritable; the armor is still stored (`saveLocal`). PGP key IDs used to attach a listen and to look up that listen must be compared case-insensitively (uppercase hex).
 
@@ -123,6 +140,37 @@ Layer Minus exposes several milestones. They are not interchangeable:
 Chat clients send the mailbox acknowledgement and a sender-facing receipt after successful application ingestion. Until acknowledgement, B may retain the encrypted offline copy. On durable chat `saveLocal` (unless mailbox-work `NoPush` / `skipPush`), B enqueues native push when the recipient has a registered `pushDevice`—whether or not an SSE listen is currently online.
 
 Presence is local to the destination mailbox. A signed `wallet_online_query`, encrypted to B's route key and sent through C, asks whether the target has a non-stale listen session in B's pool. The historical on-chain `routeOnline` field is not current presence truth.
+
+## Voice media carried by Chat
+
+`voice_message_v1` is not a mailbox media primitive. It is a typed business
+object carried inside recipient user-PGP armor. The sender encrypts the audio
+bytes locally with AES-256-GCM, stores the encrypted fragment through the
+existing IPFS storage path, and sends a manifest containing the fragment hash,
+AES key, nonce, MIME type, duration, and plaintext size only inside the
+recipient-readable Chat envelope.
+
+The encoded encrypted fragment is uploaded in ordered **512 KiB** chunks.
+The gateway applies a **256 MiB** maximum object boundary. A mailbox or entry
+must not receive the AES key, nonce, plaintext audio, or a voice-specific
+HTTP field. The fragment hash is an identifier for ciphertext and is not a
+substitute for recipient authorization.
+
+On the client, the recipient verifies the Chat signature and manifest,
+retrieves the ciphertext, checks the hash, and relies on AES-GCM authentication
+before creating a playback Blob. Object URLs are local ephemeral resources:
+revoke them when playback or the owning view ends, and do not upload or put
+decoded audio into mailbox storage or Chat history. IPFS and mailbox nodes
+therefore retain only encrypted media, while entries and mailbox operators
+may still observe ciphertext size, timing, arrival, and listen metadata.
+
+Voice replay protection, deduplication, and privacy settings belong to the
+application. Clients should bind a voice object to `sendId` plus an optional
+nonce/expiry, reject duplicate playback, and fail closed on hash, size, MIME,
+duration, or GCM errors. Supported policy choices may include voice disabled,
+contacts-only or recipient-only delivery, local retention limits, recording
+limits, and optional padding/delayed upload. These choices do not change the
+A/B/C route or create a new SI command.
 
 ## Guarantees and non-guarantees
 

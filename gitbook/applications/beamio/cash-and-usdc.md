@@ -8,7 +8,7 @@ session has already settled.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-10**.
+Revision: **2026-09-11**.
 
 ## Product role
 
@@ -20,6 +20,21 @@ This chapter is the whitepaper source for **deposit** semantics **and** for **Be
 
 **Outbound rule:** every Beamio-started USDC transfer or payment (canonical CoNET-USDC and native Base USDC) is an **offline signature**. Cluster prechecks; Master or the Factory Paymaster submits and sponsors native gas. The user’s wallet must not `eth_sendTransaction` / `USDC.transfer` and must not pay ETH or CNET gas. Private keys never go to the API. Reads (`balanceOf`, Multicall, dashboard snapshot) stay RPC-first and do not use this relay.
 
+### Settlement and custody boundary
+
+Beamio lowers the operational threshold for using stablecoin settlement, but
+it does not become the owner of customer or merchant assets. The customer
+signs with a self-custody wallet, merchant program state is attached to the
+merchant card, and Stripe card proceeds settle to the merchant's Connected
+Account. Cluster / Master may validate, queue, route, sponsor, or refuse a
+supported write; those roles do not make Beamio the payment principal or give
+it the user's private key.
+
+Card rails still use Stripe as a processor, and cross-chain rails still use
+their documented Treasury contracts. The product phrase “direct settlement”
+therefore refers to ownership and the commercial relationship, not to the
+absence of all processing, contract, or network infrastructure.
+
 ## Rails (do not merge)
 
 | Rail | User pays | On-chain result | Destination | Implementation |
@@ -27,7 +42,8 @@ This chapter is the whitepaper source for **deposit** semantics **and** for **Be
 | **Coinbase / `walletDeposit`** | Coinbase Onramp / x402 settle | TreasuryBridgeV3 **LockMint** | **CONET-USDC** on CoNET | Existing wallet-deposit workflow. Do **not** retarget it to Base USDC. |
 | **Buy USDC with card** | Stripe Crypto Onramp (card / Stripe policy) | Stripe sends native USDC | **Native USDC on Base** to the owner **EOA** | `eoaUsdcStripe` — independent of `walletDeposit` |
 | **Merchant Kit Stripe** | Card (CAD kits) | Kit fulfillment | **B-Units / Ket** on CoNET | Merchant fuel / kit product — **not** a consumer USDC deposit |
-| **Merchant card Stripe** | Card via Payment Element | Program-card top-up or membership fulfillment | Destination charge to the merchant's Connected Account | PaymentIntent rail; buyer email is optional and it is not a wallet deposit |
+| **Merchant card Stripe** | Stripe-hosted Checkout link | Program-card top-up or membership fulfillment | Destination charge to the merchant's Connected Account | Checkout Session rail; Beamio supplies no customer/receipt email, and it is not a wallet deposit |
+| **POS Stripe Terminal** | Physical card presented to Tap to Pay or an external Stripe Reader | Program-card top-up or membership fulfillment after confirmed `card_present` payment | Connected merchant account | Native iOS/Android shell through POS PWA bridge; separate from consumer Onramp and Checkout |
 
 ## Merchant card Stripe Connect
 
@@ -45,15 +61,47 @@ the merchant's own Stripe account. This rail is not a wallet deposit,
 Merchant Kit purchase, or operator-inventory USDC transfer.
 
 The consumer may use **Pay with Stripe** for a linked card's program-card
-top-up or membership fee. After Stripe confirms payment, the server performs
-the corresponding CoNET card operation through a dedicated
+top-up or membership fee. The PWA opens a Stripe-hosted Checkout link and
+shows loading while the server polls the Checkout Session and fulfillment
+status. Beamio does not supply a customer or receipt email; Stripe may still
+request one when required by the selected payment method or Stripe policy.
+
+### POS Stripe Terminal
+
+After a merchant completes Stripe Connect, an authorized POS terminal can use
+the same connected account for in-person card acceptance. The POS PWA requests
+an idempotent PaymentIntent with `payment_method_types = ["card_present"]`
+and a Terminal Connection Token. The native shell then uses Stripe Terminal
+to discover/connect either Tap to Pay or an external reader and collect the
+PaymentIntent client secret.
+
+The PWA does not treat reader success alone as business success. It polls the
+PaymentIntent and the existing idempotent merchant-card fulfillment record;
+only after the CoNET card operation succeeds is the POS top-up shown as
+completed. The shell receives no platform secret, connected-account secret,
+private key, or plaintext wallet credential. Terminal Location creation and
+reuse are account-scoped and persisted with the linked card.
+
+Terminal currency is selected per connected account. When the merchant
+account's country supports the program card currency, the card-present
+PaymentIntent uses that local currency. When it does not, Beamio quotes the
+original card amount through the card's on-chain currency oracle and creates a
+USD PaymentIntent instead. The original amount and currency remain in
+fulfillment metadata, while the quoted USD amount and currency are recorded
+separately for Stripe amount verification. Terminal locations use the
+connected account country; they are not hard-coded to Canada.
+After Stripe confirms payment, the server performs the corresponding CoNET card operation through a dedicated
 `initManager[]` Stripe fulfillment signer pool: a top-up mints program points,
 while a membership payment follows the card's membership-fee staging and
 membership NFT flow. A Master worker acquires one idle EOA only when it starts
 the chain task, signs the `ExecuteForAdmin` payload, submits it through the
 gas/EntryPoint path, and releases the EOA in all completion and error paths.
-The signer pool is separate from the settle gas pool. Every configured
-fulfillment admin must be registered as an admin on the merchant card. Checkout
+The signer pool is separate from the settle gas pool. During Stripe Connect,
+all configured fulfillment admins are registered in one owner-signed
+`adminManagerBatch` transaction, with an unlimited owner-authorized mint
+allowance applied to each signer; repeating the operation safely updates the
+same admin records. Every configured fulfillment admin must be registered as
+an admin on the merchant card. Checkout
 `session_id`, business idempotency key, and Stripe webhook event ID
 are persisted with unique constraints. Only a trusted paid event can enqueue an
 unsigned task. A recoverable lease lets Master reclaim work after a restart;

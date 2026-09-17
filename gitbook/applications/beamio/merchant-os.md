@@ -7,7 +7,7 @@ claim.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-10**.
+Revision: **2026-09-11**.
 
 ## Product role
 
@@ -15,27 +15,59 @@ Merchant OS is the merchant control plane: create and publish a program card, co
 
 It is not the Consumer PWA and not the in-store POS UI. Merchants sign as the owner (or authorized staff) after unlock; **signing material stays in session memory** and is not written to disk.
 
+Merchant OS is designed to let a business introduce USDC and on-chain program
+state without operating chain infrastructure. Beamio supplies the control
+plane, authorization checks, routing, and gas sponsorship; it does not pool
+merchant proceeds or replace the merchant as owner of the program and customer
+relationship.
+
 ### Stripe card payments
 
 For a merchant program card, Merchant OS provides **Accept card payments** →
 **Connect Stripe** when the card is not linked. The merchant completes Stripe
 Connect OAuth authorization for an existing Stripe account; Beamio does not
 create an Express account or use an Express Account Link. Before authorization, the merchant
-authorizes the configured `StripeCardFulfillmentAdmin` EOA as a card admin
-with an owner-signed `ExecuteForOwner` call. This fulfillment identity is
-separate from the settlement admin and is used only to complete paid
-top-ups/membership purchases. Starting OAuth also requires a short-lived,
+authorizes every configured `StripeCardFulfillmentAdmin` EOA as a card admin
+with one owner-signed `adminManagerBatch` `ExecuteForOwner` call. The same
+transaction applies an unlimited owner-authorized mint allowance to each
+fulfillment signer, and is idempotent when an admin is already registered.
+This fulfillment identity is separate from the settlement admin and is used
+only to complete paid top-ups/membership purchases. Starting OAuth also requires a short-lived,
 single-use signature from the current on-chain card owner; a wallet address
 alone cannot connect an account to a card.
 
 The card is eligible for consumer Stripe card payments only after the
 OAuth-linked Connected Account reports both `charges_enabled` and
 `details_submitted`. Funds use a destination charge and go directly to the
-merchant's Connected Account. Consumer payments use Stripe PaymentIntent +
-Payment Element rather than a hosted Checkout page, so the buyer's email is
-optional. Webhook event IDs, PaymentIntent/session IDs, and business
-idempotency keys are persisted so a retried event cannot mint twice; failed
-leases are recoverable by Master's signer pool.
+merchant's Connected Account. Consumer payments use a Stripe-hosted Checkout
+page with no application-supplied customer or receipt email; Stripe may still
+request an email when required by the selected payment method or Stripe policy.
+The PWA opens the hosted page and waits for the server's session/webhook status
+instead of collecting card details itself. Webhook event IDs,
+PaymentIntent/session IDs, and business idempotency keys are persisted so a
+retried event cannot mint twice; failed leases are recoverable by Master's
+signer pool. Before a paid top-up is enqueued, Beamio reads the card's
+owner-authorized mint allowance for every configured fulfillment signer; the
+selected signer is checked again immediately before signing. A missing admin
+registration or zero allowance is reported as a retryable fulfillment error
+instead of submitting a UserOperation that is expected to revert.
+
+Merchant-card Stripe events are received through the existing verified
+platform webhook and are selected by the `merchantCardStripe` metadata
+namespace. The platform-created Checkout Session / PaymentIntent uses the
+merchant Connected Account as its destination, so this flow does not require
+the merchant to create a second webhook for an independently created Stripe
+payment. Such an independent merchant-side payment is not a Beamio
+merchant-card fulfillment request.
+
+The webhook handles successful, failed, canceled, and expired Checkout /
+PaymentIntent states. Because a user closing the hosted page does not
+immediately expire a Stripe Session, the consumer also has an explicit,
+idempotent reconcile/expire path: unpaid open Sessions are expired by Stripe,
+already-paid Sessions remain successful, and the local fulfillment record is
+updated only after the Stripe state is retrieved or confirmed. This prevents
+a late webhook or a close/reopen race from minting twice or incorrectly
+reversing a completed payment.
 
 Merchant OS always shows the card's Stripe connection state. Its **Stripe
 connected** status control offers two card-level actions. **Stripe topup off**
@@ -66,6 +98,7 @@ Merchant configuration is written to **card0 / `metadata_json`** (HTTP `GET http
 | **Card Setup / Program Basic** | Name, imagery, currency, and Discover presentation (`shareTokenMetadata`). After an onboarding business pick, Card Setup may prefill logo, Discover background, brand color, and Discover copy from `POST https://beamio.app/api/onboardingBusinessCardSetup`. Onboarding’s business category, channel, store name, and region are persisted in `shareTokenMetadata.businessProfile`. The **PROGRAM CATEGORY** block is shown only for physical stores; digital/app stores do not automatically write `categories`. |
 | **Settlement Margin** | Program Basic buffer on the live CoNET oracle (0–5%, 0.25% steps). Top-up quotes use **oracle + store margin**. Overview shows `+X.XX% store margin`; 0% is “Using the live oracle rate (0% store margin).” The editor is **Settlement Margin**, not Exchange rate. |
 | **Membership** | **Base membership** lives in `baseMembership` (index `0`), not as an Add-tier row. Higher paid tiers live in `tiers[]` and must be strictly more expensive. Price and duration may change for future members; issued NFT expiry is unchanged. A direct membership purchase mints a membership NFT with `tokenId ∈ [100, 1e11)` and grants **no** `#0` top-up credit. Fee mode and Add-tier stage use the same on-chain `feeE6[]` schedule, so metadata is a mirror rather than the only purchase-price source. |
+| **Tier backgrounds** | A tier may publish multiple uploaded background choices in `images[]`; `image` identifies the merchant-selected choice. Consumer wallet passes render the selected image and use the first valid `images[]` entry as a compatibility fallback. |
 | **Tier qualification mode** | Each card has one canonical `tierQualificationMode`: `0` = top-up qualification, `1` = direct membership purchase, `2` = charge qualification. Mode `1` requires a complete fee schedule and cannot mix fee and threshold-only tiers; modes `0` and `2` require threshold tiers and cannot contain membership fees. The mode is initialized atomically with the tier schedule and is never inferred from array position. |
 | **Top-up Promotion** | Bonus validity / minimum / percent-or-fixed. The **bonus master switch is independent** of Reward PT. |
 | **Credit Gift** | Optional Discover Gift rail. Metadata `giftCreditPurchase: { enabled, feeKind, percentBps, feeE6 }`. Default **OFF**. When ON, Consumer may pay a Discover Gift by burning buyer AA `#0` for gift face **G** plus optional fee **F**; redeem stores **G** only. Publish **always writes** the block (including OFF). Independent of Top-up Promotion / Reward PT. |
@@ -132,6 +165,27 @@ Top-up `#13` percentages use **actual payment** only. Promotion bonus `#0` is no
 Merchants buy **Fuel Packs** (B-Units) for protocol fees. Pack merchandising shows price and **total B-Units** only.
 
 Merchant Kit Stripe (CAD kits → B-Units / Ket) is **not** the consumer “Buy USDC with card” rail. See [Cash and USDC](cash-and-usdc.md).
+
+### Discover Gifts: Reward PT and cross-store payment
+
+Discover Gift checkout may apply merchant Reward PT (`#13`) before the
+remaining USDC amount. PT from the selected merchant card is burned directly
+for the same-store portion. PT held on other merchant cards is burned on each
+source card, exchanged for canonical CoNET-USDC using that card's on-chain
+quote, and transferred to the target Gift merchant card. The target card then
+creates the Gift redeem only after every signed leg succeeds.
+
+The relay binds the buyer EOA, buyer Smart Wallet, redeem hash, peer-leg hash,
+deadline, and a user-scoped nonce. It executes peer burns, optional cash-USDC
+authorization, target-card #13 burn, and Gift redeem creation in one relayer
+`executeBatch`; any failed leg reverts the batch. Redeem plaintext is generated
+and retained by the client only. API, Stripe metadata, indexer rows, and chain
+state use the redeem hash, never the Gift code.
+
+Connected Stripe is an optional remainder rail. A successful Connected Stripe
+payment is reconciled through the existing `merchantCardStripe` webhook and
+must be idempotent before the Reward PT relay is fulfilled; cancelled,
+expired, or unpaid sessions must not burn PT or create a redeem.
 
 ## Chain placement
 

@@ -54,6 +54,39 @@ A **404** with a body such as `body has not PGP message` means SI rejected inval
 
 HTTP **200** on send, or an SSE handshake on listen, is **transport progress**. It is not proof that an application decrypted, verified, or rendered the payload.
 
+### Chat voice fragment storage
+
+`voice_message_v1` uses the existing IPFS fragment storage boundary; it does
+not add an SI command or a plaintext media endpoint. The client encrypts audio
+with AES-256-GCM, computes the fragment hash over the encoded encrypted
+fragment, and uploads that encoded value through the chunk storage API:
+
+```http
+POST /api/storageFragmentChunk
+Content-Type: application/json
+
+{
+  "wallet": "<uploader EOA>",
+  "signMessage": "<signature over uploader EOA>",
+  "hash": "0x<fragment hash>",
+  "chunkIndex": 0,
+  "totalChunks": 3,
+  "chunk": "<encoded ciphertext slice>"
+}
+```
+
+Chunks are ordered **512 KiB** slices and are finalized with
+`POST /api/storageFragmentChunk/complete` using the same wallet signature and
+hash. The gateway enforces a **256 MiB** maximum object boundary. This
+endpoint sees encrypted fragment data only; it must not receive the voice
+manifest's AES key or nonce. The recipient obtains those values only after
+decrypting the `voice_message_v1` manifest with the recipient user-PGP key.
+
+Storage success or HTTP 2xx proves upload progress, not message delivery,
+integrity after retrieval, or playback. The client must retrieve the fragment,
+verify its hash and AES-GCM tag, then create and later revoke a local object
+URL. Do not log, persist, or expose decoded audio or object URLs.
+
 ## Three payload families
 
 Do not mix encryption targets.
@@ -134,6 +167,7 @@ Source: CoNET-SI `localNodeCommandSocket`. Encrypt the command family to **route
 
 | `command` | Encrypt to | HTTP / SSE | Notes |
 | --- | --- | --- | --- |
+| **`mailbox_listen`** | Own mailbox **B** route PGP | Long SSE via entry **C ≠ B** | Preferred Chat mailbox command. Required `walletAddress`; optional opaque `instanceId`. Multiple instances per wallet are retained and receive fan-out copies. |
 | `mining` + `listenKind: "chat"` | Own mailbox **B** route PGP | Long SSE via entry **C ≠ B** | Chat / Merchant OS / Alliance mailbox. Required fields: `walletAddress`, `algorithm: "aes-256-cbc"`, `Securitykey` (session key) |
 | `mining` (omit `listenKind`) | Target SI route PGP | Infrastructure SSE | LayerMinus mining. SI defaults `listenKind` to `"mining"`. Not a Chat shortcut |
 | `gossip_delivery_ack` | **B** route PGP | Entry **C ≠ B** | After the client ingested user-PGP armor. Fields: `walletAddress`, `armorHash` (`keccak256(utf8(full armor))`), `timestamp` (unix seconds, ±600s), optional `sendId` |
@@ -144,7 +178,14 @@ Source: CoNET-SI `localNodeCommandSocket`. Encrypt the command family to **route
 | `l0_connect` | **Target** mailbox **B** route PGP | Entry ≠ B; keep TCP | First occupy of idle `targetWallet` L0 SSE: write `{ type:"l0_occupied" }` on SSE, **clear idle comment keepalive**, write **HTTP 200 keep-alive** on the occupy TCP (do not `end()`), pipe remaining TCP as SSE `data:` lines, SI stops parsing that socket. Second `l0_connect` → **409**. User-PGP Chat/mining gossip on the same node must **not** 409. Idle L0 needs SSE comment keepalive (no mining epoch); occupied L0 must not write comments. Occupancy is by `targetWallet` after decrypt, not by B route key ID. On teardown while occupied: write `{ type:"l0_pipe_end" }` + `\n` on inbound TCP, optional `{ type:"l0_listen_released" }` on listen SSE, then drop pool entry ([duplex-forward](duplex-forward.md)) |
 | `SilentPass` / `SaaS_Sock5` / `SaaS_Sock5_v2` | Egress node route PGP | Product-specific | Paid proxy; not a Chat path |
 
-Old clients that omit `listenKind` on `mining` are treated as mining. A Chat client **must** send `listenKind: "chat"` so SI does not apply mining-only pool policy to the mailbox SSE.
+Old clients that omit `listenKind` on `mining` are treated as mining. During
+migration, `mining` + `listenKind: "chat"` remains supported as a legacy
+single-session mailbox path. New Chat clients should send `mailbox_listen`:
+the session is indexed by `(wallet, instanceId)` and one encrypted business
+frame is attempted on every healthy session for that wallet. A failed device
+session is evicted independently. Mailbox keepalives use a bounded,
+non-overlapping `setTimeout` chain with a 60–180 second delay selected per
+session; this is reliability jitter, not a traffic-evasion mechanism.
 
 ## SI hop behavior (do not fight it)
 
@@ -390,6 +431,48 @@ export async function openChatListen(opts: {
   return res
 }
 ```
+
+### Dedicated Mailbox B listen (`mailbox_listen`)
+
+Use this command for new multi-device Chat clients. `instanceId` is an opaque
+per-device/session value; it must not contain an address, route key, or private
+material.
+
+```ts
+export async function openMailboxListen(opts: {
+  wallet: ethers.Wallet
+  ownRoutePublicKeyArmored: string
+  mailboxDomain: string
+  entryDomain: string
+  instanceId: string
+  signal?: AbortSignal
+}): Promise<Response> {
+  if (opts.entryDomain === opts.mailboxDomain) {
+    throw new Error('entry C must not be mailbox B')
+  }
+  const armored = await encryptRouteCommand(
+    opts.wallet,
+    {
+      command: 'mailbox_listen',
+      walletAddress: opts.wallet.address,
+      instanceId: opts.instanceId,
+      timestamp: Math.floor(Date.now() / 1000),
+    },
+    opts.ownRoutePublicKeyArmored,
+  )
+  const res = await postArmor(opts.entryDomain, armored, {
+    acceptSse: true,
+    signal: opts.signal,
+  })
+  if (!res.ok || !res.body) throw new Error(`mailbox listen HTTP ${res.status}`)
+  return res
+}
+```
+
+B persists each inbound armor before attempting live delivery. If the same
+wallet has three healthy `mailbox_listen` sessions, B attempts delivery to all
+three; an individual write failure does not cancel the other attempts. Clients
+must still deduplicate by their application `sendId`.
 
 Read `res.body` as a byte stream. First frames are often a handshake or mining-shaped `{ status, epoch, … }` liveness listing. Those are **not** user-PGP business messages. A browser console line `[Gossip] Unknown format: {status, epoch…}` or a Worker `heartbeat` log is that listing. It proves the SSE is alive. It does **not** prove B forwarded user-PGP armor on that socket.
 

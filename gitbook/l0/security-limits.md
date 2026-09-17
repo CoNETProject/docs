@@ -126,6 +126,34 @@ It does **not** currently specify or implement:
 
 Encrypted Chat history (IPFS fragments + `ChatIndexRegistry`) is likewise keyed from long-term EOA/OpenPGP material. Compromise of that authority can expose recoverable history.
 
+## Voice-message security boundary
+
+The live `voice_message_v1` profile adds media confidentiality and integrity
+without changing the L0 threat model:
+
+- audio is encrypted locally with a fresh AES-256-GCM key and 12-byte nonce;
+- the encoded ciphertext is uploaded as ordered 512 KiB chunks, with a
+  256 MiB gateway object boundary;
+- the fragment store sees a ciphertext hash and encrypted bytes, while the
+  recipient user-PGP manifest reveals the key and nonce only to the recipient;
+- the recipient verifies the Chat signature, fragment hash, and GCM tag before
+  decoding; and
+- decoded audio and browser object URLs are local ephemeral playback state.
+
+This does **not** provide forward secrecy, sender-controlled deletion after
+delivery, DRM, protection against a compromised recipient device, or proof
+that a human listened. The fragment hash is content addressing, not replay
+protection: clients must bind the voice object to `sendId` and any
+application nonce/expiry, deduplicate before playback, and keep consumed
+state where the product requires it. A valid old Chat envelope can otherwise
+be replayed.
+
+Voice privacy is configurable at the application layer. A product may disable
+voice, restrict it to contacts or a recipient allowlist, cap duration and
+size, choose local retention behavior, or add padding/delayed upload. None of
+these options hides ciphertext size, timing, fragment arrival, mailbox
+presence, or endpoint compromise from the current infrastructure roles.
+
 ### Chat crypto profile (roadmap)
 
 Acknowledging the gap does not raise the live grade. Until a later profile ships, do not describe Chat as forward-secret.

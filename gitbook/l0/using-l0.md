@@ -23,6 +23,7 @@ database as the application’s source of truth.
 | Need | Application profile | Guide |
 |---|---|---|
 | Offline-capable messages | Chat envelope + mailbox delivery | [CoNET Chat developer guide](chat-developer-guide.md) |
+| Voice messages | Recipient-only Chat manifest + AES-GCM IPFS fragment | [CoNET Chat developer guide](chat-developer-guide.md) |
 | Presence and delivery receipt | Mailbox query and acknowledgement | [CoNET Chat developer guide](chat-developer-guide.md) |
 | UDP frames | End-to-end AES frames over mailbox relay | [UDP forwarding](udp-forward.md) |
 | Wallet-addressed Web/API request | `web3://` caller-signed request + correlated encrypted response | [`web3://` Application Protocol](web3-application-protocol.md) |
@@ -87,12 +88,23 @@ Rules:
 
 1. Encrypt business data to the recipient **user PGP**.
 2. Submit it through healthy entry **A**, where A differs from B.
-3. Encrypt receive/listen commands to mailbox **B route PGP**.
+3. Encrypt receive/listen commands to mailbox **B route PGP**. New Chat
+   clients use the dedicated signed `mailbox_listen` command; legacy Chat
+   clients may use `mining` with `listenKind: "chat"`.
 4. Submit those commands through healthy entry **C**, where C differs from B.
 5. Treat entry `2xx` as transport progress, not delivery or application
    success.
 
 Direct mailbox access is not a conforming client optimization.
+
+`mailbox_listen` creates a dedicated Mailbox B SSE session identified by an
+opaque connection instance. Multiple devices may listen for the same wallet;
+when B receives a business armor it persists it first and independently fans
+out that armor to every healthy session. Clients deduplicate at the application
+layer (for example by `sendId`). Mailbox keepalives use a bounded 60–180
+second `setTimeout` schedule per session to maintain long connections and
+spread reconnect/load timing. This is an operational reliability measure, not
+traffic masquerading.
 
 ## 5. Sign versioned application data
 
@@ -118,6 +130,14 @@ The recipient:
 5. applies application authorization; and
 6. returns the profile-defined correlated response or signed receipt when the
    application requires one.
+
+For `voice_message_v1`, the application additionally encrypts audio locally
+with AES-256-GCM, uploads the encoded ciphertext in ordered 512 KiB chunks,
+and puts the fragment hash, key, nonce, MIME, duration, and size in the
+recipient-only Chat manifest. The IPFS gateway boundary is 256 MiB.
+Playback is a recipient-local Blob/object-URL lifecycle; revoke the URL when
+the player or view is released. Do not treat a gateway response, an IPFS hash,
+or an HTTP 2xx as proof of playback or human receipt.
 
 ## 6. Use exact wallet resolution
 

@@ -7,13 +7,20 @@ coverage.
 
 Parent: [Beamio whitepaper](../beamio.md).
 
-Revision: **2026-09-09**.
+Revision: **2026-09-11**.
 
 ## Product role
 
 The Consumer PWA is the end-user Beamio wallet and marketplace. A person recovers or creates a self-custody EOA, optionally uses a Smart Wallet (Express Pay), discovers merchant programs, claims issued assets, chats over Layer Minus, and adds cash through the documented USDC rails.
 
 It is not Merchant OS and not a POS terminal. It does not hold merchant program-admin authority.
+
+The customer owns the wallet assets and interacts with each merchant program
+directly. Beamio can provide discovery, authorization checks, routing, and
+gas-sponsored submission without receiving the customer's private key or
+issuing a pooled balance that replaces the merchant program. Store Credit
+remains issuer-specific; only eligible Reward PT participates in documented
+cross-store use.
 
 ## What exists today
 
@@ -22,9 +29,10 @@ It is not Merchant OS and not a POS terminal. It does not hold merchant program-
 | **Wallet** | Self-custody EOA from a local 12-word mnemonic. Cold start derives a global signing key. Missing mnemonic requires Restore (`@BeamioTag` + access password → on-chain recover package). |
 | **Smart Wallet** | Optional AA / Express Pay. **New consumer AA issuance is CoNET only.** Existing Base V1 accounts may remain readable; they are not a new-issuance path. |
 | **Identity** | `@BeamioTag`, profile language / currency, AddressPGP registration for Chat |
-| **Discover** | Featured Brands and Ongoing Coupons from the public latest-cards / coupon APIs (single merchant-visibility gate). Merchant detail **Top Up** (store-credit button and welcome-offer CTA when membership is already valid) opens a multi-step full-screen flow: amount → pay → optional Reward PT cover → confirm. **Smart Pay** (Use Points on) prefers **one CoNET payment** when Reward PT does not cover the full quote: `topupWithReward13Container` with peer `#13` redeem, same-store `#13` → `#0` on the user’s **AA** (no USDC escrow), and leftover cash as EOA **CONET-USDC EIP-3009 `cash`** in the same Relayer AA `executeBatch`. **Base USDC is not in that container.** If CONET-USDC is short, Consumer then settles Reward PT (`cash=0`) and pays the leftover via **Base USDC treasuryBridge** as a second step. The success screen is a centered confirmation (minted store-credit amount, currency prefix) plus a **Share & Earn** card that shares the Discover merchant `/app-download` link with the signer’s `ref=` when a wallet is present; **Done** closes the overlay. Insufficient CONET-USDC and Base USDC together, and a failed step, stay on the **confirm** panel (not the payment-method page). Cash-only (no Reward PT legs) may still pay with **Base USDC** via treasuryBridge, then CoNET-USDC, then third-party. A merchant card with Stripe Connect fully linked also exposes **Pay with Stripe** for program-card top-ups and membership fees. Stripe uses an in-app Payment Element backed by a PaymentIntent and a destination charge; the email field is optional and no receipt email is required. This is separate from wallet deposits. Paid **Join / Upgrade** still uses the locked membership-fee path, not this Top Up flow. Merchant detail **Gifting** purchases an **open redeem code** with gifter CONET-USDC (see **Discover Gifting** below). It is **not** a P2P transfer of the gifter’s existing `#0` store credit. |
+| **Discover** | Featured Brands and Ongoing Coupons from the public latest-cards / coupon APIs (single merchant-visibility gate). Merchant detail **Top Up** (store-credit button and welcome-offer CTA when membership is already valid) opens a multi-step full-screen flow: amount → pay → optional Reward PT cover → confirm. **Smart Pay** (Use Points on) prefers **one CoNET payment** when Reward PT does not cover the full quote: `topupWithReward13Container` with peer `#13` redeem, same-store `#13` → `#0` on the user’s **AA** (no USDC escrow), and leftover cash as EOA **CONET-USDC EIP-3009 `cash`** in the same Relayer AA `executeBatch`. **Base USDC is not in that container.** If CONET-USDC is short, Consumer then settles Reward PT (`cash=0`) and pays the leftover via **Base USDC treasuryBridge** as a second step. The success screen is a centered confirmation (minted store-credit amount, currency prefix) plus a **Share & Earn** card that shares the Discover merchant `/app-download` link with the signer’s `ref=` when a wallet is present; **Done** closes the overlay. Insufficient CONET-USDC and Base USDC together, and a failed step, stay on the **confirm** panel (not the payment-method page). Cash-only (no Reward PT legs) may still pay with **Base USDC** via treasuryBridge, then CoNET-USDC, then third-party. A merchant card with Stripe Connect fully linked also exposes **Pay with Stripe** for program-card top-ups and membership fees. Stripe opens a hosted Checkout link, does not collect card details in the PWA, and does not supply a customer or receipt email; Stripe may still require email for a selected payment method or platform policy. The PWA displays loading while the server polls payment and fulfillment status. This is separate from wallet deposits. Paid **Join / Upgrade** still uses the locked membership-fee path, not this Top Up flow. Merchant detail **Gifting** purchases an **open redeem code** with gifter CONET-USDC (see **Discover Gifting** below). It is **not** a P2P transfer of the gifter’s existing `#0` store credit. |
 | **Issued assets** | Coupons and Business Catalogs: open claim, like / share stats, supply copy |
-| **Programs held** | Membership NFT (`tokenId ∈ [100, 1e11)`), program points (`#0`), Reward PT (`#13`). A newly issued BeaconProxy program has its complete ordered membership or loyalty tier schedule installed atomically in its create transaction; the base membership is on-chain index `0`, while metadata mirrors its name and presentation. Paid join / upgrade charges the **locked membership fee only**, shown to two decimal places (for example `CA$0.50`). A leftover `#0` min-unit may appear as `0.00` program points so `mintPointsByAdmin` is non-zero; it is **not** the membership NFT and is not added to the payable amount. |
+| **Programs held** | Membership NFT (`tokenId ∈ [100, 1e11)`), program points (`#0`), Reward PT (`#13`). A newly issued BeaconProxy program has its complete ordered membership or loyalty tier schedule installed atomically in its create transaction; the base membership is on-chain index `0`, while metadata mirrors its name and presentation. Tier metadata may include multiple uploaded background choices (`images[]`); wallet passes use the merchant-selected `image` and fall back to the first valid choice when needed. Paid join / upgrade charges the **locked membership fee only**, shown to two decimal places (for example `CA$0.50`). A leftover `#0` min-unit may appear as `0.00` program points so `mintPointsByAdmin` is non-zero; it is **not** the membership NFT and is not added to the payable amount. |
+| **Gift card designs** | When a merchant card exposes multiple valid tier images, the Gift Card flow presents a horizontal design selector. The selected design is previewed on the gift card and preserved through delivery, claim links, and Chat; when no tier image exists, the card keeps its tier background color. Amount, message, and delivery settings remain independent. |
 | **Messaging** | CoNET Chat (ordinary sends **omit** mailbox `NoPush` so offline peers can get a native badge), delivery receipts (`NoPush: true`), mailbox presence (listen-pool query; not on-chain `routeOnline`) |
 | **Network tools** | Bounty Board, CoNET mining views, Genesis referral, Referral registry |
 | **Team wallets** | V2 institutional multisig AA (CoNET, optional Base). See [Institutional multisig AA](../institutional-multisig-aa.md). |
@@ -36,6 +44,23 @@ ready. The consumer sends the card address, EOA, fiat amount, and card
 currency to the Cluster; no private key is sent to Stripe or the API. A paid
 session is fulfilled on CoNET by the merchant card's dedicated fulfillment
 admin, and webhook/session idempotency prevents duplicate minting.
+
+Closing the hosted Checkout page is not itself a Stripe cancellation event.
+For an unpaid Checkout Session, the PWA now explicitly reconciles the session
+and asks Stripe to expire it before closing the payment panel. If the payment
+won a race and is already paid, the close action never marks it as failed or
+rolls it back. An unfinished session ID is retained locally and reconciled
+when the consumer re-enters the top-up flow, while Stripe webhook delivery
+remains the authoritative asynchronous status path.
+
+These merchant-card payments use the platform Stripe Connect flow implemented
+by Beamio: the Checkout Session or PaymentIntent is created by the configured
+platform account with the merchant Connected Account as the destination. The
+current implementation routes `merchantCardStripe` Checkout and
+PaymentIntent events through the existing verified platform webhook; it does
+not depend on a separate webhook configured inside the merchant's standalone
+Stripe account. A merchant-created, independent Stripe payment is therefore
+outside this fulfillment path.
 
 Wallet identity colors are fixed in the product: **EOA blue**, **AA purple**. Those colors mark wallet kind, not balances.
 
@@ -68,6 +93,19 @@ Beamio’s own USDC outflows (Pay / Send, Discover Gifting purchase, Discover le
 
 ## Discover Gifting
 
+The standalone public purchase page is available at
+`https://beamio.app/gift/<merchant-card-address>`. It does not require the
+Consumer PWA login gate. Buyers may connect a third-party wallet such as
+MetaMask for the sponsored EIP-3009 rail, or pay with Visa/Mastercard through
+the merchant's Stripe Connected Account. After payment and on-chain creation
+are both confirmed, the page displays a claim URL and QR code.
+
+The standalone page stores the plaintext redeem code only in its own browser
+IndexedDB, grouped by merchant card and purchase time. The chain and Beamio
+servers store only the redeem hash. Clearing that browser's IndexedDB removes
+the locally recoverable plaintext code; the code is not reconstructed from the
+hash.
+
 Merchant detail **Gifting** lets a consumer buy an **open redeem code** for a friend (or anyone who holds the code). Selecting a contact is share UX only; claim does not require that peer’s address on-chain. **Food & Beverage** and **Health & Beauty** merchants use category-themed Step 1 and success chrome (dining / wellness pass copy). Selected controls and the gift pass still use the merchant card brand color — not a generic Beamio blue.
 
 Two **purchase rails** share the same gift sheet and claim path. Default is **CONET-USDC**. When the merchant enables **Credit Gift** in Programs (`giftCreditPurchase.enabled`), the sheet also offers **Pay with store credit**.
@@ -78,7 +116,7 @@ Two **purchase rails** share the same gift sheet and claim path. Default is **CO
 | **Payment (Credit)** | Gifter burns **program points `#0`** on their **Smart Wallet (AA)** for gift face **G** plus optional merchant fee **F** (`G + F`). Offline **EIP-712** `BeamioMerchantGiftCredit` / `GiftCreditPurchase` (`verifyingContract` = card). Redeem stores **G** only; **F is never minted**. |
 | **Credit extras** | No Top-up **Multiplier** and no **`#13` Reward PT** on the credit rail. Claim still uses the same open-redeem split for **G**. |
 | **Gas** | Gifter and claimer **pay no native gas**. Master / Factory Paymaster sponsors create and claim. |
-| **Create code** | `POST /api/purchaseMerchantGiftRedeem` with `payWith: "usdc" \| "credit"` → Master collects USDC **or** burns `#0`, then EntryPoint-relays `createGiftRedeemForPayer` / `createGiftRedeemWithCreditBurn`. **No merchant card `owner()` signature**. |
+| **Create code** | Wallet purchases use `POST /api/purchaseMerchantGiftRedeem` with `payWith: "usdc"`; the standalone Stripe page uses the existing merchant-card Stripe checkout and then the same hash-only Gift creation path. Credit Gift remains `payWith: "credit"`. **No merchant card `owner()` signature**. |
 | **Secret** | Plaintext redeem code is returned **once** to the gifter. The chain stores only `keccak256(utf8(code))`. Code is not persisted in API DB. |
 | **Claim** | Anyone with the code uses the existing open-redeem path (`POST /api/cardRedeem` / Factory `redeemForUser`). Cluster prechecks redeem status on **CoNET** (the merchant card’s live chain). Claimer signs only what that path requires; gas stays sponsored. |
 | **Non–membership-fee card (USDC)** | Gift principal (plus Discover Top-up **Multiplier** on that principal) mints program points **`#0`**. |

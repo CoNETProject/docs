@@ -332,7 +332,15 @@ Recipient wallet
 
 Normative routing: [Zero-trust mailbox routing](../l0/mailbox-routing.md).
 
-Chat clients must send `listenKind: "chat"` on mailbox listen. Mining collectors omit that field. The two streams share SI `command: "mining"` but must not share eviction policy.
+New Chat clients use SI's dedicated `mailbox_listen` command, encrypted to B's
+route PGP and submitted through C. Each device/session has an opaque connection
+instance, so one wallet may maintain multiple mailbox SSE sessions. B persists
+the ciphertext first and then fans it out independently to every healthy
+session; clients deduplicate by application `sendId`. Legacy clients may still
+use `mining` with `listenKind: "chat"`, while mining collectors omit
+`listenKind`. Mailbox keepalives use a bounded 60–180 second per-session
+`setTimeout` schedule with jitter for connection reliability and load
+distribution, not traffic masquerading.
 
 ---
 
@@ -346,6 +354,55 @@ A recipient that accepts a message should emit two receipts:
 2. **Sender receipt** — encrypted to the **sender user PGP**, so the sender UI can mark `delivered`.
 
 Sender receipts use mailbox-work wrap `{ data, NoPush: true }` so they do not generate extra push notifications. HTTP `/post` still carries only `{ "data" }`.
+
+## Voice messages
+
+Beamio Chat voice messages use the same relationship-private delivery path as
+text. A client records audio locally, encrypts the bytes with a fresh
+AES-256-GCM key and 12-byte nonce, and uploads only the encrypted fragment.
+The client sends a `voice_message_v1` manifest inside the recipient-only,
+signed Chat envelope:
+
+```json
+{
+  "type": "voice_message_v1",
+  "fragmentHash": "0x<64 hex characters>",
+  "key": "<base64 AES key>",
+  "iv": "<base64 GCM nonce>",
+  "mime": "audio/webm",
+  "durationMs": 4200,
+  "sizeBytes": 123456
+}
+```
+
+The manifest is readable only by the recipient's user-PGP private key. The
+mailbox, entries, and IPFS gateway see neither the manifest key material nor
+the plaintext audio. The encrypted fragment is uploaded sequentially in
+**512 KiB** chunks and the gateway enforces a **256 MiB** maximum object
+boundary. This is a gateway/resource limit, not a promise of unlimited
+recording length; clients should apply a shorter product limit before capture.
+
+On receipt, the client verifies the outer EIP-191 signature, validates the
+manifest and fragment hash, downloads the encrypted fragment, and lets
+AES-GCM authentication succeed before decoding. It creates a local Blob and
+object URL only for playback, revokes the URL when the player/message view is
+released, and does not put decrypted audio or object URLs into the encrypted
+history track. Failed fetches, malformed manifests, hash mismatches, GCM
+authentication failures, and oversized or overlong media remain unavailable;
+they must not clear a previously trusted message.
+
+The application must bind voice handling to `sendId` (and an optional
+application nonce/expiry), deduplicate before playback, and treat replay as a
+delivery duplicate rather than a new recording. IPFS content addressing
+protects ciphertext integrity only; it does not prevent replay, traffic
+analysis, endpoint compromise, or a recipient from saving the decoded audio.
+
+Products may expose privacy controls such as disabling voice, contacts-only
+voice, recipient-only delivery, recording duration/size limits, local
+retention, and optional padding or delayed upload. These settings are
+application policy and must not be encoded as plaintext HTTP fields or
+route-key commands. Current routing still exposes ciphertext timing, size,
+fragment arrival, and mailbox listen metadata to the infrastructure roles.
 
 ## Native push badge and `NoPush`
 
@@ -379,7 +436,9 @@ Local UI chat lists are device state. Cross-device recovery uses:
 2. encrypted index and fragments from IPFS;
 3. keys derived from the wallet’s cryptographic authority.
 
-A restore that finds no local conversations must still create missing sessions from recovered history. An empty local list is not proof that the user never communicated.
+The local and remote index manifests are union-merged by `sendId` (or fragment `cid` when `sendId` is absent), so concurrent appends from multiple devices are not lost. If sequence or `prevCid` forks are detected, the worker decrypts the affected records, orders them deterministically by timestamp and `sendId`, re-encrypts the fragments with a new linear `(seq, prevCid)` chain, uploads the repaired fragments, and publishes a new head pointer. A failed or incomplete network read never clears the last trusted local mirror.
+
+A restore that finds no local conversations must still create missing sessions from recovered history. An empty local list is not proof that the user never communicated. After history initialization, the worker performs serialized background head synchronization through a non-overlapping `setTimeout` chain and clears that timer on destroy.
 
 That is how history recovery reconstructs **communication context**, not only message text.
 

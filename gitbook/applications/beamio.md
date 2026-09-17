@@ -6,7 +6,7 @@ suite is, which surfaces exist today, and how cash rails are placed. It is not
 a claim that every workflow is complete, independently audited, or covered
 by a published SLA.
 
-Revision: **2026-09-08**.
+Revision: **2026-09-16**.
 
 Public site: [https://gitbook.conet.network/applications/beamio.html](https://gitbook.conet.network/applications/beamio.html)
 
@@ -16,7 +16,7 @@ Chapters in this whitepaper:
 | --- | --- |
 | [Consumer PWA](beamio/consumer.md) | Wallet, Discover (Top Up + Gifting), coupons, Chat, mining tools, and how users add USDC |
 | [Merchant OS](beamio/merchant-os.md) | Onboarding (website, marketplace seller page, business name, or attached PDF/Word/image lookup fills the cover; marketplace platform chrome is excluded from merchant fields), programs, staff, terminals, catalogs, coupons, and merchant treasury |
-| [POS terminal](beamio/pos.md) | In-store charge, top-up, membership, claim, and redeem |
+| [POS terminal](beamio/pos.md) | In-store charge, physical-card top-up through native Stripe Terminal, membership, claim, and redeem |
 | [Cash and USDC](beamio/cash-and-usdc.md) | Distinct deposit rails (Coinbase / Treasury CONET-USDC vs Stripe Onramp Base USDC to EOA) **and** Beamio-initiated USDC transfers / payments (offline sign + sponsored gas) |
 
 Cursor rule: when a Beamio product capability is added or changed, update the matching chapter in the same task (`beamio-gitbook-whitepaper-sync.mdc`).
@@ -41,10 +41,26 @@ products:
 | Surface | Product role | Public entry |
 | --- | --- | --- |
 | **Consumer PWA** | Self-custody wallet, Smart Wallet access, Discover, coupons, messaging, and CoNET-facing account tools | [https://beamio.app/app/](https://beamio.app/app/) |
+| **Gift purchase page** | Public merchant-card Gift purchase with third-party wallet or merchant Stripe card payment | [https://beamio.app/gift/<cardAddress>](https://beamio.app/gift/) |
 | **Merchant OS** | Merchant program management, staff and terminal administration, settlements, coupons, and catalogs | [https://biz.beamio.app](https://biz.beamio.app) |
 | **POS PWA** | In-store charge, top-up, claim, and redeem operations performed by an authorized terminal wallet | [https://pos.conet.network/](https://pos.conet.network/) · [https://beamio.app/pos/](https://beamio.app/pos/) · [https://pos.beamio.app/](https://pos.beamio.app/) |
 
 Beamio is not a fourth protocol tier. It coordinates application state across CoNET L1, Layer Minus, local wallet storage, and gas-relay services.
+
+### Direct-settlement positioning
+
+Beamio is application and protocol infrastructure, not the beneficial owner of
+merchant or customer assets and not the commercial counterparty between them.
+Customers hold their wallet assets; merchants own their program rules and
+their Stripe Connected Account. Beamio can precheck an authorization, route a
+transaction, sponsor gas, and coordinate fulfillment without receiving the
+user's private key or pooling merchant proceeds in a Beamio balance.
+
+This boundary does not remove disclosed technical service providers. Stripe
+remains the payment processor for card payments, and documented Treasury
+contracts remain part of supported cross-chain settlement. “Direct” describes
+asset ownership and the merchant–customer relationship; it is not a claim that
+every network hop or card payment has no processor.
 
 The active POS product is the **POS PWA loaded by native WebView shells**. Retired native iOS and Android POS business interfaces are not the current product implementation.
 
@@ -59,6 +75,23 @@ The Beamio public homepage at [https://beamio.app/](https://beamio.app/) present
 | **Consumer** | [App Store](https://apps.apple.com/us/app/beamio-smart-local-pass/id6755375110) | [Google Play](https://play.google.com/store/apps/details?id=com.beamio.app) | [Beamio Android APK](https://beamio.app/beamio-android.apk) | [Consumer PWA](https://beamio.app/app/) |
 | **POS** | [App Store](https://apps.apple.com/ca/app/beamio-softpos/id6763462151) | [Google Play](https://play.google.com/store/apps/details?id=com.beamio.pos) | [Beamio POS Android APK](https://beamio.app/beamio-softpos.apk) | [POS PWA](https://pos.beamio.app/) |
 | **Merchant OS** | Browser application; no native-store package is required | Browser application; no native-store package is required | Not applicable | [Merchant OS](https://biz.beamio.app/) |
+
+The public homepage presents Beamio as a low-friction route into stablecoin
+settlement: merchants use the Consumer, POS, and Merchant OS applications
+without operating chain infrastructure or asking customers to manage gas.
+Merchants link an existing Stripe account, consumers can use Stripe-hosted
+Checkout for eligible program top-ups or membership purchases, and authorized
+POS terminals can accept a physical card through Stripe Terminal (Tap to Pay
+or a compatible external reader). Card credentials remain with Stripe and
+only trusted payment status drives program fulfillment.
+
+The homepage presents Reward PT as the shared reward experience: customers may
+earn it from Top-up, Charge, referrals, and social engagement; use it toward
+the issuing merchant's top-up; or apply eligible Reward PT from participating
+programs toward another merchant's top-up. Store Credit remains
+merchant-specific, while any uncovered cross-store amount may be paid with
+USDC. It also states the direct-settlement boundary above instead of describing
+Beamio as a bank, custodian, or payment principal.
 
 The native Consumer and POS packages are WebView shells around their corresponding active PWAs. They provide native integration and Embedded OTA delivery; they do not create a separate native business implementation.
 

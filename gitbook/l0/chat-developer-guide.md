@@ -16,7 +16,7 @@ Public packages: [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-
 | --- | --- | --- |
 | Register user PGP + mailbox | — | `POST https://beamio.app/api/regiestChatRoute`, then confirm with AddressPGP `searchKey` |
 | Send a message | Recipient **EOA user PGP** | `POST /post` to healthy entries **A ≠ B** |
-| Listen | Own mailbox **B route PGP** | SSE via entry **C ≠ B**, `command: "mining"` + `listenKind: "chat"` |
+| Listen | Own mailbox **B route PGP** | SSE via entry **C ≠ B**, preferred `command: "mailbox_listen"`; legacy `command: "mining"` + `listenKind: "chat"` remains supported |
 | After inbound ingest | (1) **B route PGP** ACK · (2) sender user PGP receipt, then mailbox-work wrap `NoPush` to sender mailbox B | ACK and receipt both via entries ≠ B; HTTP still `{ data }` only. `NoPush` is **Chat/APNs only**. L0 duplex mailbox work must omit it; see [duplex-forward](duplex-forward.md) |
 | Presence (green dot) | Contact mailbox **B route PGP** | `wallet_online_query` via **C ≠ B** |
 | Optional recover history | — | Encrypted IPFS fragments + `ChatIndexRegistry` head pointer |
@@ -136,18 +136,22 @@ HTTP 200 on any entry means the armor was accepted for forward. It does **not** 
 
 ## Sample: listen
 
-Chat listen is an SI **route command**, not user-PGP business. Required: `listenKind: "chat"`. Full helper: [SI developer guide](si-developer-guide.md#chat-mailbox-listen-listenkind-chat).
+Chat listen is an SI **route command**, not user-PGP business. New clients
+should use `mailbox_listen`, which accepts an opaque per-device `instanceId`.
+Legacy clients must set `listenKind: "chat"` on `mining`. Full helper:
+[SI developer guide](si-developer-guide.md#chat-mailbox-listen-listenkind-chat).
 
 ```ts
 const command = {
-  command: 'mining',
-  listenKind: 'chat',
+  command: 'mailbox_listen',
+  instanceId: crypto.randomUUID(),
   walletAddress: wallet.address,
   algorithm: 'aes-256-cbc',
   Securitykey: sessionKeyBase64,
 }
 // sign JSON.stringify(command); encrypt { message, signMessage } to own route PGP
-// POST { data } to entry C ≠ mailbox B; read SSE
+// Encrypt to B route PGP; POST { data } to entry C ≠ mailbox B; read SSE.
+// B fans out each saved armor to every healthy instance for this wallet.
 ```
 
 | Frame | Treat as |
@@ -309,6 +313,64 @@ Current discovery HTTP: `GET/POST` `https://beamio.app/api/search-users` (applic
 
 POS permission is still delivered as user-PGP Chat armor. Classification happens **after** verify + unwrap.
 
+## Voice messages: `voice_message_v1`
+
+Voice is an application payload carried by the same recipient-only Chat
+envelope. It does not add an SI command, a plaintext HTTP field, or a mailbox
+media API.
+
+```json
+{
+  "type": "voice_message_v1",
+  "fragmentHash": "0x<64 lowercase hex characters>",
+  "key": "<base64 AES-256 key>",
+  "iv": "<base64 12-byte nonce>",
+  "mime": "audio/webm",
+  "durationMs": 4200,
+  "sizeBytes": 123456
+}
+```
+
+The manifest above is an illustrative decrypted shape. In transit it is
+inside the signed Chat application envelope and OpenPGP-encrypted to the
+recipient's **user PGP**. The audio bytes are encrypted locally with
+AES-256-GCM before upload. The random 256-bit AES key and 96-bit GCM nonce
+are present only in the recipient-readable manifest; they must never be
+placed in HTTP JSON, a route-key command, an IPFS filename, logs, or a
+mailbox plaintext field.
+
+The encrypted audio is stored as one IPFS fragment. Clients upload the
+encoded fragment in sequential **512 KiB** chunks and finalize it with the
+fragment hash. The gateway rejects objects beyond the **256 MiB** gateway
+boundary; clients should reject an oversized recording before starting
+capture or upload. The hash identifies the encrypted fragment, not the
+plaintext recording.
+
+The receiver verifies the Chat signature and manifest fields, downloads the
+fragment through the existing IPFS gateway, and lets AES-GCM authentication
+fail closed before creating an object URL. Playback is local: keep the
+decrypted `Blob` and its `URL.createObjectURL()` only for the active message
+view, revoke the object URL when playback/unmount ends, and never persist
+decrypted audio or the object URL in Chat history. A failed download,
+authentication, MIME parse, size, or duration check is an unavailable voice
+message—not an empty or trusted replacement.
+
+Voice-specific replay and integrity rules are application rules: bind the
+payload to the Chat `sendId` (and, where the client supports it, a message
+nonce/expiry), deduplicate before playback, verify the EIP-191 sender
+signature, verify the fragment hash over the uploaded encoded ciphertext,
+and rely on AES-GCM authentication before release to an audio decoder.
+Neither an IPFS hash nor an HTTP 2xx is proof that a human heard the clip.
+
+Privacy modes are product configuration, not SI commands. A client may offer
+voice disabled, contacts-only, recipient-only delivery, recording-length and
+size limits, upload through a selected entry set, and local-only retention
+policy. These options must not weaken recipient user-PGP encryption or put
+the AES key in a route-visible command. Applications should disclose that
+mailbox/entry nodes can still observe ciphertext size, timing, fragment
+arrival, and listen state; optional padding or delayed upload is a future
+application mode, not a property of the current protocol.
+
 ## Encrypted history (optional second track)
 
 L0 does not store Chat history. Apps that promise cross-device recover use:
@@ -324,6 +386,8 @@ L0 does not store Chat history. Apps that promise cross-device recover use:
 Local `profile.chats` is the UI track. After recover it may be empty. Decrypt the index, **create missing sessions** by peer EOA, then merge. Do not `if (!chats.length) return`. POS permission and delivery receipts stay off the encrypted history track.
 
 Keys are derived in a Worker from an EIP-191 domain over the EOA. Without the EOA signing key, history is unreadable. See the product page and chat-sdk `history` worker for the HKDF labels.
+
+History synchronization is a union merge, not a length-based table replacement. Records are deduplicated by `sendId`, or by `cid` when no `sendId` exists, preserving unique appends from both devices. A conflicting `seq`/`cid` or `prevCid` fork is repaired by decrypting the records, ordering them by timestamp and `sendId`, re-encrypting them with a new linear chain, uploading the fragments, and publishing the new pointer. Network failure or an incomplete pull must preserve the trusted local mirror. The Worker serializes mutations and runs background `syncFromHead()` on a non-overlapping `setTimeout` chain, which is cleared when the Worker is destroyed; `setInterval` is not used.
 
 ## Using `@conet.project/chat-sdk`
 
