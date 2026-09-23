@@ -18,12 +18,21 @@ role separation, encrypted payloads, and wallet-controlled history recovery.
 Do not start a Chat integration by creating a centralized contact-graph
 database as the application’s source of truth.
 
+In a Chat business send, the sender wallet belongs inside the signed
+recipient-user-PGP envelope. It is not an HTTP field or hop header. Entry A
+sees the connecting IP and encrypted routing material; mailbox B sees the
+destination route and stored armor; only the recipient decrypts and verifies
+the sender wallet. This role split is the concrete relationship-privacy
+mechanism. It does not hide the client IP from A or C, and colluding roles can
+correlate their observations.
+
 ## 1. Choose an application profile
 
 | Need | Application profile | Guide |
 |---|---|---|
 | Offline-capable messages | Chat envelope + mailbox delivery | [CoNET Chat developer guide](chat-developer-guide.md) |
 | Voice messages | Recipient-only Chat manifest + AES-GCM IPFS fragment | [CoNET Chat developer guide](chat-developer-guide.md) |
+| Real-time voice MVP | Random temporary voice SSE per wallet + encrypted uplink/downlink frames | [CoNET Chat developer guide](chat-developer-guide.md) |
 | Presence and delivery receipt | Mailbox query and acknowledgement | [CoNET Chat developer guide](chat-developer-guide.md) |
 | UDP frames | End-to-end AES frames over mailbox relay | [UDP forwarding](udp-forward.md) |
 | Wallet-addressed Web/API request | `web3://` caller-signed request + correlated encrypted response | [`web3://` Application Protocol](web3-application-protocol.md) |
@@ -138,6 +147,20 @@ recipient-only Chat manifest. The IPFS gateway boundary is 256 MiB.
 Playback is a recipient-local Blob/object-URL lifecycle; revoke the URL when
 the player or view is released. Do not treat a gateway response, an IPFS hash,
 or an HTTP 2xx as proof of playback or human receipt.
+
+The real-time voice MVP is a different composition. It leaves
+`mailbox_listen` untouched and creates a random temporary `voice_listen` SSE
+on each participant's own mailbox. After the recipient accepts, the two
+participants send AES-GCM ciphertext through `voice_uplink` and
+`voice_downlink` commands targeted at the peer's temporary session. This is a
+duplex application relay made from two one-way paths; it is not WebRTC, raw
+UDP, or a persistent Chat-history stream.
+
+The voice route keeps the initiating application wallet inside the
+recipient-user-PGP offer. `voice_listen` and wake-up metadata expose only
+opaque session/call identifiers plus the callee routing target. “Both systems
+use a relay” is not a privacy comparison; compare which identity, IP, content,
+timing, and session fields each role actually receives.
 
 ## 6. Use exact wallet resolution
 

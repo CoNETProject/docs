@@ -5,7 +5,24 @@ over CoNET L0 resources.**
 
 **Maturity: Implemented capability.** Beamio Consumer, Merchant OS, and POS
 already use this infrastructure. It is not a finished public messenger with
-groups, channels, or calls.
+groups or channels. Real-time voice is an implemented encrypted relay
+capability; groups and channels remain outside the current product.
+
+## Native voice-call wake-up
+
+Beamio Chat voice calls can wake a registered native device with an opaque,
+metadata-only VoIP/FCM push. A random `callId` and `sessionId` identify the
+temporary call; neither is derived from the caller's wallet or tag.
+The push never contains private keys, PGP session keys, audio, or plaintext.
+The native shell presents the system call UI, while the encrypted offer and
+media continue through the normal Chat mailbox path. Push delivery is only a
+ringing hint and does not mean that the call was answered.
+
+The upgraded voice route removes the initiating application EOA from
+`voice_listen`, frame commands, push metadata, and relay logs. The mailbox
+receives only the encrypted route command, opaque session identifiers, and the
+callee routing target. The initiating application wallet remains only inside
+the recipient-user-PGP call offer.
 
 ## Encrypted file attachments
 
@@ -66,6 +83,30 @@ CoNET Chat therefore treats the user's social relationships as a primary privacy
 ---
 
 ## From encrypted messages to private relationships
+
+CoNET Chat places the sender wallet inside the signed application envelope
+**before** that envelope is encrypted to the recipient's user PGP key. The
+HTTP entry receives OpenPGP armor, not a plaintext `from` wallet. The mailbox
+stores and forwards that armor. Only the recipient decrypts the envelope,
+recovers the EIP-191 signer, and learns the sender wallet from the message.
+
+This makes the privacy objective concrete. The protocol attempts to separate
+three direct associations:
+
+1. **Sender wallet ↔ recipient** — forwarding infrastructure sees a routing
+   key or mailbox role; the business sender wallet remains inside
+   recipient-only ciphertext.
+2. **Message content ↔ relay** — entries and mailboxes relay OpenPGP or
+   AES-GCM ciphertext without the application plaintext.
+3. **User IP ↔ communication identity** — an entry sees the connection IP,
+   while the mailbox sees the wallet route and receives the connection from
+   the entry rather than directly from the user.
+
+The third statement is role separation, not disappearance of IP metadata.
+Entry A or C necessarily sees the IP that connects to it. A mailbox does not
+see that direct client IP on a conforming A/B/C path, and the remote Chat peer
+does not receive a direct socket or WebRTC candidate. Entry–mailbox collusion
+or a global timing observer can weaken this separation.
 
 Traditional messaging architecture tends to concentrate several kinds of information in the same operator:
 
@@ -290,6 +331,30 @@ The architectural objective is therefore more precise:
 
 Role separation, encrypted payloads, decentralized infrastructure, fragmented encrypted history, and wallet-controlled recovery reduce the amount of relationship information that any single infrastructure participant needs to possess.
 
+### Compare fields, not the word “relay”
+
+The fact that two systems both use relay servers does not establish the same
+privacy property. For voice calls, a useful comparison asks what each role
+actually receives:
+
+- Does the peer receive the other participant's network address?
+- Does an entry receive a wallet identity as plaintext, or only a connection
+  plus ciphertext?
+- Does the voice mailbox receive the initiating application wallet, or only a
+  separate routing identity / opaque call capability?
+- Can a media relay decrypt frames, or does it receive only authenticated
+  ciphertext and temporary session identifiers?
+- Which fields and identifiers are written to logs?
+
+Signal-style call relaying is commonly discussed in terms of preventing the
+two call endpoints from learning one another's IP addresses. CoNET's stated
+design target additionally separates entry IP observation from mailbox wallet
+state. The implemented initiator-hidden voice protocol requires the voice
+mailbox to receive a separate routing identity or opaque session authority,
+rather than the initiating application wallet. That last property is an upgrade requirement and must be
+validated against the implemented command, push payload, SSE frame, and logs;
+the mere existence of a relay is not evidence for it.
+
 ---
 
 ## Protect what people say. Protect who people know.
@@ -466,11 +531,62 @@ That is how history recovery reconstructs **communication context**, not only me
 - Encrypted-history append and recover on the Consumer path
 - Published SDK: `@conet.project/chat-sdk`
 
+## Real-time voice calls
+
+CoNET Chat is developing a privacy-preserving one-to-one voice call mode.
+This is distinct from the already implemented `voice_message_v1` recording
+attachment: it is a temporary encrypted media session and is not part of
+ordinary Chat history.
+
+The normal Chat `mailbox_listen` SSE remains available for text, files,
+receipts and offline delivery. A call creates a random temporary `sessionId`
+and two temporary `voice_listen` SSE sessions, one on each participant's own
+mailbox. Short `voice_uplink` / `voice_downlink` commands deliver encrypted
+frames to the peer's temporary session. This creates a duplex relay without a
+direct peer socket, WebRTC, or exchange of peer IP candidates.
+
+The browser encrypts each audio frame with AES-256-GCM. The session key is
+delivered only inside the signed recipient-user-PGP call offer/accept envelope.
+Entries and mailboxes route opaque ciphertext and must not receive the key,
+plaintext audio, or an HTTP media field. The MVP does not write frames to
+offline storage, push notifications, or encrypted Chat history.
+
+The relay exposes metadata such as encrypted frame size, timing, session
+duration and mailbox routing state. It therefore improves peer-address privacy
+but does not provide complete traffic-analysis resistance. Relay success means
+only that a frame entered the peer SSE queue, not that it was played.
+
+### Initiator-hidden voice protocol
+
+The voice privacy profile separates call discovery from mailbox transport:
+
+```text
+recipient-user-PGP offer:
+  initiating application wallet + callee wallet + session key + call policy
+
+caller mailbox voice_listen:
+  separate routing wallet + random sessionId + opaque call capability
+
+voice relay:
+  random session/capability identifiers + encrypted frames
+```
+
+The caller mailbox attaches the temporary SSE using the encrypted route and
+opaque session identifier. It does not receive the initiating application
+wallet as `walletAddress`, `callerEoa`, `callId`, or another reversible field.
+The recipient learns the initiating wallet only after decrypting and verifying
+the call offer. The callee route remains an operational delivery target.
+
+The current wire shape excludes the initiating application wallet from
+mailbox-visible voice commands, wake-up push metadata, and voice-frame relay
+fields. The callee routing target remains an operational destination field.
+
 ## What remains under development
 
 - Broader client coverage beyond the current Beamio surfaces
-- Stronger metadata resistance than current entry/mailbox observation
-- Groups, channels, and calls — not claimed here
+- Groups and channels
+- Production-grade voice-call media adaptation, congestion control, codec
+  portability and stronger traffic-analysis resistance
 
 ---
 
@@ -478,8 +594,8 @@ That is how history recovery reconstructs **communication context**, not only me
 
 | Participant | Can see | Must not see |
 |---|---|---|
-| Entry A / C | Encrypted payload, timing, size, connection | Application plaintext, recipient private key |
-| Mailbox B | Ciphertext, listen-pool membership, ACK hashes | Application plaintext, user PGP private key |
+| Entry A / C | Connecting IP, encrypted payload, timing, size, outer routing key ID | Application plaintext, sender wallet inside the encrypted business envelope, recipient private key |
+| Mailbox B | Ciphertext, destination route, listen-pool membership, ACK hashes, opaque voice session/call identifiers | Application plaintext, initiating application wallet, and user PGP private key |
 | IPFS / fragment store | Encrypted fragments and encrypted index | Readable history without wallet authority |
 | Beamio API | Gas-sponsored writes such as ChatIndexRegistry pointer updates | Private keys, plaintext history |
 | Recipient wallet | Decrypted application objects after local verification | Other users’ private keys |

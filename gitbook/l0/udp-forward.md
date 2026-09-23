@@ -121,6 +121,16 @@ It also does not hide a client's IP from its entry, defeat a global timing obser
 
 ## Next
 
+## Relationship to Chat real-time voice
+
+The real-time voice MVP uses the same zero-trust **frame** principles as this
+UDP composition, but it is not raw UDP and it does not reuse the normal Chat
+mailbox SSE. Each participant opens a separate random `voice_listen` session;
+`voice_uplink` and `voice_downlink` commands write AES-GCM frames to the peer's
+temporary voice SSE. Voice sessions have their own limits and lifecycle and
+must not be inserted into `udpClientPool`, `udpServerPool`, or the normal Chat
+offline store. The mailbox never decrypts either UDP or voice payloads.
+
 - [How to use Layer Minus](using-l0.md) places UDP among the other L0 combinations.
 - [Security limits](security-limits.md) grades UDP metadata and missing native-UDP properties.
 - [Zero-trust mailbox routing](mailbox-routing.md) defines the shared A/B/C path.

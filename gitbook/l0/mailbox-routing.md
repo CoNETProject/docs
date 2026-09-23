@@ -6,6 +6,23 @@ Mailbox routing is the specified Layer Minus **forwarding** protocol. It separat
 
 L0 stops at “deliver this OpenPGP armor to the mailbox of this key.” Chat schemas, POS permission types, acknowledgements, and UI are [application combinations](using-l0.md) of the same path.
 
+Voice-call wake-up is also an application combination. The caller first sends
+a route-encrypted `voice_listen` command to its own mailbox B. The command may
+carry an opaque, metadata-only `{ callId, sessionId, calleeEoa, expiresAt }`
+record. After B attaches the voice SSE and writes `voice_ready`, B
+calls the Beamio push API. The caller PWA never calls that API directly, and
+the callee mailbox is not used as a push proxy. `callId` is a random wake-up
+reference; `sessionId` uniquely identifies one call.
+The command and push path must not carry the user-PGP session key, private key,
+audio, or call plaintext. APNs/FCM wake-up is only a native ringing hint; the
+actual offer still follows the normal recipient-user-PGP mailbox path.
+
+Initiator-hidden voice is enforced in the route command: the
+recipient-user-PGP call offer carries the initiating application wallet, while
+`voice_listen` carries only opaque session data and the callee routing target.
+The mailbox never receives the initiating application wallet in a
+mailbox-decryptable command, relay frame, push request, or log.
+
 ## Roles
 
 | Symbol | Role |
@@ -23,12 +40,20 @@ For the intended route, `A ≠ B` and `C ≠ B`. A and C may be different entrie
 ### Send: S → A → B
 
 1. S resolves R's `userPublicKeyArmored` (the inbox key on R's AddressPGP row).
-2. S signs the application envelope with its **sender** EOA. That EOA does not have to be R, and R does not have to be the recipient's display wallet.
+2. S signs the application envelope with its **sender** EOA. The sender wallet
+   is a field of that application envelope, not a plaintext HTTP or hop-header
+   field. That EOA does not have to be R, and R does not have to be the
+   recipient's display wallet.
 3. S encrypts the complete envelope to **R's user OpenPGP key**.
 4. Optionally, S wraps that armor in one or more **outer OpenPGP layers** addressed to A or to a hop chain. The first `/post` then shows the **outer** key ID to a path observer.
 5. S posts the armored ciphertext to healthy entry A over **HTTP or HTTPS**. The HTTP JSON is **only** `{ "data": "<OpenPGP armor>" }`. Do **not** add sibling fields (`NoPush`, `beamioNoPush`, flags). Extra plaintext fields raise inspection risk. Because the body is already ciphertext, **HTTP is sufficient** and is the intended client path where TLS SNI or JA3/JA4 would be classified or blocked.
 6. A reads `getEncryptionKeyIDs()`. If the key is not local, A forwards the **same armor** and signs the SI hop header. If the key **is** local, A decrypts **once**. When the plaintext is still OpenPGP and the inner side-channel key ID is not this node, A forwards the **inner** armor if hop signatures stay at or below **3**. Same-node inner PGP is an attack (`end`). A does **not** read user-PGP business plaintext.
-7. B stores the inbound armor before attempting live SSE delivery. B does not decrypt the **user-PGP** business envelope. When B ends the socket, A frees that connection. SI hop signatures are the credential the last decrypting hop uses to meter prior-hop bytes against the **user** wallet for **GB**.
+7. B stores the inbound armor before attempting live SSE delivery. B does not
+   decrypt the **user-PGP** business envelope and therefore cannot read the
+   sender wallet carried inside it. Only R learns that wallet after local
+   decrypt and EIP-191 verification. When B ends the socket, A frees that
+   connection. SI hop signatures are the credential the last decrypting hop
+   uses to meter prior-hop bytes against the **user** wallet for **GB**.
 
 ### Mailbox work envelope (B decrypts a delivery instruction)
 
@@ -99,11 +124,14 @@ The SI runtime labels long-lived sessions so that unrelated lifecycle policies d
 | LayerMinus mining gossip | `mining` | Omitted; defaults to **mining** | Shared liveness pool, labeled mining |
 | UDP client | `udp_listen`, or `mining` | `udp` | Separate UDP client pool |
 | UDP server | `udp_server_listen`, or `mining` | `udp_server` | Separate UDP server pool |
+| Real-time voice participant | `voice_listen` | — | Separate random temporary voice-session pool |
 | Exclusive L0 occupancy | `l0_listen` or `mining` | **`l0`** | Separate `l0ListenPool`. First `l0_connect` occupies (HTTP 200 keep-alive; stop idle comment keepalives). Second `l0_connect` is **409**. Replacement `l0_listen` while live occupied is **409**; dead/stale occupy sockets are dropped so a restarted client can re-listen. Chat / mining gossip on the same node continues. Idle gossip does not occupy |
 
-Chat, mailbox, mining, UDP, and exclusive application attachments are distinct SI
+Chat, mailbox, mining, UDP, voice, and exclusive application attachments are distinct SI
 listen namespaces. Application offers, accepts, and stream frames are **not**
-SI commands. They remain endpoint-encrypted application data. See
+ordinary Chat messages. Voice uses `voice_listen` plus signed
+`voice_uplink`/`voice_downlink` commands only for opaque frame relay; it never
+uses the normal `mailbox_listen` SSE. See
 [Persistent application streams](duplex-forward.md).
 
 A completed HTTP request body does not make a receive-only SSE socket stale. SI checks whether the socket remains writable; chat-only timeout or zombie policy must not evict a mining session.
@@ -177,13 +205,27 @@ A/B/C route or create a new SI command.
 When routing and encryption rules are followed:
 
 - A and C cannot decrypt **business** content (user-PGP innermost armor);
+- the application sender wallet is inside that business armor, so A, B, and C
+  do not receive it as a plaintext routing field;
 - A and C **can** read the OpenPGP key ID on the layer they handle. If the client used an outer envelope, the first-hop observer sees A's key, not R's. After a local decrypt, A still sees the next key ID — that is the routing primitive, not a leak of message text;
 - B can decrypt mailbox control and mailbox-work JSON (`NoPush`) but not user-PGP business content;
 - B sees an entry connection instead of a direct client connection;
 - client `/post` confidentiality does not require HTTPS; and
 - a forwarding node is paid in **GB** for relaying ciphertext, which aligns the incentive with delivery rather than inspection.
 
-The design does not hide the client IP from A or C, prevent a global observer from correlating timing and sizes, protect a compromised endpoint, or guarantee availability of an entry or mailbox. Ciphertext key IDs and routing metadata remain visible where forwarding requires them. HTTP `/post` makes the application shape visible to a path observer in exchange for avoiding TLS metadata.
+The design does not hide the client IP from A or C. It separates that IP
+observation from the sender wallet and mailbox state: A/C see the connection,
+while B sees the destination route through an entry connection. The design
+also does not prevent a global observer from correlating timing and sizes,
+protect a compromised endpoint, or guarantee availability of an entry or
+mailbox. Ciphertext key IDs and routing metadata remain visible where
+forwarding requires them. HTTP `/post` makes the application shape visible to
+a path observer in exchange for avoiding TLS metadata.
+
+For real-time voice, compare the actual command fields rather than relying on
+the word “relay.” `voice_listen` uses an opaque session ID, wake-up `callId`,
+and callee routing target; frame relay uses opaque source/target session IDs.
+The mailbox relay does not receive the initiating application wallet.
 
 A/B/C are **roles**. Collusion of A+B, C+B, or one operator running all three reconstructs send relationships or binds a wallet to an IP. Distinct Guardian addresses are not an operator-domain proof.
 

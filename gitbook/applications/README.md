@@ -33,7 +33,7 @@ Maturity is not an audit, uptime, or anonymity guarantee.
 | **Web3 Browser + Wallet** | Native shell + local PWA: browse/publish `web3://`, SI subset, L2 on-demand | Under development | [Web3 Browser](web3-browser.md) |
 | **SilentPass** | Wallet-authorized privacy access to ordinary Internet services | Production reference | [SilentPass](silentpass-vpn.md) |
 | **Beamio** | Consumer wallet, Merchant OS (including website lookup onboarding), POS, Cash and USDC | Production reference | [Beamio](beamio.md) |
-| **CoNET Chat** | Wallet-addressed, relationship-private communication: receipts, presence, and encrypted-history recovery | Implemented capability | [CoNET Chat](depin-chat.md) |
+| **CoNET Chat** | Relationship-private messaging and real-time voice: sender wallet inside recipient-only ciphertext, Layer Minus IP/route separation, encrypted history, and opaque voice relay sessions | Implemented capability | [CoNET Chat](depin-chat.md) |
 | **Privacy-first Decentralized AI** | Three independent roles and one open intelligence economy: private paths plus candidate micropayments (not a live AI fee rail) | Design study | [Landing](privacy-first-ai.md) · [Whitepaper](privacy-first-ai-whitepaper.md) |
 | **Institutional multisig AA** | Team-controlled Smart Wallet with on-chain tasks and threshold votes | Implemented capability | [Institutional multisig AA](institutional-multisig-aa.md) |
 | **Miner-matched order-book exchange** | Proposed non-custodial ERC-20 order book | Design study | [Miner-matched exchange](miner-orderbook-dex.md) |

@@ -21,6 +21,30 @@ Public packages: [CoNET-project/chat-sdk](https://github.com/CoNET-project/chat-
 | Presence (green dot) | Contact mailbox **B route PGP** | `wallet_online_query` via **C ≠ B** |
 | Optional recover history | — | Encrypted IPFS fragments + `ChatIndexRegistry` head pointer |
 
+## Relationship-privacy field contract
+
+The application sender wallet is confidential routing metadata until the
+recipient decrypts:
+
+```text
+{ from: senderEOA, text, signature }
+  → encrypt complete object to recipient user PGP
+  → POST { data: armor } through entry A
+```
+
+| Role | Receives | Must not receive |
+| --- | --- | --- |
+| **Entry A** | Client IP, ciphertext, timing, size, outer key ID | Plaintext sender wallet or Chat body |
+| **Mailbox B** | Destination route, stored armor, listen state | Sender wallet inside the business envelope or Chat body |
+| **Listen entry C** | Recipient-side connection IP, encrypted listen/control traffic | Decrypted Chat body |
+| **Recipient** | Decrypted envelope and verified sender wallet | Other users' private keys |
+
+This attempts to break three direct associations: sender wallet ↔ recipient,
+message content ↔ relay, and user IP ↔ communication identity. It does not
+make IP disappear: A/C see the connecting IP, while B sees route state through
+an entry connection. Collusion and global timing analysis remain outside the
+guarantee.
+
 ## Protected file attachments
 
 Chat file attachments use the encrypted `file_message_v1` application type. The
@@ -44,6 +68,106 @@ locally, then receive per-file download/preview controls. Object URLs must be
 revoked after each download or component unmount.
 
 Do **not** encrypt business Chat to an AA Smart Wallet unless that AA has its own AddressPGP row. Do **not** take `search-users` `results[0]` as the gossip target (`CoNET` ≠ `CONET`).
+
+## Voice-call wake-up push
+
+Voice calls keep the media path end-to-end encrypted, but a device may need a
+native wake-up before its Chat SSE is active. The caller first opens its
+voice-specific SSE through its own mailbox route B. The `voice_listen` command
+may carry an opaque, metadata-only wake-up request for the callee:
+
+```json
+{
+  "command": "voice_listen",
+  "targetWallet": "0xCallee",
+  "callId": "@callerTag-or-callerEOA",
+  "sessionId": "voice-session-opaque-id",
+  "expiresAt": 1710000123456,
+  "pushTimestamp": 1710000000
+}
+```
+
+`callId` is a random wake-up reference and must not contain the caller's
+`@BeamioTag` or wallet address. `sessionId` is the per-call unique identifier
+and must be used for deduplication. After the
+caller's mailbox has accepted the voice SSE and sent its `voice_ready`
+handshake, that mailbox calls `/api/voiceCallPush` with only the signed
+metadata. The caller PWA never calls this endpoint, and it does not send a
+second `voice_call_push` command to the callee mailbox. This keeps the caller's
+network address outside the push API path while preserving the existing
+entry-to-mailbox routing.
+
+The mailbox must verify that the voice session belongs to its route, validate
+the target and expiry, and forward only the minimal metadata to the API. It
+must never forward the PGP session key, private key, audio, or the user-PGP
+call offer.
+
+The API sends the metadata-only wake-up to registered native devices:
+`ios_voip` uses APNs PushKit/CallKit and `android` uses high-priority FCM.
+The native shell then opens the system call UI and the PWA obtains the
+encrypted offer through its normal Chat mailbox path. A push response is not
+proof that the call offer was delivered or answered.
+
+### Implemented initiator-hidden voice protocol
+
+`walletAddress` is intentionally absent: the mailbox authenticates the
+encrypted route command by its
+destination route and keeps only the opaque `sessionId`. The initiating
+application EOA is never sent as `walletAddress`, `callerEoa`, `callId`, or a
+signature that the mailbox can recover.
+
+The mailbox-visible shape is:
+
+```json
+{
+  "command": "voice_listen",
+  "callId": "opaque-call-id",
+  "sessionId": "opaque-session-id",
+  "expiresAt": 1710000123456,
+  "pushTimestamp": 1710000000
+}
+```
+
+The real caller wallet remains only in the signed call offer encrypted to the
+callee user PGP. `callId` is generated solely for native wake-up and is
+unrelated to the caller's BeamioTag or EOA. The session authority is the
+opaque `sessionId`, scoped by expiry and mailbox route.
+
+The initiating application EOA is absent from mailbox-decryptable
+`voice_listen`, frame commands, SSE frames, and push metadata. The mailbox
+authenticates the route, checks the opaque session and expiry, and relays
+encrypted frames without learning the initiating application wallet.
+Comparisons with other relays must use the actual fields visible to each role.
+
+## Native push and call-UI capability registration
+
+When a Consumer PWA runs inside the iOS or Android shell, the shell sends its
+push token and native call-UI capabilities to the PWA. The PWA signs the
+registration payload with the wallet EOA and sends it as an encrypted
+`push_device_register` command to the wallet's own mailbox route:
+
+```json
+{
+  "command": "push_device_register",
+  "walletAddress": "0xUser",
+  "deviceToken": "opaque-platform-token",
+  "platform": "android",
+  "bundleId": "com.beamio.app",
+  "timestamp": 1710000000,
+  "registrationSignature": "0x...",
+  "capabilities": {
+    "nativeCallUi": true,
+    "fullScreenIntent": true,
+    "callKit": false
+  }
+}
+```
+
+The mailbox validates that `walletAddress` is its route, then forwards the
+signed registration to `/api/registerPushDevice`. The PWA does not call the
+push API directly, and the mailbox must not log device tokens or forward
+private keys. `fullScreenIntent` is a capability report only; Android still
+controls the permission and may revoke it.
 
 ## Identity
 
@@ -392,6 +516,57 @@ the AES key in a route-visible command. Applications should disclose that
 mailbox/entry nodes can still observe ciphertext size, timing, fragment
 arrival, and listen state; optional padding or delayed upload is a future
 application mode, not a property of the current protocol.
+
+## Real-time voice calls
+
+Real-time calls are a separate application stream from `voice_message_v1`.
+They must **not** consume or overload the normal `mailbox_listen` Chat SSE,
+which remains reserved for messages, attachments, delivery receipts and
+offline flush.
+
+Each call creates a random `sessionId`. Both wallets open a temporary
+`voice_listen` SSE on their own mailbox. After the recipient accepts the call,
+encrypted audio frames are sent through short `voice_uplink` or
+`voice_downlink` route commands to the peer mailbox, which writes them to the
+peer's temporary voice SSE. Two one-way mailbox paths form the duplex channel;
+there is no peer-to-peer socket and no WebRTC candidate exchange.
+
+```text
+Caller ── voice_listen(session A) ──> caller mailbox
+Caller ── voice_uplink(target session B) ──> callee mailbox ──> callee voice SSE
+Callee ── voice_downlink(target session A) ──> caller mailbox ──> caller voice SSE
+```
+
+The audio payload is AES-256-GCM ciphertext. The session key is delivered only
+inside the recipient-only, signed Chat offer/accept envelope. It must never
+appear in `voice_listen`, `voice_uplink`, HTTP JSON, SSE plaintext, logs or
+mailbox storage. The SI node validates the signed command, route ownership,
+session ownership, timestamp, sequence and size, but never decrypts the audio.
+
+Caller session authentication uses the encrypted mailbox route and an opaque
+session identifier, not the application caller EOA.
+The destination mailbox may still know the wallet whose local route and SSE it
+serves; the protected identity here is the initiating application wallet.
+
+The frame shape is:
+
+```json
+{
+  "type": "voice_frame_v1",
+  "callId": "call-…",
+  "sessionId": "session-…",
+  "seq": 12,
+  "timestamp": 1710000000,
+  "payload": "<base64 AES-GCM frame>"
+}
+```
+
+The current implementation uses bounded temporary sessions, a 60-second
+timestamp window, a 12,000-character encoded payload limit, bounded queueing
+under SSE backpressure, and a two-minute idle timeout. Frames are not saved to
+offline Chat, APNs, `ChatIndexRegistry`, or encrypted message history. A
+successful relay means only that the frame entered the peer SSE write queue; it
+does not prove that the peer audio device played it.
 
 ## Encrypted history (optional second track)
 

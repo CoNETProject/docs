@@ -154,6 +154,40 @@ size, choose local retention behavior, or add padding/delayed upload. None of
 these options hides ciphertext size, timing, fragment arrival, mailbox
 presence, or endpoint compromise from the current infrastructure roles.
 
+## Real-time voice: relay presence is not the privacy property
+
+The real-time voice MVP avoids a direct peer socket and WebRTC candidate
+exchange. Audio frames are AES-256-GCM ciphertext and use temporary
+`voice_listen` SSE sessions. This protects media plaintext and prevents the
+two endpoints from learning one another's direct IP through the media
+channel.
+
+The initiator-hidden field boundary is now enforced for voice route commands.
+`voice_listen` has no business-wallet `walletAddress`; wake-up metadata uses
+only an opaque random `callId`, and voice frames target an opaque session ID.
+The initiating application wallet remains inside the recipient-user-PGP offer.
+
+The implemented initiator-hidden profile provides:
+
+- the initiating application wallet only inside a signed offer encrypted to
+  the callee user PGP;
+- an opaque `callId` that does not reuse the caller BeamioTag or EOA;
+- no initiating application EOA in mailbox-visible commands, SSE frames,
+  push metadata, or logs; and
+- expiry, replay rejection, and scope binding for every routing/session
+  capability.
+
+Even after that upgrade, the mailbox knows the separate routing identity it
+serves, entries still observe connecting IPs, and timing/size correlation
+remains. The stronger claim is specifically that the **mailbox is not given
+the initiating application wallet as a field**.
+
+Comparisons with other messengers must use this field-level model. Saying that
+Signal and CoNET both use relays is insufficient: call relays can hide peer IP
+addresses while exposing different account identifiers to different service
+roles. The review question is what each entry, mailbox, push service, and
+media relay actually receives and logs.
+
 ### Chat crypto profile (roadmap)
 
 Acknowledging the gap does not raise the live grade. Until a later profile ships, do not describe Chat as forward-secret.
@@ -321,6 +355,8 @@ Grades describe the **current SI + intended A/B/C client path**, not a future ra
 | Entry learns recipient wallet / route | **Weak** on a one-layer post; **reduced for the first-hop observer** with an outer wrap | After a local peel, A still sees the next key ID |
 | Long-term wallet graph | **Moderate to weak** | Public chain + reused EOA |
 | Single malicious relay | **Moderately strong** | Cannot read user-PGP content; can drop, delay, or classify |
+| Real-time voice media relay reads audio | **Strong** | AES-GCM frame key stays in recipient-user-PGP offer |
+| Voice mailbox learns initiating application wallet | **Strong** | Voice route commands and wake-up metadata use opaque session/call identifiers |
 | Entry + mailbox collusion | **Weak** | Role split ≠ operator split |
 | Global timing correlation | **Weak** | No padding or mix |
 | Endpoint compromise | **Weak** | Device or long-term key exposure |

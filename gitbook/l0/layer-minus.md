@@ -28,6 +28,20 @@ This can reduce fixed-origin exposure and the amount of relationship
 information one intermediary needs. It does not remove IP from packet
 delivery or prove that role operators are independent.
 
+For CoNET Chat, that separation is used to break three direct associations:
+
+- the sender wallet is inside the recipient-user-PGP business envelope rather
+  than a plaintext transport field;
+- message content remains ciphertext to entries and mailboxes; and
+- entries observe client IP connections while mailboxes observe wallet routes
+  through those entries, rather than receiving the client connection
+  directly.
+
+Only the recipient learns the sender wallet after decrypting and verifying the
+application envelope. This is a relationship-privacy design, not a claim that
+IP metadata vanishes: A/C still see their connecting IP, and colluding roles
+or a global observer can correlate observations.
+
 ## Identity and routing
 
 A wallet route uses three distinct inputs:

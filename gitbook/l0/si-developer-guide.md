@@ -168,6 +168,9 @@ Source: CoNET-SI `localNodeCommandSocket`. Encrypt the command family to **route
 | `command` | Encrypt to | HTTP / SSE | Notes |
 | --- | --- | --- | --- |
 | **`mailbox_listen`** | Own mailbox **B** route PGP | Long SSE via entry **C ≠ B** | Preferred Chat mailbox command. Required `walletAddress`; optional opaque `instanceId`. Multiple instances per wallet are retained and receive fan-out copies. |
+| `voice_listen` | Own mailbox **B** route PGP | Separate temporary SSE via entry **C ≠ B** | Random `sessionId`; separate voice pool. Never occupies `mailbox_listen`. For an outgoing call it may include signed push metadata; after `voice_ready`, B calls `/api/voiceCallPush`. |
+| `voice_uplink` / `voice_downlink` | Peer mailbox **B** route PGP | Short POST via entry **A ≠ B** | Opaque AES-GCM frame addressed by `targetSessionId`; no session key or plaintext audio. |
+| `voice_unlisten` | Own mailbox **B** route PGP | Short POST via entry **C ≠ B** | Closes one temporary voice session. |
 | `mining` + `listenKind: "chat"` | Own mailbox **B** route PGP | Long SSE via entry **C ≠ B** | Chat / Merchant OS / Alliance mailbox. Required fields: `walletAddress`, `algorithm: "aes-256-cbc"`, `Securitykey` (session key) |
 | `mining` (omit `listenKind`) | Target SI route PGP | Infrastructure SSE | LayerMinus mining. SI defaults `listenKind` to `"mining"`. Not a Chat shortcut |
 | `gossip_delivery_ack` | **B** route PGP | Entry **C ≠ B** | After the client ingested user-PGP armor. Fields: `walletAddress`, `armorHash` (`keccak256(utf8(full armor))`), `timestamp` (unix seconds, ±600s), optional `sendId` |
